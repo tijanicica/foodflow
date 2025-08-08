@@ -1,7 +1,11 @@
 package com.iis.foodflow.model.restaurant;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 public class DietType {

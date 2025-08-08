@@ -5,7 +5,11 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 public class OperatorRating {

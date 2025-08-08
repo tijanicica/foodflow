@@ -3,8 +3,11 @@ package com.iis.foodflow.model.order;
 import com.iis.foodflow.model.user.Customer;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 public class Card {

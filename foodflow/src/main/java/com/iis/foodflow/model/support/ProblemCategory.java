@@ -5,7 +5,11 @@ import lombok.Data;
 
 import java.util.HashSet;
 import java.util.Set;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 public class ProblemCategory {

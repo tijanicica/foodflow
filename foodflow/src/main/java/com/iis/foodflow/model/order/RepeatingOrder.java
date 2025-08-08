@@ -8,8 +8,11 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 public class RepeatingOrder {

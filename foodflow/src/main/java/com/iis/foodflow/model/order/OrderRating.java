@@ -2,10 +2,12 @@ package com.iis.foodflow.model.order;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
-
 @Entity
 public class OrderRating {
     @Id

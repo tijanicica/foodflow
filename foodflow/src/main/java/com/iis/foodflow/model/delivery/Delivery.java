@@ -3,10 +3,14 @@ package com.iis.foodflow.model.delivery;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.user.Driver;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 public class Delivery {
     @Id

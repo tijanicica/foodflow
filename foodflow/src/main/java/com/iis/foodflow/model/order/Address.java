@@ -4,7 +4,11 @@ import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Customer;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 public class Address {
@@ -16,6 +20,7 @@ public class Address {
     private String city;
     private String country;
     private String nickname; // naziv (opciono)
+    private String postalCode;
     private Double longitude;
     private Double latitude;
 
