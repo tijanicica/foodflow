@@ -1,0 +1,34 @@
+package com.iis.foodflow.model.restaurant;
+
+import com.iis.foodflow.model.order.Address;
+import com.iis.foodflow.model.user.Manager;
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
+
+@Data
+
+@Entity
+public class Restaurant {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private LocalTime openingTime;
+    private LocalTime closingTime;
+    private Double averageRating;
+
+    @ManyToOne
+    @JoinColumn(name = "manager_id")
+    private Manager manager;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
+
+    @OneToMany(mappedBy = "restaurant")
+    private Set<Menu> menus = new HashSet<>();
+}
