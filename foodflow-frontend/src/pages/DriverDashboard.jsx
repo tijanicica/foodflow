@@ -1,7 +1,7 @@
-// src/pages/DriverDashboard.jsx
+// Datoteka: src/pages/DriverDashboard.jsx
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <-- 1. DODAJTE 'Link' OVDJE
 
 export function DriverDashboard() {
     const navigate = useNavigate();
@@ -18,8 +18,10 @@ export function DriverDashboard() {
                 <nav style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>FoodFlow Driver</h1>
                     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <a href="/driver" style={{ fontWeight: '600', borderBottom: '2px solid #8A643B' }}>Dashboard</a>
-                        <a href="#">My Profile</a>
+                        {/* === 2. IZMJENE SU OVDJE === */}
+                        <Link to="/driver" style={{ fontWeight: '600', borderBottom: '2px solid #8A643B' }}>Dashboard</Link>
+                        <Link to="/driver/profile">My Profile</Link> 
+                        {/* ========================== */}
                         <button onClick={handleLogout}>Logout</button>
                     </div>
                 </nav>

@@ -96,3 +96,82 @@ export const getActiveMenu = async (restaurantId, filters) => {
   });
   return response.data;
 };
+
+
+export const getDriverPerformance = async () => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            throw new Error('No token found');
+        }
+
+        const response = await fetch('/api/drivers/performance', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Ključno: Šaljemo token!
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch performance data');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching driver performance:", error);
+        throw error;
+    }
+};
+export const updateDriverStatus = async (statusData) => {
+  try {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) throw new Error('No token found');
+
+    const response = await fetch('/api/drivers/status', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(statusData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update status: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in updateDriverStatus:", error);
+    throw error;
+  }
+};
+
+
+/**
+ * Ažurira tip vozila za prijavljenog vozača.
+ * @param {object} vehicleData - Objekat sa novim vozilom, npr. { newVehicleType: 'MOTORCYCLE' }
+ */
+export const updateDriverVehicle = async (vehicleData) => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) throw new Error('No token found');
+
+        const response = await fetch('/api/drivers/vehicle', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(vehicleData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to update vehicle: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error in updateDriverVehicle:", error);
+        throw error;
+    }
+};

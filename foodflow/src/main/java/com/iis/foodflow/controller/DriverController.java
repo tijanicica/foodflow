@@ -5,6 +5,7 @@ import com.iis.foodflow.dto.request.UpdateDriverStatusRequest;
 import com.iis.foodflow.dto.request.UpdateLocationRequest;
 import com.iis.foodflow.dto.request.UpdateVehicleRequest;
 import com.iis.foodflow.dto.response.DriverLocationResponse; // <-- DODAT JE OVAJ IMPORT
+import com.iis.foodflow.dto.response.DriverPerformanceResponse;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.DriverService;
 import lombok.RequiredArgsConstructor;
@@ -61,5 +62,20 @@ public class DriverController {
         Driver updatedDriver = driverService.updateVehicle(driverEmail, request.getNewVehicleType());
 
         return ResponseEntity.ok(updatedDriver);
+    }
+
+    @GetMapping("/performance")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<DriverPerformanceResponse> getMyPerformance(
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        // Uzimamo email prijavljenog vozača iz tokena
+        String driverEmail = driverPrincipal.getEmail();
+
+        // Pozivamo servisnu metodu koja sve izračunava
+        DriverPerformanceResponse performanceData = driverService.getDriverPerformance(driverEmail);
+
+        // Vraćamo DTO kao JSON odgovor
+        return ResponseEntity.ok(performanceData);
     }
 }
