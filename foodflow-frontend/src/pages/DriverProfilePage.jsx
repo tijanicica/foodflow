@@ -67,26 +67,26 @@ export function DriverProfilePage() {
             console.error("Error updating vehicle:", err);
         }
     };
-const handleToggleStatus = async () => {
-  try {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      alert('Niste prijavljeni. Molimo prijavite se.');
-      navigate('/login', { replace: true });
-      return;
-    }
 
-    // Odredi novi status kao enum string
-    const newStatus = isOnline ? "OFFLINE" : "ONLINE";
+    const handleToggleStatus = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                alert('Niste prijavljeni. Molimo prijavite se.');
+                navigate('/login', { replace: true });
+                return;
+            }
 
-    await updateDriverStatus({ newStatus });  // šalji string, ne boolean
-    setIsOnline(prev => !prev);
-  } catch (err) {
-    alert('Neuspešno ažuriranje statusa. Pokušajte ponovo.');
-    console.error("Error updating status:", err);
-  }
-};
+            // Novi status kao string iz enuma
+            const newStatus = isOnline ? "OFFLINE" : "ONLINE";
 
+            await updateDriverStatus({ newStatus });  // šalje objekat sa poljem newStatus
+            setIsOnline(prev => !prev);
+        } catch (err) {
+            alert('Neuspešno ažuriranje statusa. Pokušajte ponovo.');
+            console.error("Error updating status:", err);
+        }
+    };
 
     if (loading) return <div style={{ padding: '2rem' }}>Loading profile...</div>;
     if (error) return <div style={{ padding: '2rem', color: 'red' }}>Error: {error}</div>;
