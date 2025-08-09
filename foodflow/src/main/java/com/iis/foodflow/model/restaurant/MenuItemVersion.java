@@ -1,17 +1,15 @@
 package com.iis.foodflow.model.restaurant;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class MenuItemVersion {
     @Id
@@ -25,9 +23,11 @@ public class MenuItemVersion {
 
     @ManyToOne
     @JoinColumn(name = "menu_item_id", nullable = false)
+    @ToString.Exclude
     private MenuItem menuItem;
 
     @ManyToOne
     @JoinColumn(name = "menu_version_id")
+    @ToString.Exclude
     private MenuVersion menuVersion;
 }

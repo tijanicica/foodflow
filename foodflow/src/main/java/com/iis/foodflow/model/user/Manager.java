@@ -3,7 +3,7 @@ package com.iis.foodflow.model.user;
 
 import com.iis.foodflow.enums.Role;
 import com.iis.foodflow.model.restaurant.Restaurant;
-import lombok.Data;
+import lombok.*;
 
 import jakarta.persistence.*;
 
@@ -11,15 +11,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Manager implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +42,7 @@ public class Manager implements UserDetails {
     private Administrator createdByAdmin;
 
     @OneToMany(mappedBy = "manager")
+    @ToString.Exclude
     private Set<Restaurant> managedRestaurants = new HashSet<>();
     @Enumerated(EnumType.STRING) // <-- JAKO VAŽNO!
     @Column(nullable = false)

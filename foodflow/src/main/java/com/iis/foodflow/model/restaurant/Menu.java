@@ -2,16 +2,15 @@ package com.iis.foodflow.model.restaurant;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class Menu {
     @Id
@@ -21,8 +20,10 @@ public class Menu {
 
     @ManyToOne
     @JoinColumn(name = "restaurant_id", nullable = false)
+    @ToString.Exclude // Isključi toString da sprečiš rekurziju
     private Restaurant restaurant;
 
     @OneToMany(mappedBy = "menu")
+    @ToString.Exclude // NAJVAŽNIJE: Isključi kolekciju iz toString
     private Set<MenuVersion> versions = new HashSet<>();
 }

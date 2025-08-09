@@ -1,17 +1,16 @@
 package com.iis.foodflow.model.restaurant;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class MenuVersion {
     @Id
@@ -25,8 +24,10 @@ public class MenuVersion {
 
     @ManyToOne
     @JoinColumn(name = "menu_id", nullable = false)
+    @ToString.Exclude
     private Menu menu;
 
     @OneToMany(mappedBy = "menuVersion")
+    @ToString.Exclude
     private Set<MenuItemVersion> menuItemVersions = new HashSet<>();
 }

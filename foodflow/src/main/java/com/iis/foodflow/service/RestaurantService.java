@@ -1,21 +1,25 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.FilterRequestDTO;
-import com.iis.foodflow.dto.response.AllergenDTO;
-import com.iis.foodflow.dto.response.DietTypeDTO;
-import com.iis.foodflow.dto.response.RestaurantDTO;
+import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.enums.PriceRange;
+import com.iis.foodflow.model.restaurant.MenuItem;
+import com.iis.foodflow.model.restaurant.MenuItemVersion;
+import com.iis.foodflow.model.restaurant.MenuVersion;
 import com.iis.foodflow.model.restaurant.Restaurant;
-import com.iis.foodflow.repository.AllergenRepository;
-import com.iis.foodflow.repository.DietTypeRepository;
-import com.iis.foodflow.repository.RestaurantRepository;
+import com.iis.foodflow.repository.*;
 import com.iis.foodflow.specification.RestaurantSpecification;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import com.iis.foodflow.model.restaurant.*; // Importuj sve iz model.restaurant paketa
+import org.springframework.util.CollectionUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +28,12 @@ public class RestaurantService {
     private final RestaurantRepository restaurantRepository;
     private final AllergenRepository allergenRepository; // Dodaj repozitorijum
     private final DietTypeRepository dietTypeRepository; // Dodaj repozitorijum
+    private final MenuVersionRepository menuVersionRepository;
+
+    private final MenuItemVersionRepository menuItemVersionRepository; // DODAJ NOVI REPOZITORIJUM
+
+
+
 
     public List<RestaurantDTO> getFilteredRestaurants(FilterRequestDTO filters) {
         Specification<Restaurant> spec = RestaurantSpecification.filterBy(filters);
@@ -54,6 +64,52 @@ public class RestaurantService {
                 restaurant.getImageUrl(),
                 restaurant.getAverageRating(),
                 restaurant.getPriceRange()
+        );
+    }
+
+    public MenuDTO getActiveMenuForRestaurant(Long restaurantId, List<Long> dietTypeIds, List<Long> excludeAllergenIds) {
+        MenuVersion activeVersion = menuVersionRepository
+                .findByMenuRestaurantIdAndActiveTrue(restaurantId)
+                .orElseThrow(() -> new RuntimeException("No active menu found for restaurant ID: " + restaurantId));
+
+        Restaurant restaurant = activeVersion.getMenu().getRestaurant();
+
+        // Provera da li su liste prazne i postavljanje na null ako jesu, radi JPQL upita
+        List<Long> finalDietTypeIds = CollectionUtils.isEmpty(dietTypeIds) ? null : dietTypeIds;
+        List<Long> finalExcludeAllergenIds = CollectionUtils.isEmpty(excludeAllergenIds) ? null : excludeAllergenIds;
+
+        // KORISTI NOVI UPIT ZA FILTRIRANJE DIREKTNO U BAZI
+        List<MenuItemVersion> filteredMenuItemVersions = menuItemVersionRepository.findFilteredItemsByVersionId(
+                activeVersion.getId(),
+                finalDietTypeIds,
+                finalExcludeAllergenIds
+        );
+
+        List<MenuItemDTO> filteredItems = filteredMenuItemVersions.stream()
+                .map(this::convertMenuItemVersionToDto)
+                .collect(Collectors.toList());
+
+        return new MenuDTO(
+                restaurant.getName(),
+                restaurant.getAverageRating(),
+                restaurant.getImageUrl(),
+                filteredItems
+        );
+    }
+
+    private MenuItemDTO convertMenuItemVersionToDto(MenuItemVersion miv) {
+        MenuItem item = miv.getMenuItem();
+        List<String> allergenNames = item.getAllergens().stream().map(Allergen::getName).collect(Collectors.toList());
+        List<String> dietTypeNames = item.getDietTypes().stream().map(DietType::getName).collect(Collectors.toList());
+
+        return new MenuItemDTO(
+                miv.getId(),
+                item.getName(),
+                item.getDescription(),
+                item.getImageUrl(),
+                miv.getPrice(),
+                allergenNames,
+                dietTypeNames
         );
     }
 }

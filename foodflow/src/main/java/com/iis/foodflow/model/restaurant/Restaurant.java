@@ -4,21 +4,23 @@ import com.iis.foodflow.enums.PriceRange;
 import com.iis.foodflow.model.order.Address;
 import com.iis.foodflow.model.user.Manager;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 @Entity
+@Getter
+@Setter
+// Definišite equals i hashCode samo na osnovu jedinstvenog ključa (id)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Restaurant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
     private String name;
     private String imageUrl;
