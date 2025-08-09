@@ -1,19 +1,20 @@
 package com.iis.foodflow.model.user;
 
+import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.Role;
-import com.iis.foodflow.model.delivery.Delivery;
+import com.iis.foodflow.enums.VehicleType;
+import com.iis.foodflow.model.order.Order;
 import jakarta.persistence.*;
 import lombok.Data;
-
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,31 +36,42 @@ public class Driver implements UserDetails {
     @Column(nullable = false)
     private String phone;
 
-    private String vehicleType;
-    private Integer rejectionCount;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type")
+    private VehicleType vehicleType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DriverStatus status;
+
     private Double latitude;
     private Double longitude;
     private LocalDateTime timestamp;
+
+    // --- ISPRAVKA OVDJE ---
+    @Column(name = "rejection_count")
+    private Integer rejectionCount = 0; // Postavljena početna vrijednost na 0
+    // -----------------------
+
+    @Column(name = "average_rating")
+    private Double averageRating = 5.0;
 
     @ManyToOne
     @JoinColumn(name = "admin_id")
     private Administrator createdByAdmin;
 
     @OneToMany(mappedBy = "driver")
-    private Set<Delivery> deliveries = new HashSet<>();
-    @Enumerated(EnumType.STRING) // <-- JAKO VAŽNO!
+    private Set<Order> deliveries = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role; // <-- NOVO POLJE!
+    private Role role;
 
+    // --- UserDetails METODE ---
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(role);
-    }
-
+    public Collection<? extends GrantedAuthority> getAuthorities() { return Collections.singletonList(role); }
     @Override
-    public String getUsername() {
-        return email;
-    }
+    public String getUsername() { return email; }
     @Override
     public boolean isAccountNonExpired() { return true; }
     @Override

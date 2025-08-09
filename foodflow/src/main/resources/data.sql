@@ -6,10 +6,11 @@
 -- Customer
 INSERT INTO customer (id, email, password, first_name, last_name, phone, role) VALUES
     (1, 'customer@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
-
--- Driver
-INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, rejection_count, latitude, longitude, timestamp) VALUES
-    (2, 'driver@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'Car', 0, 44.8125, 20.4612, NOW());
+-- Vozaci
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp) VALUES
+    (2, 'driver1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'CAR', 'OFFLINE', 0, 44.8125, 20.4612, NOW());
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (8, 'driver2@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '065111222', 'DRIVER', 'MOTORCYCLE', 'ONLINE', 0, 44.8040, 20.4651, NOW(), 5.0);
 
 -- Operator
 INSERT INTO operator (id, email, password, first_name, last_name, phone, role) VALUES
@@ -391,7 +392,16 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
 INSERT INTO problem_category (id, name, parent_category_id) VALUES
     (8, 'Problem sa sajtom', 3);
 
-
+--Ocena ya dostavljaca--
+INSERT INTO driver_rating (order_id, driver_id, customer_id,
+                           on_time_arrival_rating, hygiene_rating_customer, kindness_rating, customer_comment, customer_rated_at,
+                           manager_id,
+                           professionalism_rating, hygiene_rating_restaurant, communication_rating, restaurant_comment, restaurant_rated_at)
+VALUES
+    (1, 2, 1,
+     5, 5, 4, 'Sve je bilo super, dostavljač je bio brz i ljubazan.', NOW(),
+     4,
+     5, 5, 5, 'Sve po dogovoru, profesionalno odrađeno.', NOW());
 
 -- Resetovanje sekvenci da bi ID-jevi išli od sledećeg broja
 -- Resetovanje sekvenci na visoku vrednost
