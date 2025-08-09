@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage.jsx';
 import { RegisterPage } from './pages/RegisterPage.jsx';
 import { HomePage } from './pages/HomePage.jsx';
 import { MenuPage } from './pages/MenuPage.jsx';
+import { DriverDashboard } from './pages/DriverDashboard.jsx';
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
     path: "/restaurant/:restaurantId", // Dvotačka označava dinamički segment
     element: <MenuPage />,
   },
+  {
+  path: "/driver",
+  element: <DriverDashboard />,
+},
   // Ovde ćeš kasnije dodavati i druge rute
   // {
   //   path: "/dashboard",
