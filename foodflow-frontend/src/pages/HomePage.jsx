@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from 'react-router-dom'; 
+import { Link, useNavigate, createSearchParams } from 'react-router-dom';
 import { getFilteredRestaurants, getAllergens, getDietTypes } from '@/services/api';
 
 // --- POMOĆNA KOMPONENTA: Navbar ---
@@ -56,21 +56,51 @@ const Navbar = () => {
   );
 };
 
-// --- POMOĆNA KOMPONENTA: RestaurantCard ---
-const RestaurantCard = ({ restaurant }) => (
-  <div className="bg-white rounded-xl shadow-md border border-brand-accent/20 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-    <img src={restaurant.imageUrl || "https://via.placeholder.com/400x200.png?text=Food+Flow"} alt={restaurant.name} className="w-full h-48 object-cover" />
-    <div className="p-4">
-      <h3 className="text-xl font-bold text-brand-primary">{restaurant.name}</h3>
-      <div className="flex items-center mt-2 text-brand-primary/80">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="gold" stroke="gold" strokeWidth="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <span className="ml-1 font-semibold">{restaurant.averageRating}</span>
-        <span className="mx-2">•</span>
-        <span>{restaurant.priceRange}</span>
+
+
+const RestaurantCard = ({ restaurant, filters }) => {
+  // Pomoćna funkcija koja kreira ISPRAVAN URL query string
+  // npr. "dietTypeIds=3&dietTypeIds=5"
+  const createQueryString = (params) => {
+    const searchParams = new URLSearchParams();
+    
+    // Prolazi kroz sve izabrane tipove ishrane
+    if (params.dietTypeIds && params.dietTypeIds.length > 0) {
+      params.dietTypeIds.forEach(id => searchParams.append('dietTypeIds', id));
+    }
+    
+    // Prolazi kroz sve izabrane alergene za izbegavanje
+    if (params.excludeAllergenIds && params.excludeAllergenIds.length > 0) {
+      params.excludeAllergenIds.forEach(id => searchParams.append('excludeAllergenIds', id));
+    }
+    
+    // Vraća string spreman za URL
+    return searchParams.toString();
+  };
+
+  // Pozivamo našu funkciju da dobijemo ispravan string
+  const searchParamsString = createQueryString(filters);
+
+  return (
+    // Link sada koristi ispravno generisan string bez uglastih zagrada
+    <Link to={`/restaurant/${restaurant.id}?${searchParamsString}`} className="block">
+      <div className="bg-white rounded-xl shadow-md border border-brand-accent/20 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+        <img src={restaurant.imageUrl || "https://via.placeholder.com/400x200.png?text=Food+Flow"} alt={restaurant.name} className="w-full h-48 object-cover" />
+        <div className="p-4">
+          <h3 className="text-xl font-bold text-brand-primary">{restaurant.name}</h3>
+          <div className="flex items-center mt-2 text-brand-primary/80">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="gold" stroke="gold" strokeWidth="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span className="ml-1 font-semibold">{restaurant.averageRating}</span>
+            <span className="mx-2">•</span>
+            <span>{restaurant.priceRange}</span>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-);
+    </Link>
+  );
+};
+
+
 
 // --- POMOĆNA KOMPONENTA: FilterModal ---
 const FilterModal = ({ isOpen, onClose, onApply, initialFilters }) => {
@@ -238,10 +268,15 @@ export function HomePage() {
 
         <AppliedFilters filters={filters} setFilters={setFilters} dietTypeMap={dietTypeMap} allergenMap={allergenMap}/>
         
+             
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
           {restaurants.length > 0 ? (
             restaurants.map(restaurant => (
-              <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+              <RestaurantCard 
+                key={restaurant.id} 
+                restaurant={restaurant} 
+                filters={filters} // <-- KLJUČNA ISPRAVKA JE OVDE
+              />
             ))
           ) : (
             <p className="col-span-full text-center text-brand-primary/80 mt-8">No restaurants match your criteria.</p>

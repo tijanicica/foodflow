@@ -1,16 +1,15 @@
 package com.iis.foodflow.model.restaurant;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class MenuItem {
     @Id
@@ -26,6 +25,7 @@ public class MenuItem {
             joinColumns = @JoinColumn(name = "menu_item_id"),
             inverseJoinColumns = @JoinColumn(name = "diet_type_id")
     )
+    @ToString.Exclude
     private Set<DietType> dietTypes = new HashSet<>();
 
     @ManyToMany
@@ -34,5 +34,6 @@ public class MenuItem {
             joinColumns = @JoinColumn(name = "menu_item_id"),
             inverseJoinColumns = @JoinColumn(name = "allergen_id")
     )
+    @ToString.Exclude
     private Set<Allergen> allergens = new HashSet<>();
 }

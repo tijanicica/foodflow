@@ -7,6 +7,18 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+     paramsSerializer: params => {
+        const searchParams = new URLSearchParams();
+        for (const key in params) {
+            const value = params[key];
+            if (Array.isArray(value)) {
+                value.forEach(item => searchParams.append(key, item));
+            } else {
+                searchParams.append(key, value);
+            }
+        }
+        return searchParams.toString();
+    }
 });
 
 
@@ -71,5 +83,16 @@ export const getAllergens = async () => {
 
 export const getDietTypes = async () => {
   const response = await apiClient.get('/restaurants/diet-types');
+  return response.data;
+};
+
+export const getActiveMenu = async (restaurantId, filters) => {
+  // Prosleđujemo filtere kao query parametre
+  const response = await apiClient.get(`/restaurants/${restaurantId}/menu`, {
+    params: {
+      dietTypeIds: filters.dietTypeIds,
+      excludeAllergenIds: filters.excludeAllergenIds,
+    }
+  });
   return response.data;
 };
