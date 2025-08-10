@@ -3,11 +3,13 @@ package com.iis.foodflow.service;
 import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OfferStatus;
+import com.iis.foodflow.model.order.Address;
 import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.VehicleType;
 import com.iis.foodflow.model.delivery.OrderOffer;
 import com.iis.foodflow.model.order.Order;
+import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.DriverRatingRepository;
 import com.iis.foodflow.repository.DriverRepository;
@@ -240,38 +242,6 @@ public class DriverService {
     }
 
 
-    @Transactional(readOnly = true)
-    public DriverDashboardResponse getDashboardData(String driverEmail) {
-        Driver driver = findDriverByEmail(driverEmail);
-
-        if (driver.getStatus() != DriverStatus.ONLINE) {
-            return new DriverDashboardResponse(Collections.emptyList(), Collections.emptyList());
-        }
-
-        // Pronađi nove ponude i MAPIRAJ ih u DTO
-        List<DashboardOfferDTO> newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
-                .stream()
-                .map(offer -> DashboardOfferDTO.builder()
-                        .id(offer.getId())
-                        .order(DashboardOrderDTO.builder()
-                                .id(offer.getOrder().getId())
-                                .status(offer.getOrder().getStatus())
-                                .build())
-                        .build())
-                .collect(Collectors.toList());
-
-        // Pronađi aktivne porudžbine i MAPIRAJ ih u DTO
-        List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
-        List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
-                .stream()
-                .map(order -> DashboardOrderDTO.builder()
-                        .id(order.getId())
-                        .status(order.getStatus())
-                        .build())
-                .collect(Collectors.toList());
-
-        return new DriverDashboardResponse(newOffers, assignedDeliveries);
-    }
 
     /**
      * Vozač prihvata ponuđenu porudžbinu.
@@ -345,5 +315,141 @@ public class DriverService {
 
         return orderOfferRepository.save(offer);
     }
+    @Transactional(readOnly = true)
+    public DriverDashboardResponse getDashboardData(String driverEmail) {
+        Driver driver = findDriverByEmail(driverEmail);
+
+        if (driver.getStatus() != DriverStatus.ONLINE) {
+            return new DriverDashboardResponse(Collections.emptyList(), Collections.emptyList());
+        }
+
+        // --- LOGIKA ZA NOVE PONUDE (newOffers) ---
+        List<DashboardOfferDTO> newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
+                .stream()
+                .map(offer -> {
+                    Order order = offer.getOrder();
+
+                    Restaurant restaurant = order.getOrderItems().stream()
+                            .findFirst()
+                            .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                            .orElse(null);
+
+                    if (restaurant == null) {
+                        return DashboardOfferDTO.builder()
+                                .id(offer.getId())
+                                .order(DashboardOrderDTO.builder()
+                                        .id(order.getId())
+                                        .status(order.getStatus())
+                                        .build())
+                                .build();
+                    }
+
+                    double distance = calculateDistance(
+                            driver.getLatitude(), driver.getLongitude(),
+                            restaurant.getAddress().getLatitude(),
+                            restaurant.getAddress().getLongitude()
+                    );
+
+                    // Prava adresa restorana
+                    String restaurantAddress = String.format(
+                            "%s, %s, %s",
+                            restaurant.getAddress().getStreet(),
+                            restaurant.getAddress().getCity(),
+                            restaurant.getAddress().getPostalCode()
+                    );
+
+                    // Prava adresa dostave
+                    String deliveryAddress = order.getCustomer().getAddresses().stream()
+                            .findFirst()
+                            .map(addr -> String.format("%s, %s, %s",
+                                    addr.getStreet(),
+                                    addr.getCity(),
+                                    addr.getPostalCode()))
+                            .orElse("N/A");
+
+                    DashboardOrderDTO orderDTO = DashboardOrderDTO.builder()
+                            .id(order.getId())
+                            .status(order.getStatus())
+                            .restaurantName(restaurant.getName())
+                            .restaurantAddress(restaurantAddress)
+                            .deliveryAddress(deliveryAddress)
+                            .distanceToRestaurant(distance)
+                            .build();
+
+                    return DashboardOfferDTO.builder()
+                            .id(offer.getId())
+                            .order(orderDTO)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // --- LOGIKA ZA AKTIVNE PORUDŽBINE (assignedDeliveries) ---
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
+        List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
+                .stream()
+                .map(order -> {
+                    Restaurant restaurant = order.getOrderItems().stream()
+                            .findFirst()
+                            .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                            .orElse(null);
+
+                    if (restaurant == null) {
+                        return DashboardOrderDTO.builder()
+                                .id(order.getId())
+                                .status(order.getStatus())
+                                .build();
+                    }
+
+                    double distance = calculateDistance(
+                            driver.getLatitude(), driver.getLongitude(),
+                            restaurant.getAddress().getLatitude(),
+                            restaurant.getAddress().getLongitude()
+                    );
+
+                    String restaurantAddress = String.format(
+                            "%s, %s, %s",
+                            restaurant.getAddress().getStreet(),
+                            restaurant.getAddress().getCity(),
+                            restaurant.getAddress().getPostalCode()
+                    );
+
+                    String deliveryAddress = order.getCustomer().getAddresses().stream()
+                            .findFirst()
+                            .map(addr -> String.format("%s, %s, %s",
+                                    addr.getStreet(),
+                                    addr.getCity(),
+                                    addr.getPostalCode()))
+                            .orElse("N/A");
+
+                    return DashboardOrderDTO.builder()
+                            .id(order.getId())
+                            .status(order.getStatus())
+                            .restaurantName(restaurant.getName())
+                            .restaurantAddress(restaurantAddress)
+                            .deliveryAddress(deliveryAddress)
+                            .distanceToRestaurant(distance)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return new DriverDashboardResponse(newOffers, assignedDeliveries);
+    }
+
+
+    // === DODAJTE OVU POMOĆNU METODU U 'DriverService.java' AKO VEĆ NE POSTOJI ===
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        if ((lat1 == lat2) && (lon1 == lon2)) {
+            return 0;
+        }
+        final int R = 6371; // Radius Zemlje u km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
 
 }

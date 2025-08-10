@@ -13,27 +13,44 @@ const OfferCard = ({ offer, onAccept, onReject }) => (
         backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
         boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #EAEAEA'
     }}>
-        {/* Pretpostavka: Vaš backend vraća ove podatke unutar 'order' objekta */}
-        <p style={{ fontWeight: 'bold' }}>Pickup: {offer.order?.restaurant?.name || 'Unknown Restaurant'}</p>
-        <p>Deliver to: {offer.order?.customer?.address?.street || 'Unknown Address'}</p>
-        <p style={{ marginTop: '0.5rem', color: '#6B7280' }}>Distance: 2.1km</p> {/* TODO: Izračunati ili dobiti sa backenda */}
+        <p style={{ fontWeight: 'bold' }}>
+            Pickup: {offer.order?.restaurantName || 'Unknown Restaurant'}
+        </p>
+        <p>
+            Deliver to: {offer.order?.deliveryAddress || 'Unknown Address'}
+        </p>
+        <p style={{ marginTop: '0.5rem', color: '#6B7280' }}>
+            Distance: {offer.order?.distanceToRestaurant
+                ? `${offer.order.distanceToRestaurant.toFixed(2)} km`
+                : 'N/A'}
+        </p>
 
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
             <button
                 onClick={() => onReject(offer.id)}
-                style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #8A643B', color: '#8A643B', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: '600' }}
+                style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '8px',
+                    border: '1px solid #8A643B', color: '#8A643B',
+                    backgroundColor: 'transparent', cursor: 'pointer',
+                    fontWeight: '600'
+                }}
             >
                 Reject
             </button>
             <button
                 onClick={() => onAccept(offer.id)}
-                style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', color: 'white', backgroundColor: '#8A643B', cursor: 'pointer', fontWeight: '600' }}
+                style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '8px',
+                    border: 'none', color: 'white', backgroundColor: '#8A643B',
+                    cursor: 'pointer', fontWeight: '600'
+                }}
             >
                 Accept
             </button>
         </div>
     </div>
 );
+
 
 export function DriverDashboard() {
     const navigate = useNavigate();

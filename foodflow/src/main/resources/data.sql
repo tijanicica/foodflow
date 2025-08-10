@@ -32,35 +32,23 @@ INSERT INTO administrator (id, email, password, first_name, last_name, phone, ro
 INSERT INTO support_administrator (id, email, password, first_name, last_name, phone, role) VALUES
     (6, 'supportadmin@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Support', 'Adminović', '064123456', 'SUPPORT_ADMINISTRATOR');
 
+-- Adrese sa koordinatama
+INSERT INTO address (id, street, street_number, city, country, nickname, postal_code, latitude, longitude, customer_id) VALUES
+    (1, 'Kralja Milana', '20', 'Beograd', 'Srbija', 'Kuća', '11000', 44.8111, 20.4593, 1);
 
--- ADRESE
-INSERT INTO address (id, street, street_number, city, country, nickname, postal_code, customer_id) VALUES
-    (1, 'Kralja Milana', '20', 'Beograd', 'Srbija', 'Kuća', '11000', 1);
-
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (10, 'Kralja Petra', '12', 'Beograd', 'Srbija', '11000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (11, 'Njegoševa', '5', 'Novi Sad', 'Srbija', '21000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (12, 'Bulevar Oslobođenja', '102', 'Novi Sad', 'Srbija', '21000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (13, 'Knez Mihailova', '30', 'Beograd', 'Srbija', '11000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (14, 'Cara Dušana', '44', 'Niš', 'Srbija', '18000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (15, 'Trg Slobode', '1', 'Novi Sad', 'Srbija', '21000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (16, 'Kralja Aleksandra I Karađorđevića', '25', 'Kragujevac', 'Srbija', '34000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (17, 'Gospodar Jevremova', '50', 'Beograd', 'Srbija', '11000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (18, 'Bulevar Nemanjića', '22', 'Niš', 'Srbija', '18000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (19, 'Palmotićeva', '2', 'Beograd', 'Srbija', '11000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (20, 'Vojvode Mišića', '10', 'Niš', 'Srbija', '18000');
-INSERT INTO address (id, street, street_number, city, country, postal_code) VALUES
-    (21, 'Laze Telečkog', '8', 'Novi Sad', 'Srbija', '21000');
+INSERT INTO address (id, street, street_number, city, country, postal_code, latitude, longitude) VALUES
+                                                                                                     (10, 'Kralja Petra', '12', 'Beograd', 'Srbija', '11000', 44.8196, 20.4569),
+                                                                                                     (11, 'Njegoševa', '5', 'Novi Sad', 'Srbija', '21000', 45.2576, 19.8444),
+                                                                                                     (12, 'Bulevar Oslobođenja', '102', 'Novi Sad', 'Srbija', '21000', 45.2463, 19.8369),
+                                                                                                     (13, 'Knez Mihailova', '30', 'Beograd', 'Srbija', '11000', 44.8176, 20.4565),
+                                                                                                     (14, 'Cara Dušana', '44', 'Niš', 'Srbija', '18000', 43.3194, 21.8950),
+                                                                                                     (15, 'Trg Slobode', '1', 'Novi Sad', 'Srbija', '21000', 45.2550, 19.8456),
+                                                                                                     (16, 'Kralja Aleksandra I Karađorđevića', '25', 'Kragujevac', 'Srbija', '34000', 44.0151, 20.9114),
+                                                                                                     (17, 'Gospodar Jevremova', '50', 'Beograd', 'Srbija', '11000', 44.8213, 20.4607),
+                                                                                                     (18, 'Bulevar Nemanjića', '22', 'Niš', 'Srbija', '18000', 43.3169, 21.8906),
+                                                                                                     (19, 'Palmotićeva', '2', 'Beograd', 'Srbija', '11000', 44.8161, 20.4652),
+                                                                                                     (20, 'Vojvode Mišića', '10', 'Niš', 'Srbija', '18000', 43.3242, 21.8924),
+                                                                                                     (21, 'Laze Telečkog', '8', 'Novi Sad', 'Srbija', '21000', 45.2557, 19.8459);
 
 -- RESTORAN I MENI
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
