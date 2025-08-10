@@ -74,4 +74,7 @@ public class Order {
 
     @OneToOne(mappedBy = "order")
     private SupportTicket supportTicket;
+
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
 }

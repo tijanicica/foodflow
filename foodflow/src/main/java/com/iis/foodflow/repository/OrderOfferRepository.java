@@ -17,6 +17,8 @@ public interface OrderOfferRepository extends JpaRepository<OrderOffer, Long> {
 
     // Metoda za pronalaženje aktivne ponude za određenog vozača i porudžbinu
     Optional<OrderOffer> findByOrderAndDriver(Order order, Driver driver);
+    List<OrderOffer> findByDriverAndStatus(Driver driver, OfferStatus status);
+
     long countByDriverAndStatusAndCreatedAtAfter(Driver driver, OfferStatus status, LocalDateTime date);
 
 }

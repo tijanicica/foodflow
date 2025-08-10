@@ -4,6 +4,7 @@ package com.iis.foodflow.controller;
 import com.iis.foodflow.dto.request.UpdateDriverStatusRequest;
 import com.iis.foodflow.dto.request.UpdateLocationRequest;
 import com.iis.foodflow.dto.request.UpdateVehicleRequest;
+import com.iis.foodflow.dto.response.DriverDashboardResponse;
 import com.iis.foodflow.dto.response.DriverLocationResponse; // <-- DODAT JE OVAJ IMPORT
 import com.iis.foodflow.dto.response.DriverPerformanceResponse;
 import com.iis.foodflow.dto.response.DriverResponseDTO;
@@ -14,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/drivers")
@@ -78,5 +81,71 @@ public class DriverController {
 
         // Vraćamo DTO kao JSON odgovor
         return ResponseEntity.ok(performanceData);
+    }
+
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<DriverDashboardResponse> getDashboard(
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        DriverDashboardResponse dashboardData = driverService.getDashboardData(driverPrincipal.getEmail());
+        return ResponseEntity.ok(dashboardData);
+    }
+
+
+    @PostMapping("/offers/{offerId}/accept")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> acceptOrderOffer(
+            @PathVariable Long offerId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        driverService.acceptOffer(driverPrincipal.getEmail(), offerId);
+        return ResponseEntity.ok().build();
+    }
+
+    /** POST endpoint kojim vozač odbija ponudu za dostavu. */
+    @PostMapping("/offers/{offerId}/reject")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> rejectOrderOffer(
+            @PathVariable Long offerId,
+            @RequestBody(required = false) Map<String, String> payload,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        String reason = (payload != null) ? payload.get("reason") : null;
+        driverService.rejectOffer(driverPrincipal.getEmail(), offerId, reason);
+        return ResponseEntity.ok().build();
+    }
+
+    /** POST endpoint kojim vozač otkazuje porudžbinu koja mu je već dodijeljena. */
+    @PostMapping("/orders/{orderId}/cancel")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> cancelAssignedOrder(
+            @PathVariable Long orderId,
+            @RequestBody Map<String, String> payload,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        String reason = payload.get("reason");
+        if (reason == null || reason.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build(); // Razlog je obavezan
+        }
+        driverService.cancelAssignedDelivery(driverPrincipal.getEmail(), orderId, reason);
+        return ResponseEntity.ok().build();
+    }
+
+    /** POST endpoint kojim vozač označava da je preuzeo porudžbinu. */
+    @PostMapping("/orders/{orderId}/pickup")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> pickUpOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        driverService.markOrderAsPickedUp(driverPrincipal.getEmail(), orderId);
+        return ResponseEntity.ok().build();
+    }
+
+    /** POST endpoint kojim vozač označava da je isporučio porudžbinu. */
+    @PostMapping("/orders/{orderId}/deliver")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> deliverOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        driverService.markOrderAsDelivered(driverPrincipal.getEmail(), orderId);
+        return ResponseEntity.ok().build();
     }
 }

@@ -1,12 +1,16 @@
 package com.iis.foodflow.service;
 
+import com.iis.foodflow.dto.response.DriverDashboardResponse;
 import com.iis.foodflow.dto.response.DriverLocationResponse;
 import com.iis.foodflow.dto.response.DriverPerformanceResponse;
 import com.iis.foodflow.dto.response.DriverResponseDTO;
 import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OfferStatus;
+import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.VehicleType;
+import com.iis.foodflow.model.delivery.OrderOffer;
+import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.DriverRatingRepository;
 import com.iis.foodflow.repository.DriverRepository;
@@ -17,6 +21,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -147,4 +153,187 @@ public class DriverService {
         return driverRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Driver not found with email: " + email));
     }
+    @Transactional
+    public Order markOrderAsPickedUp(String driverEmail, Long orderId) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // Sigurnosne provjere
+        if (order.getDriver() == null || !order.getDriver().equals(driver)) {
+            throw new SecurityException("Forbidden: This order is not assigned to you.");
+        }
+        if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            throw new IllegalStateException("Cannot pick up order. It is not ready yet.");
+        }
+
+        order.setStatus(OrderStatus.PICKED_UP);
+
+        // TODO: Ovdje dodati logiku za slanje notifikacije kupcu ("Vaša porudžbina je na putu!").
+
+        return orderRepository.save(order);
+    }
+
+    /**
+     * Vozač označava da je isporučio porudžbinu kupcu.
+     */
+    @Transactional
+    public Order markOrderAsDelivered(String driverEmail, Long orderId) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // Sigurnosne provjere
+        if (order.getDriver() == null || !order.getDriver().equals(driver)) {
+            throw new SecurityException("Forbidden: This order is not assigned to you.");
+        }
+        if (order.getStatus() != OrderStatus.PICKED_UP) {
+            throw new IllegalStateException("Cannot deliver order. It has not been picked up yet.");
+        }
+
+        order.setStatus(OrderStatus.DELIVERED);
+        // KLJUČNO ZA PERFORMANSE: Bilježimo točno vrijeme isporuke.
+        order.setDeliveredAt(LocalDateTime.now());
+
+        // TODO: Ovdje pokrenuti logiku koja omogućava kupcu i menadžeru da ocijene vozača.
+
+        return orderRepository.save(order);
+    }
+
+
+    /**
+     * Vozač OTKAZUJE porudžbinu koju je VEĆ PRIHVATIO.
+     * @param driverEmail Email ulogiranog vozača
+     * @param orderId ID porudžbine koja se otkazuje
+     * @param reason Obavezan razlog za otkazivanje
+     */
+    @Transactional
+    public Order cancelAssignedDelivery(String driverEmail, Long orderId, String reason) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // KLJUČNA PROVJERA: Da li je porudžbina zaista dodijeljena ovom vozaču?
+        if (order.getDriver() == null || !order.getDriver().equals(driver)) {
+            throw new SecurityException("Forbidden: This order is not assigned to you.");
+        }
+
+        // KLJUČNA PROVJERA: Da li se porudžbina može otkazati? Ne može ako je već isporučena ili otkazana.
+        List<OrderStatus> cancellableStatuses = List.of(
+                OrderStatus.CONFIRMED,
+                OrderStatus.READY_FOR_PICKUP,
+                OrderStatus.PICKED_UP
+        );
+        if (!cancellableStatuses.contains(order.getStatus())) {
+            throw new IllegalStateException("This order can no longer be canceled. Current status: " + order.getStatus());
+        }
+
+        // Ažuriramo porudžbinu
+        order.setStatus(OrderStatus.CANCELED);
+        order.setCancellationReason(reason);
+
+        // Opcionalno, ali preporučeno: Ovdje se porudžbina "oslobađa" od vozača.
+        // Sistem bi je onda trebao ponovo dodijeliti drugom vozaču.
+        order.setDriver(null);
+
+        // TODO: Ovdje pozvati logiku koja će pokrenuti proces ponovne dodjele porudžbine.
+
+        return orderRepository.save(order);
+    }
+
+    @Transactional(readOnly = true)
+    public DriverDashboardResponse getDashboardData(String driverEmail) {
+        Driver driver = findDriverByEmail(driverEmail);
+
+        if (driver.getStatus() != DriverStatus.ONLINE) {
+            return new DriverDashboardResponse(Collections.emptyList(), Collections.emptyList());
+        }
+
+        // 1. Pronađi sve nove ponude za ovog vozača (status SENT)
+        List<OrderOffer> newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT);
+
+        // 2. Pronađi sve aktivne porudžbine koje su već dodijeljene ovom vozaču.
+        List<OrderStatus> activeStatuses = List.of(
+                OrderStatus.CONFIRMED,
+                OrderStatus.READY_FOR_PICKUP,
+                OrderStatus.PICKED_UP
+        );
+        List<Order> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses);
+
+        return new DriverDashboardResponse(newOffers, assignedDeliveries);
+    }
+
+    /**
+     * Vozač prihvata ponuđenu porudžbinu.
+     * Dozvoljeno samo ako je vozač ONLINE.
+     */
+    @Transactional
+    public OrderOffer acceptOffer(String driverEmail, Long offerId) {
+        Driver driver = findDriverByEmail(driverEmail);
+
+        if (driver.getStatus() != DriverStatus.ONLINE) {
+            throw new IllegalStateException("You must be ONLINE to accept offers.");
+        }
+
+        OrderOffer offer = orderOfferRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+
+        if (!offer.getDriver().equals(driver)) {
+            throw new SecurityException("Forbidden: You cannot accept an offer that is not assigned to you.");
+        }
+
+        // Provjera: Može se prihvatiti samo ponuda sa statusom SENT
+        if (offer.getStatus() != OfferStatus.SENT) {
+            throw new IllegalStateException("This offer is no longer available.");
+        }
+
+        offer.setStatus(OfferStatus.ACCEPTED);
+
+        // Ažuriramo porudžbinu: dodjeljujemo vozača i postavljamo status na CONFIRMED
+        Order order = offer.getOrder();
+        order.setDriver(driver);
+        order.setStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
+
+        return orderOfferRepository.save(offer);
+    }
+
+    /**
+     * Vozač odbija ponuđenu porudžbinu.
+     * Mijenja status ponude i pokreće logiku za pronalazak novog vozača.
+     */
+    @Transactional
+    public OrderOffer rejectOffer(String driverEmail, Long offerId, String reason) {
+        Driver driver = findDriverByEmail(driverEmail);
+
+        if (driver.getStatus() != DriverStatus.ONLINE) {
+            throw new IllegalStateException("You must be ONLINE to reject offers.");
+        }
+
+        OrderOffer offer = orderOfferRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+
+        if (!offer.getDriver().equals(driver)) {
+            throw new SecurityException("Forbidden: You cannot reject an offer that is not assigned to you.");
+        }
+
+        if (offer.getStatus() != OfferStatus.SENT) {
+            throw new IllegalStateException("This offer is no longer available.");
+        }
+
+        // Ažuriramo status ponude
+        offer.setStatus(OfferStatus.REJECTED);
+        offer.setReasonForRejection(reason);
+
+        // === KLJUČNA ISPRAVKA: Povećavamo brojač odbijanja za vozača ===
+        int currentRejections = (driver.getRejectionCount() == null) ? 0 : driver.getRejectionCount();
+        driver.setRejectionCount(currentRejections + 1);
+        driverRepository.save(driver);
+        // ================================================================
+
+        // TODO: Ovdje implementirati logiku za slanje ponude sljedećem vozaču.
+
+        return orderOfferRepository.save(offer);
+    }
+
 }
