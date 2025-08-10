@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Dodan useState
 import { useNavigate, Link } from 'react-router-dom';
 import { getDriverPerformance, updateDriverVehicle, updateDriverStatus } from '@/services/api';
-// Ikonice (ostaju za ostatak stranice)
+// Ikonice
 import { FiEdit2, FiSave, FiXCircle, FiTruck, FiClock, FiThumbsDown, FiStar } from 'react-icons/fi';
 import { BsBicycle } from 'react-icons/bs';
 import { AiFillCar } from 'react-icons/ai';
@@ -13,23 +13,37 @@ const VEHICLE_OPTIONS = [
     { value: 'BICYCLE', label: 'Bicycle', icon: <BsBicycle /> },
 ];
 
-const PerformanceCard = ({ label, value, icon }) => (
-    <div style={{
+// --- AŽURIRANA KOMPONENTA BEZ 'POINTER' CURSORA ---
+const PerformanceCard = ({ label, value, icon }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    const cardStyle = {
         backgroundColor: 'white',
         padding: '1.5rem',
         borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+        boxShadow: isHovered ? '0 8px 15px rgba(0,0,0,0.1)' : '0 4px 6px rgba(0,0,0,0.05)',
         display: 'flex',
         alignItems: 'center',
-        gap: '1rem'
-    }}>
-        <div style={{ color: '#8A643B', fontSize: '2rem' }}>{icon}</div>
-        <div>
-            <p style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: '500' }}>{label}</p>
-            <p style={{ color: '#1F2937', fontSize: '1.75rem', fontWeight: 'bold' }}>{value}</p>
+        gap: '1rem',
+        transition: 'all 0.3s ease-in-out',
+        transform: isHovered ? 'translateY(-5px)' : 'translateY(0)',
+        // cursor: 'pointer' // <-- OVU LINIJU UKLONITE
+    };
+
+    return (
+        <div
+            style={cardStyle}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div style={{ color: '#8A643B', fontSize: '2rem' }}>{icon}</div>
+            <div>
+                <p style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: '500' }}>{label}</p>
+                <p style={{ color: '#1F2937', fontSize: '1.75rem', fontWeight: 'bold' }}>{value}</p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const VehicleIcon = ({ vehicleType }) => {
     const vehicle = VEHICLE_OPTIONS.find(v => v.value === vehicleType);
@@ -134,9 +148,9 @@ export function DriverProfilePage() {
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
             backgroundColor: '#FFFBEB',
             minHeight: '100vh',
-            color: '#4A4A4A' // Vraćena boja iz dashboarda
+            color: '#4A4A4A'
         }}>
-            {/* Navigacija - AŽURIRANA DA BUDE IDENTIČNA DASHBOARDU */}
+            {/* Navigacija */}
             <header style={{ 
                 backgroundColor: 'rgba(255, 255, 255, 0.8)', 
                 borderBottom: '1px solid #EAEAEA' 
@@ -180,7 +194,7 @@ export function DriverProfilePage() {
                 </nav>
             </header>
 
-            {/* Glavni Sadržaj (ostaje isti) */}
+            {/* Glavni Sadržaj */}
             <main style={{ maxWidth: '1000px', margin: '2rem auto', padding: '0 1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                     <div>
