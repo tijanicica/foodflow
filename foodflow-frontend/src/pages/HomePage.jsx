@@ -5,56 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate, createSearchParams } from 'react-router-dom';
 import { getFilteredRestaurants, getAllergens, getDietTypes } from '@/services/api';
+import { SlidersHorizontal } from 'lucide-react'; 
+import { Navbar } from '@/components/Navbar'; // Prilagodi putanju ako je potrebno
 
-// --- POMOĆNA KOMPONENTA: Navbar ---
-const Navbar = () => {
-  const navigate = useNavigate(); // Inicijalizuj hook za navigaciju
-
-  // Kreiraj logout funkciju
-  const handleLogout = () => {
-    // 1. Obriši token iz Local Storage
-    localStorage.removeItem('jwtToken');
-    
-    // 2. Preusmeri korisnika na login stranicu
-    // replace: true sprečava korisnika da se vrati na prethodnu stranicu klikom na "back"
-    navigate('/login', { replace: true }); 
-  };
-
-  return (
-    <header className="flex items-center h-16 px-4 border-b shrink-0 md:px-6 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      {/* Logo sada takođe poziva logout */}
-      <Link 
-        to="/login" 
-        onClick={handleLogout} 
-        className="text-3xl font-bold text-brand-primary italic mr-auto"
-      >
-        foodFlow
-      </Link>
-      
-      <nav className="hidden lg:flex gap-6 items-center text-lg font-medium text-brand-primary/80">
-        <Link to="/home" className="font-bold text-brand-primary underline underline-offset-4">Home</Link>
-        <Link to="/orders">My Orders</Link>
-        <Link to="/analytics">My Analytics</Link>
-        <Link to="/profile">My Profile</Link>
-      </nav>
-
-      <div className="flex items-center gap-4 ml-6">
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-          <span className="sr-only">Toggle cart</span>
-        </Button>
-        
-        {/* Logout link je sada dugme koje poziva handleLogout */}
-        <button 
-          onClick={handleLogout} 
-          className="hidden lg:inline-block text-lg font-medium text-brand-primary/80 hover:text-brand-primary"
-        >
-          Logout
-        </button>
-      </div>
-    </header>
-  );
-};
 
 
 
@@ -261,8 +214,12 @@ export function HomePage() {
             value={filters.searchTerm}
             onChange={handleSearchChange}
           />
-          <Button className="h-12 rounded-r-full px-6 text-lg bg-brand-primary" onClick={() => setFilterModalOpen(true)}>
-            Filters
+          <Button 
+            className="h-12 w-16 rounded-r-full px-4 text-lg bg-brand-primary" 
+            onClick={() => setFilterModalOpen(true)}
+            aria-label="Open filters" // Dodajemo aria-label za pristupačnost
+          >
+            <SlidersHorizontal className="h-6 w-6" /> {/* Koristimo ikonicu */}
           </Button>
         </div>
 

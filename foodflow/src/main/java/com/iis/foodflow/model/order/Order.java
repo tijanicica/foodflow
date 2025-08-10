@@ -8,10 +8,7 @@ import com.iis.foodflow.model.support.SupportTicket;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -19,7 +16,8 @@ import java.util.Set;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "orders")
 public class Order {
