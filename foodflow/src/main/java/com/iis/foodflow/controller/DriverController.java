@@ -6,6 +6,7 @@ import com.iis.foodflow.dto.request.UpdateLocationRequest;
 import com.iis.foodflow.dto.request.UpdateVehicleRequest;
 import com.iis.foodflow.dto.response.DriverLocationResponse; // <-- DODAT JE OVAJ IMPORT
 import com.iis.foodflow.dto.response.DriverPerformanceResponse;
+import com.iis.foodflow.dto.response.DriverResponseDTO;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.DriverService;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +23,16 @@ public class DriverController {
     private final DriverService driverService;
 
     /** Vozač mijenja svoj status dostupnosti (ONLINE/OFFLINE). */
+// Ispravljena verzija
     @PutMapping("/status")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Driver> updateOwnStatus(
-            @RequestBody UpdateDriverStatusRequest request,
-            @AuthenticationPrincipal Driver driverPrincipal) {
-        Driver updatedDriver = driverService.updateStatus(driverPrincipal.getEmail(), request.getNewStatus());
-        return ResponseEntity.ok(updatedDriver);
+    public ResponseEntity<DriverResponseDTO> updateOwnStatus( // <-- 1. Promijenjen povratni tip
+                                                              @RequestBody UpdateDriverStatusRequest request,
+                                                              @AuthenticationPrincipal Driver driverPrincipal) {
+        // 2. Sada će servis vratiti DTO, a ne Driver entitet
+        DriverResponseDTO updatedDriverDTO = driverService.updateStatus(driverPrincipal.getEmail(), request.getNewStatus());
+        return ResponseEntity.ok(updatedDriverDTO);
     }
-
     /** Vozač periodično šalje svoju lokaciju. */
     @PutMapping("/location")
     @PreAuthorize("hasRole('DRIVER')")
@@ -51,19 +53,18 @@ public class DriverController {
         DriverLocationResponse locationData = driverService.getDriverLocation(driverId);
         return ResponseEntity.ok(locationData);
     }
-
     @PutMapping("/vehicle")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Driver> updateOwnVehicle(
-            @RequestBody UpdateVehicleRequest request,
-            @AuthenticationPrincipal Driver driverPrincipal) {
+    public ResponseEntity<DriverResponseDTO> updateOwnVehicle( // <-- 1. Promijenjen povratni tip
+                                                               @RequestBody UpdateVehicleRequest request,
+                                                               @AuthenticationPrincipal Driver driverPrincipal) {
 
         String driverEmail = driverPrincipal.getEmail();
-        Driver updatedDriver = driverService.updateVehicle(driverEmail, request.getNewVehicleType());
+        // 2. Sada će servis vratiti DTO, a ne Driver entitet
+        DriverResponseDTO updatedDriverDTO = driverService.updateVehicle(driverEmail, request.getNewVehicleType());
 
-        return ResponseEntity.ok(updatedDriver);
+        return ResponseEntity.ok(updatedDriverDTO);
     }
-
     @GetMapping("/performance")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverPerformanceResponse> getMyPerformance(
