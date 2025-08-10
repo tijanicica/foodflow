@@ -1,9 +1,6 @@
 package com.iis.foodflow.service;
 
-import com.iis.foodflow.dto.response.DriverDashboardResponse;
-import com.iis.foodflow.dto.response.DriverLocationResponse;
-import com.iis.foodflow.dto.response.DriverPerformanceResponse;
-import com.iis.foodflow.dto.response.DriverResponseDTO;
+import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OfferStatus;
 import com.iis.foodflow.enums.DriverStatus;
@@ -23,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -241,6 +239,7 @@ public class DriverService {
         return orderRepository.save(order);
     }
 
+
     @Transactional(readOnly = true)
     public DriverDashboardResponse getDashboardData(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -249,16 +248,27 @@ public class DriverService {
             return new DriverDashboardResponse(Collections.emptyList(), Collections.emptyList());
         }
 
-        // 1. Pronađi sve nove ponude za ovog vozača (status SENT)
-        List<OrderOffer> newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT);
+        // Pronađi nove ponude i MAPIRAJ ih u DTO
+        List<DashboardOfferDTO> newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
+                .stream()
+                .map(offer -> DashboardOfferDTO.builder()
+                        .id(offer.getId())
+                        .order(DashboardOrderDTO.builder()
+                                .id(offer.getOrder().getId())
+                                .status(offer.getOrder().getStatus())
+                                .build())
+                        .build())
+                .collect(Collectors.toList());
 
-        // 2. Pronađi sve aktivne porudžbine koje su već dodijeljene ovom vozaču.
-        List<OrderStatus> activeStatuses = List.of(
-                OrderStatus.CONFIRMED,
-                OrderStatus.READY_FOR_PICKUP,
-                OrderStatus.PICKED_UP
-        );
-        List<Order> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses);
+        // Pronađi aktivne porudžbine i MAPIRAJ ih u DTO
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
+        List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
+                .stream()
+                .map(order -> DashboardOrderDTO.builder()
+                        .id(order.getId())
+                        .status(order.getStatus())
+                        .build())
+                .collect(Collectors.toList());
 
         return new DriverDashboardResponse(newOffers, assignedDeliveries);
     }

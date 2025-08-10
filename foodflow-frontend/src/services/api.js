@@ -175,3 +175,77 @@ export const updateDriverVehicle = async (vehicleData) => {
         throw error;
     }
 };
+
+export const getDriverDashboard = async () => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) throw new Error('No token found');
+
+        const response = await fetch('/api/drivers/dashboard', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard data');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        throw error;
+    }
+};
+
+/**
+ * Šalje zahtjev za prihvatanje ponude.
+ * @param {number} offerId ID ponude koja se prihvata.
+ */
+export const acceptOffer = async (offerId) => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) throw new Error('No token found');
+
+        const response = await fetch(`/api/drivers/offers/${offerId}/accept`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to accept offer: ${response.statusText}`);
+        }
+        return response.ok;
+    } catch (error) {
+        console.error("Error accepting offer:", error);
+        throw error;
+    }
+};
+
+/**
+ * Šalje zahtjev za odbijanje ponude.
+ * @param {number} offerId ID ponude koja se odbija.
+ * @param {string|null} reason Opcionalni razlog odbijanja.
+ */
+export const rejectOffer = async (offerId, reason = null) => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) throw new Error('No token found');
+
+        const body = reason ? JSON.stringify({ reason }) : null;
+
+        const response = await fetch(`/api/drivers/offers/${offerId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: body
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to reject offer: ${response.statusText}`);
+        }
+        return response.ok;
+    } catch (error) {
+        console.error("Error rejecting offer:", error);
+        throw error;
+    }
+};

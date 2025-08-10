@@ -422,6 +422,17 @@ INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival
                                                                                                                                                                                                                             (3, 4, 8, 1, 5, 5, 5, 7, 5, 5, 5);
 
 
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, eta) VALUES
+    (5, 'CONFIRMED', 'CASH', 'REGULAR', NOW(), 180.00, 2200.00, 1, NOW() + INTERVAL '45 minute');
+
+-- KORAK 2: Dodajemo stavke za tu porudžbinu
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (5, 1, 5, 41);
+
+-- KORAK 3: Kreiramo PONUDU za Petra (ID=8) sa statusom 'SENT'
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at) VALUES
+    (5, 5, 8, 'SENT', NOW());
+
 -- Resetovanje sekvenci
 ALTER SEQUENCE customer_id_seq RESTART WITH 100;
 ALTER SEQUENCE driver_id_seq RESTART WITH 100;
