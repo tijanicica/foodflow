@@ -7,18 +7,17 @@ import com.iis.foodflow.enums.PaymentType;
 import com.iis.foodflow.model.support.SupportTicket;
 import com.iis.foodflow.model.user.Customer;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "orders") // "order" je rezervisana reč u SQL-u
 public class Order {
