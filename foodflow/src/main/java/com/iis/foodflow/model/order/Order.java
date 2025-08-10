@@ -1,14 +1,14 @@
+// Datoteka: src/main/java/com/iis/foodflow/model/order/Order.java
 package com.iis.foodflow.model.order;
-
 
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.OrderType;
 import com.iis.foodflow.enums.PaymentType;
 import com.iis.foodflow.model.support.SupportTicket;
 import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.model.user.Driver;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -19,7 +19,7 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "orders") // "order" je rezervisana reč u SQL-u
+@Table(name = "orders")
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,11 +42,22 @@ public class Order {
     private String noteForRestaurant;
     private String noteForDriver;
     private BigDecimal totalPrice;
-    private LocalDateTime eta;
+    private LocalDateTime eta; // Procijenjeno vrijeme isporuke
+
+    // =================================================================
+    // === NOVO POLJE KOJE JE DODATO ===
+    // Služi za objektivno mjerenje da li je dostava bila na vrijeme.
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt; // Stvarno vrijeme kada je porudžbina isporučena
+    // =================================================================
 
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
+
+    @ManyToOne
+    @JoinColumn(name = "driver_id")
+    private Driver driver;
 
     @OneToOne
     @JoinColumn(name = "coupon_id")
