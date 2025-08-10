@@ -16,6 +16,7 @@ import { RegisterPage } from './pages/RegisterPage.jsx';
 import { HomePage } from './pages/HomePage.jsx';
 import { MenuPage } from './pages/MenuPage.jsx';
 import { DriverDashboard } from './pages/DriverDashboard.jsx';
+import { CheckoutPage } from './pages/CheckoutPage.jsx';
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -44,7 +45,11 @@ const router = createBrowserRouter([
   {
   path: "/driver",
   element: <DriverDashboard />,
-},
+  },
+  {
+    path: "/checkout",
+    element: <CheckoutPage />,
+  },
 
   // Ovde ćeš kasnije dodavati i druge rute
   // {

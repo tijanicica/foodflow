@@ -3,11 +3,15 @@ package com.iis.foodflow.repository;
 
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.model.order.Order;
+import com.iis.foodflow.model.order.RepeatingOrder;
 import com.iis.foodflow.model.user.Driver;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
@@ -31,4 +35,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * vremenskom periodu. Ovu metodu Spring Data JPA kreira automatski.
      */
     Long countByDriverAndStatusAndCreationDateAfter(Driver driver, OrderStatus status, LocalDateTime since);
+
+    List<Order> findByStatusAndScheduledForBefore(OrderStatus status, LocalDateTime time);
+
+    // Proverava da li postoji porudžbina povezana sa određenim šablonom, a kreirana je danas.
+    boolean existsByRepeatingOrderAndCreationDateBetween(RepeatingOrder repeatingOrder, LocalDateTime startOfDay, LocalDateTime endOfDay);
+
 }

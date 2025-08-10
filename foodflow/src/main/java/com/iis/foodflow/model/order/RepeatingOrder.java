@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+ // <-- VAŽNO: Importujte ugrađeni Java enum
 
 @NoArgsConstructor
 @AllArgsConstructor

@@ -96,3 +96,27 @@ export const getActiveMenu = async (restaurantId, filters) => {
   });
   return response.data;
 };
+
+// --- ORDER ---
+export const createOrder = async (orderData) => {
+    // Nema potrebe za ručnim dodavanjem tokena, interceptor to radi.
+    const response = await apiClient.post('/orders', orderData);
+    return response.data;
+};
+
+// --- ADDRESS ---
+export const getMyAddresses = async () => {
+    const response = await apiClient.get('/addresses/my');
+    return response.data;
+};
+
+export const addNewAddress = async (addressData) => {
+    const response = await apiClient.post('/addresses', addressData);
+    return response.data;
+};
+
+// --- COUPON ---
+export const getMyCoupons = async () => {
+    const response = await apiClient.get('/coupons/my');
+    return response.data;
+};
