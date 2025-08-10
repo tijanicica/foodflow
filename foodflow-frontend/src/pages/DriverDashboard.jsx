@@ -16,6 +16,9 @@ const OfferCard = ({ offer, onAccept, onReject }) => (
         <p style={{ fontWeight: 'bold' }}>
             Pickup: {offer.order?.restaurantName || 'Unknown Restaurant'}
         </p>
+        <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+            {offer.order?.restaurantAddress || 'Unknown Restaurant Address'}
+        </p>
         <p>
             Deliver to: {offer.order?.deliveryAddress || 'Unknown Address'}
         </p>
@@ -50,6 +53,7 @@ const OfferCard = ({ offer, onAccept, onReject }) => (
         </div>
     </div>
 );
+
 
 
 export function DriverDashboard() {
