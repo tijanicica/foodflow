@@ -93,6 +93,8 @@ public class RestaurantService {
                 restaurant.getName(),
                 restaurant.getAverageRating(),
                 restaurant.getImageUrl(),
+                restaurant.getOpeningTime(),
+                restaurant.getClosingTime(),
                 filteredItems
         );
     }

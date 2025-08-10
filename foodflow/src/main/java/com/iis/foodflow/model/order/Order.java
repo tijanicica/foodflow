@@ -44,12 +44,9 @@ public class Order {
     private BigDecimal totalPrice;
     private LocalDateTime eta; // Procijenjeno vrijeme isporuke
 
-    // =================================================================
-    // === NOVO POLJE KOJE JE DODATO ===
-    // Služi za objektivno mjerenje da li je dostava bila na vrijeme.
+
     @Column(name = "delivered_at")
-    private LocalDateTime deliveredAt; // Stvarno vrijeme kada je porudžbina isporučena
-    // =================================================================
+    private LocalDateTime deliveredAt;
 
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
