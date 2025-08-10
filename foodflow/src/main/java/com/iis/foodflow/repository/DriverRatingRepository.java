@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface DriverRatingRepository extends JpaRepository<DriverRating, Long> {
 
     /**
@@ -25,4 +27,9 @@ public interface DriverRatingRepository extends JpaRepository<DriverRating, Long
             ") " +
             "FROM DriverRating r WHERE r.driver = :driver")
     Double calculateOverallAverageRatingForDriver(@Param("driver") Driver driver);
+
+    // Custom upit za računanje prosjeka svih ocjena za određenog vozača
+    @Query("SELECT AVG( (dr.onTimeArrivalRating + dr.hygieneRatingCustomer + dr.kindnessRating + dr.professionalismRating + dr.hygieneRatingRestaurant + dr.communicationRating) / 6.0 ) " +
+            "FROM DriverRating dr WHERE dr.driver.id = :driverId")
+    Optional<Double> findAverageRatingByDriverId(@Param("driverId") Long driverId);
 }

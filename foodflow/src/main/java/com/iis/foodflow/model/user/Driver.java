@@ -54,7 +54,7 @@ public class Driver implements UserDetails {
     // -----------------------
 
     @Column(name = "average_rating")
-    private Double averageRating = 5.0;
+    private Double averageRating = 0.0;
 
     @ManyToOne
     @JoinColumn(name = "admin_id")

@@ -2,12 +2,16 @@ package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.response.DriverLocationResponse;
 import com.iis.foodflow.dto.response.DriverPerformanceResponse;
+import com.iis.foodflow.dto.response.DriverResponseDTO;
 import com.iis.foodflow.enums.DriverStatus;
+import com.iis.foodflow.enums.OfferStatus;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.VehicleType;
 import com.iis.foodflow.model.user.Driver;
+import com.iis.foodflow.repository.DriverRatingRepository;
 import com.iis.foodflow.repository.DriverRepository;
-import com.iis.foodflow.repository.OrderRepository; // <-- POTREBAN IMPORT
+import com.iis.foodflow.repository.OrderOfferRepository;
+import com.iis.foodflow.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -18,18 +22,37 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class DriverService {
 
+    // --- SVE POTREBNE ZAVISNOSTI ---
     private final DriverRepository driverRepository;
-    private final OrderRepository orderRepository; // <-- POTREBNA ZAVISNOST
+    private final OrderRepository orderRepository;
+    private final DriverRatingRepository driverRatingRepository; // <-- ISPRAVKA: Dodana zavisnost
+    private final OrderOfferRepository orderOfferRepository;   // <-- ISPRAVKA: Dodana zavisnost
 
-    /** Mijenja status dostupnosti vozača (ONLINE/OFFLINE). */
+    /**
+     * Mijenja status dostupnosti vozača (ONLINE/OFFLINE).
+     */
+// Ispravljena verzija
     @Transactional
-    public Driver updateStatus(String driverEmail, DriverStatus newStatus) {
+    public DriverResponseDTO updateStatus(String driverEmail, DriverStatus newStatus) { // 1. Promijenjen povratni tip
         Driver driver = findDriverByEmail(driverEmail);
         driver.setStatus(newStatus);
-        return driverRepository.save(driver);
+        Driver savedDriver = driverRepository.save(driver);
+
+        // 2. Kreiramo i vraćamo DTO umjesto cijelog entiteta
+        return DriverResponseDTO.builder()
+                .id(savedDriver.getId())
+                .email(savedDriver.getEmail())
+                .firstName(savedDriver.getFirstName())
+                .lastName(savedDriver.getLastName())
+                .phone(savedDriver.getPhone())
+                .vehicleType(savedDriver.getVehicleType())
+                .status(savedDriver.getStatus())
+                .build();
     }
 
-    /** Ažurira geografsku lokaciju vozača. */
+    /**
+     * Ažurira geografsku lokaciju vozača.
+     */
     @Transactional
     public void updateLocation(String driverEmail, Double latitude, Double longitude) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -39,15 +62,32 @@ public class DriverService {
         driverRepository.save(driver);
     }
 
-    /** Mijenja tip vozila za prijavljenog vozača. */
+    /**
+     * Mijenja tip vozila za prijavljenog vozača.
+     */
+// Nova, ispravljena verzija u vašem servisu
     @Transactional
-    public Driver updateVehicle(String driverEmail, VehicleType newVehicleType) {
+    public DriverResponseDTO updateVehicle(String driverEmail, VehicleType newVehicleType) { // 1. Promijenjen povratni tip
         Driver driver = findDriverByEmail(driverEmail);
         driver.setVehicleType(newVehicleType);
-        return driverRepository.save(driver);
+        Driver savedDriver = driverRepository.save(driver);
+
+        // 2. Kreiramo i vraćamo DTO umjesto cijelog entiteta
+        return DriverResponseDTO.builder()
+                .id(savedDriver.getId())
+                .email(savedDriver.getEmail())
+                .firstName(savedDriver.getFirstName())
+                .lastName(savedDriver.getLastName())
+                .phone(savedDriver.getPhone())
+                .vehicleType(savedDriver.getVehicleType())
+                .status(savedDriver.getStatus())
+                .build();
     }
 
-    /** Pronalazi vozača po ID-u i vraća DTO sa podacima o lokaciji. */
+    /**
+     * Pronalazi vozača po ID-u i vraća DTO sa podacima o lokaciji.
+     */
+    @Transactional(readOnly = true)
     public DriverLocationResponse getDriverLocation(Long driverId) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new UsernameNotFoundException("Driver not found with ID: " + driverId));
@@ -62,40 +102,43 @@ public class DriverService {
         );
     }
 
-    /** Prikuplja i izračunava statistike o performansama za prijavljenog vozača. */
+    /**
+     * Prikuplja i izračunava statistike o performansama za prijavljenog vozača.
+     */
+    @Transactional(readOnly = true)
     public DriverPerformanceResponse getDriverPerformance(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
-
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
 
-        // Dobijamo ukupan broj isporučenih porudžbina u periodu
+        // 1. Dobijamo ukupan broj isporučenih porudžbina
         Long totalDelivered = orderRepository.countByDriverAndStatusAndCreationDateAfter(
                 driver, OrderStatus.DELIVERED, thirtyDaysAgo
         );
 
-        // Dobijamo broj porudžbina isporučenih na vrijeme u periodu
+        // 2. Dobijamo broj porudžbina isporučenih na vrijeme
         Long onTimeDelivered = orderRepository.countOnTimeDeliveriesForDriver(
                 driver, OrderStatus.DELIVERED, thirtyDaysAgo
         );
 
-        // Računamo procenat u Javi
-        double onTimeRate;
-        if (totalDelivered == null || totalDelivered == 0) {
-            onTimeRate = 1.0; // 100% ako nije bilo isporuka
-        } else {
-            onTimeRate = (double) onTimeDelivered / totalDelivered;
-        }
+        double onTimeRate = (totalDelivered == null || totalDelivered == 0) ? 1.0 : (double) onTimeDelivered / totalDelivered;
 
-        // TODO: Dodati logiku za dobijanje broja odbijanja u posljednjih 30 dana
+        // 3. Dobijanje broja odbijanja u posljednjih 30 dana
+        long rejections = orderOfferRepository.countByDriverAndStatusAndCreatedAtAfter(
+                driver, OfferStatus.REJECTED, thirtyDaysAgo
+        );
+
+        // 4. Računanje prosječne ocjene iz 'driver_rating' tabele
+        double averageRating = driverRatingRepository.findAverageRatingByDriverId(driver.getId())
+                .orElse(0.0); // Ako nema ocjena, vrati 0.0
 
         return new DriverPerformanceResponse(
                 driver.getFirstName(),
                 driver.getLastName(),
                 driver.getVehicleType(),
-                totalDelivered.intValue(),
-                onTimeRate,
-                0, // TODO: Zamijeniti sa pravim brojem odbijanja
-                driver.getAverageRating()
+                totalDelivered != null ? totalDelivered.intValue() : 0, // Ukupno isporuka
+                onTimeRate,                                             // Procenat na vrijeme
+                (int) rejections,                                       // Broj odbijanja
+                averageRating                                           // Prosječna ocjena
         );
     }
 
