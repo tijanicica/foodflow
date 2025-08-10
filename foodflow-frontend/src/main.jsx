@@ -2,6 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from "react-router-dom"; // Uvezi ruter
 import './index.css';
+import { CartProvider } from './context/CartContext'; // Importuj
+import { Toaster } from 'react-hot-toast'; // Importuj
+
+
+
+
+
 
 // Uvezi sve tvoje stranice
 import { LoginPage } from './pages/LoginPage.jsx';
@@ -33,19 +40,27 @@ const router = createBrowserRouter([
     path: "/restaurant/:restaurantId", // Dvotačka označava dinamički segment
     element: <MenuPage />,
   },
+
   {
   path: "/driver",
   element: <DriverDashboard />,
 },
+
   // Ovde ćeš kasnije dodavati i druge rute
   // {
   //   path: "/dashboard",
   //   element: <DashboardPage />,
   // },
 ]);
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} /> {/* Umesto <App />, koristi RouterProvider */}
-  </React.StrictMode>,
+    {/* 
+      CartProvider mora da obmota RouterProvider kako bi sve stranice
+      unutar rutera imale pristup kontekstu korpe.
+    */}
+    <CartProvider>
+      <RouterProvider router={router} />
+      <Toaster position="bottom-right" /> {/* Toaster može biti unutar ili van, ali ovako je čistije */}
+    </CartProvider>
+  </React.StrictMode>
 );

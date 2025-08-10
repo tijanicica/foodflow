@@ -4,16 +4,15 @@ import com.iis.foodflow.enums.DayOfMonth;
 import com.iis.foodflow.enums.DayOfWeek;
 import com.iis.foodflow.enums.RepeatType;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class RepeatingOrder {
     @Id
