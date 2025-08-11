@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getDriverDashboard, acceptOffer, rejectOffer } from '@/services/api'; // Importujemo nove funkcije
+import { getDriverDashboard, acceptOffer, rejectOffer } from '@/services/api';
 
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
@@ -13,60 +13,67 @@ const OfferCard = ({ offer, onAccept, onReject }) => (
         backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
         boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #EAEAEA'
     }}>
-        <p style={{ fontWeight: 'bold' }}>
-            Pickup: {offer.order?.restaurantName || 'Unknown Restaurant'}
-        </p>
+        <p style={{ fontWeight: 'bold' }}>Pickup: {offer.order.restaurantName}</p>
         <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-            {offer.order?.restaurantAddress || 'Unknown Restaurant Address'}
+            From: {offer.order.restaurantAddress}
         </p>
-        <p>
-            Deliver to: {offer.order?.deliveryAddress || 'Unknown Address'}
-        </p>
+        <p>Deliver to: {offer.order.deliveryAddress}</p>
         <p style={{ marginTop: '0.5rem', color: '#6B7280' }}>
-            Distance: {offer.order?.distanceToRestaurant
-                ? `${offer.order.distanceToRestaurant.toFixed(2)} km`
-                : 'N/A'}
+            Distance: {offer.order.distanceToRestaurant.toFixed(1)} km
         </p>
-
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-            <button
-                onClick={() => onReject(offer.id)}
-                style={{
-                    flex: 1, padding: '0.75rem', borderRadius: '8px',
-                    border: '1px solid #8A643B', color: '#8A643B',
-                    backgroundColor: 'transparent', cursor: 'pointer',
-                    fontWeight: '600'
-                }}
-            >
+            <button onClick={() => onReject(offer.id)} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #8A643B', color: '#8A643B', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: '600' }}>
                 Reject
             </button>
-            <button
-                onClick={() => onAccept(offer.id)}
-                style={{
-                    flex: 1, padding: '0.75rem', borderRadius: '8px',
-                    border: 'none', color: 'white', backgroundColor: '#8A643B',
-                    cursor: 'pointer', fontWeight: '600'
-                }}
-            >
+            <button onClick={() => onAccept(offer.id)} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', color: 'white', backgroundColor: '#8A643B', cursor: 'pointer', fontWeight: '600' }}>
                 Accept
             </button>
         </div>
     </div>
 );
 
+/**
+ * Komponenta za prikaz jedne prihvaćene porudžbine.
+ */
+const AssignedDeliveryCard = ({ delivery }) => {
+    const isReadyForPickup = delivery.status === 'READY_FOR_PICKUP';
+    let statusMessage = "Waiting for Restaurant...";
+    if (isReadyForPickup) {
+        statusMessage = "Order is Ready for Pickup!";
+    } else if (delivery.status === 'PICKED_UP') {
+        statusMessage = "On your way to customer!";
+    }
+
+    return (
+        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: isReadyForPickup ? '2px solid #2F855A' : '1px solid #EAEAEA' }}>
+            <p style={{ fontWeight: 'bold' }}>Pickup: {delivery.restaurantName}</p>
+            <p>Deliver to: {delivery.deliveryAddress}</p>
+
+            {isReadyForPickup ? (
+                <>
+                    <p style={{ marginTop: '1rem', color: '#2F855A', fontWeight: 'bold' }}>{statusMessage}</p>
+                    <button style={{ width: '100%', marginTop: '1rem', padding: '0.75rem', borderRadius: '8px', border: 'none', color: 'white', backgroundColor: '#333', cursor: 'pointer', fontWeight: '600' }}>
+                        View on Map & Start
+                    </button>
+                </>
+            ) : (
+                <div style={{ marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', backgroundColor: '#F3EAD9', color: '#8A643B', textAlign: 'center', fontWeight: '600' }}>
+                    {statusMessage}
+                </div>
+            )}
+        </div>
+    );
+};
 
 
 export function DriverDashboard() {
     const navigate = useNavigate();
-    // Stanje za čuvanje podataka sa servera
     const [dashboardData, setDashboardData] = useState({ newOffers: [], assignedDeliveries: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Funkcija za dohvaćanje podataka sa servera
     const fetchData = async () => {
         try {
-            setLoading(true);
             const data = await getDriverDashboard();
             setDashboardData(data);
         } catch (err) {
@@ -76,12 +83,14 @@ export function DriverDashboard() {
         }
     };
 
-    // Dohvaćamo podatke kada se komponenta prvi put učita
     useEffect(() => {
+        // Postavljamo loading na true samo pri prvom učitavanju
         fetchData();
-        // Opcionalno: Automatsko osvježavanje svakih 30 sekundi
-        const intervalId = setInterval(fetchData, 30000);
-        return () => clearInterval(intervalId); // Čistimo interval
+        const intervalId = setInterval(() => {
+            // Ne postavljamo loading na true za pozadinska osvježavanja
+            getDriverDashboard().then(setDashboardData).catch(() => setError('Failed to refresh data.'));
+        }, 15000); // Osvježavanje svakih 15 sekundi
+        return () => clearInterval(intervalId);
     }, []);
 
     const handleLogout = () => {
@@ -92,8 +101,7 @@ export function DriverDashboard() {
     const handleAccept = async (offerId) => {
         try {
             await acceptOffer(offerId);
-            alert('Offer accepted successfully!');
-            fetchData(); // Ponovo dohvati podatke da se UI odmah ažurira
+            fetchData(); // Odmah osvježi podatke
         } catch (err) {
             alert('Failed to accept offer. Please try again.');
         }
@@ -102,8 +110,7 @@ export function DriverDashboard() {
     const handleReject = async (offerId) => {
         try {
             await rejectOffer(offerId);
-            alert('Offer rejected.');
-            fetchData(); // Ponovo dohvati podatke
+            fetchData(); // Odmah osvježi podatke
         } catch (err) {
             alert('Failed to reject offer. Please try again.');
         }
@@ -111,7 +118,6 @@ export function DriverDashboard() {
 
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
-            {/* Navigacija */}
             <header style={{ backgroundColor: 'white', borderBottom: '1px solid #EAEAEA' }}>
                 <nav style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>FoodFlow Driver</h1>
@@ -123,33 +129,44 @@ export function DriverDashboard() {
                 </nav>
             </header>
 
-            {/* Glavni Sadržaj */}
             <main style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 1.5rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-                    {/* Lijeva Kolona */}
-                    <div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>New Order Opportunities</h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                         
-                        {/* DINAMIČKI PRIKAZ SADRŽAJA */}
-                        {loading && <p>Loading offers...</p>}
-                        {error && <p style={{ color: 'red' }}>{error}</p>}
+                        <section>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>New Order Opportunities</h2>
+                            {loading && <p>Loading...</p>}
+                            {error && <p style={{ color: 'red' }}>{error}</p>}
+                            {!loading && dashboardData.newOffers.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {dashboardData.newOffers.map(offer => (
+                                        <OfferCard key={offer.id} offer={offer} onAccept={handleAccept} onReject={handleReject} />
+                                    ))}
+                                </div>
+                            ) : !loading && (
+                                <div style={{ border: '2px dashed #D1D5DB', borderRadius: '8px', padding: '4rem 1rem', textAlign: 'center', color: '#6B7280' }}>
+                                    <p>No new orders available.</p>
+                                </div>
+                            )}
+                        </section>
                         
-                        {!loading && dashboardData.newOffers.length > 0 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {dashboardData.newOffers.map(offer => (
-                                    <OfferCard key={offer.id} offer={offer} onAccept={handleAccept} onReject={handleReject} />
-                                ))}
-                            </div>
-                        ) : !loading && (
-                            <div style={{ border: '2px dashed #D1D5DB', borderRadius: '8px', padding: '4rem 1rem', textAlign: 'center', color: '#6B7280' }}>
-                                <p>No new orders available.</p>
-                            </div>
-                        )}
+                        {/* === PRIKAZ ZA PRIHVAĆENE PORUDŽBINE JE SADA TU === */}
+                        <section>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>My Assigned Deliveries</h2>
+                            {loading && <p>Loading...</p>}
+                            {!loading && dashboardData.assignedDeliveries.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {dashboardData.assignedDeliveries.map(delivery => (
+                                        <AssignedDeliveryCard key={delivery.id} delivery={delivery} />
+                                    ))}
+                                </div>
+                            ) : !loading && (
+                                <p style={{ color: '#6B7280', paddingLeft: '0.5rem' }}>You have no active deliveries.</p>
+                            )}
+                        </section>
 
-                        {/* TODO: Kasnije ćemo ovdje dodati prikaz za 'assignedDeliveries' */}
                     </div>
 
-                    {/* Desna Kolona - Mapa */}
                     <div style={{ backgroundColor: '#F3EAD9', borderRadius: '8px', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <p style={{ color: '#6B7280' }}>Map View</p>
                     </div>
