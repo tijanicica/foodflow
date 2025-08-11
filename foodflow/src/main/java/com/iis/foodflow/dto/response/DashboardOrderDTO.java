@@ -15,4 +15,7 @@ public class DashboardOrderDTO {
     private String restaurantAddress;
     private String deliveryAddress;
     private Double distanceToRestaurant; // Udaljenost vozača od restorana
+
+    private CoordinatesDTO restaurantCoordinates;
+    private CoordinatesDTO deliveryCoordinates;
 }

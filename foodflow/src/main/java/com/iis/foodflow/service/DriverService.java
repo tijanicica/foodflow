@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -323,13 +324,15 @@ public class DriverService {
 
         return orderOfferRepository.save(offer);
     }
+// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE CIJELU 'getDashboardData' METODU
+
     @Transactional(readOnly = true)
     public DriverDashboardResponse getDashboardData(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
 
         List<DashboardOfferDTO> newOffers = Collections.emptyList();
 
-        // Ako je ONLINE, učitavamo nove ponude
         if (driver.getStatus() == DriverStatus.ONLINE) {
             newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
                     .stream()
@@ -338,17 +341,11 @@ public class DriverService {
 
                         Restaurant restaurant = order.getOrderItems().stream()
                                 .findFirst()
-                                .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
                                 .orElse(null);
 
                         if (restaurant == null) {
-                            return DashboardOfferDTO.builder()
-                                    .id(offer.getId())
-                                    .order(DashboardOrderDTO.builder()
-                                            .id(order.getId())
-                                            .status(order.getStatus())
-                                            .build())
-                                    .build();
+                            return null; // Ili vrati osnovni DTO ako je potrebno
                         }
 
                         double distance = calculateDistance(
@@ -357,53 +354,38 @@ public class DriverService {
                                 restaurant.getAddress().getLongitude()
                         );
 
-                        String restaurantAddress = String.format(
-                                "%s, %s, %s",
-                                restaurant.getAddress().getStreet(),
-                                restaurant.getAddress().getCity(),
-                                restaurant.getAddress().getPostalCode()
-                        );
-
-                        String deliveryAddress = order.getCustomer().getAddresses().stream()
-                                .findFirst()
-                                .map(addr -> String.format("%s, %s, %s",
-                                        addr.getStreet(),
-                                        addr.getCity(),
-                                        addr.getPostalCode()))
-                                .orElse("N/A");
+                        String deliveryAddress = order.getAddress().toString();
 
                         DashboardOrderDTO orderDTO = DashboardOrderDTO.builder()
                                 .id(order.getId())
                                 .status(order.getStatus())
                                 .restaurantName(restaurant.getName())
-                                .restaurantAddress(restaurantAddress)
+                                .restaurantAddress(restaurant.getAddress().toString())
                                 .deliveryAddress(deliveryAddress)
                                 .distanceToRestaurant(distance)
+                                .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
+                                .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
                                 .build();
 
-                        return DashboardOfferDTO.builder()
-                                .id(offer.getId())
-                                .order(orderDTO)
-                                .build();
+                        return DashboardOfferDTO.builder().id(offer.getId()).order(orderDTO).build();
                     })
+                    .filter(Objects::nonNull) // Uklanjamo null vrijednosti ako restoran nije pronađen
                     .collect(Collectors.toList());
         }
 
-        // Assigned deliveries uvek vraćamo, bez obzira na status
+        // --- LOGIKA ZA AKTIVNE PORUDŽBINE ---
         List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
         List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
                 .stream()
                 .map(order -> {
+                    // === ISPRAVKA: Logika za dohvaćanje restorana i adrese se mora ponoviti i ovdje ===
                     Restaurant restaurant = order.getOrderItems().stream()
                             .findFirst()
-                            .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                            .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
                             .orElse(null);
 
                     if (restaurant == null) {
-                        return DashboardOrderDTO.builder()
-                                .id(order.getId())
-                                .status(order.getStatus())
-                                .build();
+                        return null; // Preskačemo porudžbine bez restorana
                     }
 
                     double distance = calculateDistance(
@@ -412,33 +394,26 @@ public class DriverService {
                             restaurant.getAddress().getLongitude()
                     );
 
-                    String restaurantAddress = String.format(
-                            "%s, %s, %s",
-                            restaurant.getAddress().getStreet(),
-                            restaurant.getAddress().getCity(),
-                            restaurant.getAddress().getPostalCode()
-                    );
-
-                    String deliveryAddress = order.getCustomer().getAddresses().stream()
-                            .findFirst()
-                            .map(addr -> String.format("%s, %s, %s",
-                                    addr.getStreet(),
-                                    addr.getCity(),
-                                    addr.getPostalCode()))
-                            .orElse("N/A");
+                    String deliveryAddress = order.getAddress().toString();
+                    // =================================================================================
 
                     return DashboardOrderDTO.builder()
                             .id(order.getId())
                             .status(order.getStatus())
                             .restaurantName(restaurant.getName())
-                            .restaurantAddress(restaurantAddress)
+                            .restaurantAddress(restaurant.getAddress().toString())
                             .deliveryAddress(deliveryAddress)
                             .distanceToRestaurant(distance)
+                            .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
+                            .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
                             .build();
                 })
+                .filter(Objects::nonNull) // Uklanjamo null vrijednosti
                 .collect(Collectors.toList());
 
-        return new DriverDashboardResponse(newOffers, assignedDeliveries);
+        CoordinatesDTO driverCoordinates = new CoordinatesDTO(driver.getLatitude(), driver.getLongitude());
+
+        return new DriverDashboardResponse(newOffers, assignedDeliveries, driverCoordinates);
     }
     // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 // ZAMIJENITE POSTOJEĆU 'calculateEta' METODU SA OVOM
