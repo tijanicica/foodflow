@@ -61,6 +61,7 @@ public class OrderController {
         orderService.confirmOrder(orderId);
         return ResponseEntity.ok().build();
 
+    }
     @PostMapping
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<Void> createOrder(

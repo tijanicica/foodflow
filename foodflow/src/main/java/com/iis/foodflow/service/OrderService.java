@@ -32,7 +32,6 @@ public class OrderService {
     private final NotificationService notificationService;
 
     private final RepeatingOrderRepository repeatingOrderRepository; 
-    private final NotificationService notificationService; 
 
     private final OrderAssignmentService orderAssignmentService; 
 
@@ -284,13 +283,4 @@ public class OrderService {
         order.setUsedCoupon(coupon);
     }
 
-    // markOrderAsDelivered metoda može da ostane, korisna je za druge delove aplikacije
-    @Transactional
-    public void markOrderAsDelivered(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-        order.setStatus(OrderStatus.DELIVERED);
-        order.setDeliveredAt(LocalDateTime.now());
-        orderRepository.save(order);
-    }
 }
