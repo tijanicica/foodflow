@@ -66,7 +66,7 @@ public class Order {
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
     private OrderRating orderRating;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST) // <-- DODAJTE 'cascade = CascadeType.PERSIST'
     @JoinColumn(name = "repeating_order_template_id") // Nova kolona u 'orders' tabeli
     @ToString.Exclude
     private RepeatingOrder repeatingOrderTemplate;

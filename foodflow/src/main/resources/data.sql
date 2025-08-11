@@ -426,7 +426,7 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 -- Njen order_type je sada REGULAR, jer je to samo prva instanca.
 -- --------------------------------------------------------------------
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
-    (5, 'CREATED', 'COMBINED', 'REGULAR', NOW(), 150.00, 2650.00, 1, 1, 2000.00, 650.00);
+    (5, 'DELIVERED', 'COMBINED', 'REPEATING', NOW() - INTERVAL '7 day', 150.00, 2650.00, 1, 1, 2000.00, 650.00);
 
 -- Stavke za porudžbinu #5 ostaju iste
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
@@ -436,7 +436,10 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 -- Šablon za ponavljanje. Sada ima svoj ID i referencira originalnu porudžbinu (original_order_id = 5)
 -- Ime tabele je 'repeating_order'
 INSERT INTO repeating_order (id, original_order_id, repeat_type, day_of_week, delivery_time, active, unlimited) VALUES
-    (1, 5, 'WEEKLY', 'FRIDAY', '19:00:00', true, true);
+    (1, 5, 'WEEKLY', 'MONDAY', '21:35:00', true, true);
+
+UPDATE orders SET repeating_order_template_id = 1 WHERE id = 5;
+
 INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
     (4, 5, 2, 'ACCEPTED', NOW() - INTERVAL '45 minute', NULL);
 

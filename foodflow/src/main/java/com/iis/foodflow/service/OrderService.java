@@ -120,27 +120,22 @@ public class OrderService {
         newOrder.setTotalPrice(finalTotalPrice);
         populatePaymentAmounts(newOrder, request, finalTotalPrice);
 
-        // === KORAK 4: SPECIFIČNA LOGIKA PO TIPU PORUDŽBINE ===
-        if (request.getOrderType() == OrderType.SCHEDULED) {
-            handleScheduledOrder(newOrder, request.getScheduleInfo(), coupon);
-            orderRepository.save(newOrder);
-        }
-        else if (request.getOrderType() == OrderType.REPEATING) {
-            // Prvo kreiramo i sačuvamo regularnu porudžbinu
-            newOrder.setOrderType(OrderType.REGULAR); // Prva instanca je REGULARNA
-            handleRegularOrder(newOrder, coupon);
-            Order savedOriginalOrder = orderRepository.save(newOrder);
 
-            // Zatim kreiramo šablon koji je vezan za nju
-            handleRepeatingOrder(savedOriginalOrder, request.getRepeatInfo());
-        }
-        else { // REGULAR
-            newOrder.setOrderType(OrderType.REGULAR);
-            handleRegularOrder(newOrder, coupon);
+        // === KORAK 4: NOVA, CENTRALIZOVANA LOGIKA PO TIPU PORUDŽBINE ===
+        if (request.getOrderType() == OrderType.REPEATING) {
+            handleRepeatingOrder(newOrder, request.getRepeatInfo(), coupon);
+        } else {
+            // Logika za REGULAR i SCHEDULED
+            if (request.getOrderType() == OrderType.SCHEDULED) {
+                handleScheduledOrder(newOrder, request.getScheduleInfo(), coupon);
+            } else { // REGULAR
+                newOrder.setOrderType(OrderType.REGULAR);
+                handleRegularOrder(newOrder, coupon);
+            }
             orderRepository.save(newOrder);
         }
 
-        notificationService.sendOrderConfirmation(newOrder);
+      //  notificationService.sendOrderConfirmation(newOrder);
     }
 
     // === POMOĆNE (HELPER) METODE ===
@@ -170,18 +165,37 @@ public class OrderService {
         }
     }
 
-    private void handleRepeatingOrder(Order originalOrder, OrderRequestDTO.RepeatDTO repeatInfo) {
+    private void handleRepeatingOrder(Order firstInstance, OrderRequestDTO.RepeatDTO repeatInfo, Coupon coupon) {
         if (repeatInfo == null) {
             throw new IllegalArgumentException("Repeat info is required for repeating orders.");
         }
-        // Kreiraj i sačuvaj šablon za ponavljanje
-        RepeatingOrder template = createRepeatingOrderTemplate(repeatInfo, originalOrder);
-        repeatingOrderRepository.save(template);
+
+        // 1. Kreiramo šablon u memoriji, ali bez originalne porudžbine za sada.
+        RepeatingOrder template = createRepeatingOrderTemplate(repeatInfo, firstInstance);
+
+        // 2. Popunjavamo podatke za prvu instancu.
+        firstInstance.setOrderType(OrderType.REPEATING);
+        firstInstance.setStatus(OrderStatus.CREATED);
+
+        // Povezujemo ih međusobno pre čuvanja.
+        firstInstance.setRepeatingOrderTemplate(template);
+        template.setOriginalOrder(firstInstance);
+
+        // Kupon važi samo za prvu instancu.
+        if (coupon != null) {
+            markCouponAsUsed(coupon, firstInstance);
+        }
+
+        // 3. Čuvamo prvu instancu. Hibernate/JPA će se pobrinuti da sačuva
+        // i povezani 'template' objekat u ispravnom redosledu.
+        orderRepository.save(firstInstance);
     }
 
     private RepeatingOrder createRepeatingOrderTemplate(OrderRequestDTO.RepeatDTO repeatInfo, Order originalOrder) {
         RepeatingOrder template = new RepeatingOrder();
-        template.setOriginalOrder(originalOrder); // Povezujemo sa originalnom porudžbinom
+        if (originalOrder != null) {
+            template.setOriginalOrder(originalOrder);
+        }
         template.setRepeatType(repeatInfo.getRepeatType());
         template.setDayOfWeek(repeatInfo.getDayOfWeek());
         template.setDayOfMonth(repeatInfo.getDayOfMonth());
