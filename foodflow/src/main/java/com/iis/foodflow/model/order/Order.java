@@ -71,4 +71,7 @@ public class Order {
 
     @OneToOne(mappedBy = "order")
     private SupportTicket supportTicket;
+    @ManyToOne
+    @JoinColumn(name = "address_id", nullable = false) // Svaka porudžbina MORA imati adresu
+    private Address address;
 }

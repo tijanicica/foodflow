@@ -69,23 +69,18 @@ export function CheckoutPage() {
   const isRedirecting = React.useRef(false);
 
     useEffect(() => {
-        // Ako je preusmeravanje već pokrenuto, ne radi ništa
-        if (isRedirecting.current) return;
-
-        // Ako korpa postane prazna (ili je bila prazna), pokreni preusmeravanje
+        // Ovaj efekat se pokreće samo jednom i proverava početno stanje.
+        // Ako je korpa prazna na početku, vrati korisnika na home.
         if (!restaurantInfo || cartItems.length === 0) {
-            // Prikazujemo poruku samo ako nismo na početnom renderovanju 
-            // i ako restoran postoji (što znači da je korpa upravo ispražnjena)
-            if (restaurantInfo) { 
-                toast.error("Your cart is empty!");
-            }
-            isRedirecting.current = true; // Označi da je preusmeravanje počelo
             navigate('/home', { replace: true });
-        } else {
-            // Ako je korpa puna, normalno učitaj podatke
-            fetchInitialData();
+            return; // Prekini dalje izvršavanje
         }
-    }, [restaurantInfo, cartItems, navigate, fetchInitialData]);
+        
+        // Ako je korpa puna, učitaj potrebne podatke.
+        fetchInitialData();
+
+    }, []);
+   
 
     ////
 
@@ -123,14 +118,32 @@ export function CheckoutPage() {
         setIsPlacingOrder(true);
         try {
             await createOrder(orderData);
-            toast.success("Order placed successfully!");
+               toast.success(
+                (t) => (
+                    <div className="flex flex-col gap-1">
+                        <span className="font-bold">Order placed successfully!</span>
+                        <span className="text-sm text-gray-600">
+                            A confirmation invoice will be sent to your email.
+                        </span>
+                    </div>
+                ),
+                {
+                    duration: 5000, // Poruka ostaje vidljiva 5 sekundi
+                }
+            );
+
             clearCart();
-            navigate('/orders');
-        } catch (error) {
+            
+            // Mala pauza pre preusmeravanja da korisnik stigne da pročita poruku
+            setTimeout(() => {
+                navigate('/orders');
+            });
+     } catch (error) {
             toast.error(error.response?.data?.message || "Failed to place order.");
-        } finally {
-            setIsPlacingOrder(false);
-        }
+            setIsPlacingOrder(false); // Vrati dugme u normalno stanje u slučaju greške
+        } 
+        // finally blok više nije potreban jer se setIsPlacingOrder(false)
+        // ne treba izvršiti ako je porudžbina uspešna (jer sledi preusmeravanje)
     };
     
     if (!restaurantInfo) return null;

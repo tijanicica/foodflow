@@ -32,6 +32,7 @@ public class OrderService {
     private final MenuItemVersionRepository menuItemVersionRepository;
     private final AddressRepository addressRepository;
     private final CouponRepository couponRepository;
+    private final NotificationService notificationService;
 
     /**
      * Mijenja status porudžbine na DELIVERED i bilježi tačno vrijeme isporuke.
@@ -57,7 +58,10 @@ public class OrderService {
     @Transactional
     public void createOrder(OrderRequestDTO request, Customer customer) {
         // === KORAK 1: VALIDACIJA UNOSA ===
-        validateRequest(request, customer);
+        Address deliveryAddress = addressRepository.findByIdAndCustomer(request.getAddressId(), customer)
+                .orElseThrow(() -> new RuntimeException("Address not found or does not belong to user."));
+
+        validateRequest(request);
 
         // === KORAK 2: PRIPREMA PODATAKA ===
         Order newOrder = new Order();
@@ -70,6 +74,7 @@ public class OrderService {
 
         // === KORAK 3: POPUNJAVANJE ZAJEDNIČKIH POLJA PORUDŽBINE ===
         newOrder.setCustomer(customer);
+        newOrder.setAddress(deliveryAddress);
         newOrder.setCreationDate(LocalDateTime.now());
         newOrder.setOrderType(request.getOrderType());
         newOrder.setNoteForRestaurant(request.getNoteForRestaurant());
@@ -90,8 +95,10 @@ public class OrderService {
             handleRegularOrder(newOrder, couponHolder.getCoupon());
         }
 
-        // === KORAK 5: ČUVANJE U BAZI ===
-        orderRepository.save(newOrder);
+        Order savedOrder = orderRepository.save(newOrder);
+
+
+        notificationService.sendOrderConfirmation(savedOrder);
     }
 
     // === POMOĆNE (HELPER) METODE ===
@@ -141,20 +148,15 @@ public class OrderService {
         order.setRepeatingOrder(repeatingOrderTemplate);
     }
 
-    private void validateRequest(OrderRequestDTO request, Customer customer) {
-        addressRepository.findByIdAndCustomer(request.getAddressId(), customer)
-                .orElseThrow(() -> new RuntimeException("Address not found or does not belong to user."));
-
+    private void validateRequest(OrderRequestDTO request) { // Menjamo potpis metode
+        // Provera adrese je već obavljena u `createOrder`
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new IllegalArgumentException("Order must contain at least one item.");
         }
-
-        // Validacija radnog vremena se vrši samo za zakazane i ponavljajuće
         if (request.getOrderType() == OrderType.SCHEDULED || request.getOrderType() == OrderType.REPEATING) {
             validateRestaurantOperatingHours(request);
         }
     }
-
     @RequiredArgsConstructor
     @lombok.Getter
     private static class CouponHolder {
