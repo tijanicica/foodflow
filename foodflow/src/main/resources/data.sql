@@ -479,7 +479,7 @@ INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for
 -- Porudžbina je potvrđena od strane restorana i sada čeka na dodjelu
 -- Ne može imati 'delivered_at' i ne bi trebala još imati 'driver_id'
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
-    (20, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 1, 1400.00, 0.00);
+    (20, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 11, 1400.00, 0.00);
 
 -- Stavke za porudžbinu #7
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
