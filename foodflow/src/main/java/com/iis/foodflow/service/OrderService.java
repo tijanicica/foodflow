@@ -2,6 +2,9 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.OrderRequestDTO;
+import com.iis.foodflow.dto.response.OrderDetailDTO;
+import com.iis.foodflow.dto.response.OrderSummaryDTO;
+import com.iis.foodflow.dto.response.RepeatingOrderTemplateDTO;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.OrderType;
 import com.iis.foodflow.enums.PaymentType;
@@ -13,6 +16,8 @@ import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException; // Dodaj import
+
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,6 +25,7 @@ import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -297,4 +303,160 @@ public class OrderService {
         order.setUsedCoupon(coupon);
     }
 
+
+    public List<OrderSummaryDTO> getOrdersForTab(String tab, Customer customer) {
+        List<Order> orders;
+        switch (tab.toUpperCase()) {
+            case "ACTIVE":
+                orders = orderRepository.findOrdersByCustomerAndStatusIn(customer,
+                        Set.of(OrderStatus.CREATED, OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP)
+                );
+                break;
+            case "PAST":
+                orders = orderRepository.findOrdersByCustomerAndStatusIn(customer,
+                        Set.of(OrderStatus.DELIVERED, OrderStatus.CANCELED, OrderStatus.REJECTED)
+                );
+                break;
+            case "SCHEDULED":
+                orders = orderRepository.findScheduledOrdersForCustomer(customer);
+                break;
+            default:
+                orders = List.of();
+        }
+        return orders.stream().map(this::mapToOrderSummaryDTO).collect(Collectors.toList());
+    }
+
+    public List<RepeatingOrderTemplateDTO> getRepeatingOrderTemplates(Customer customer) {
+        return repeatingOrderRepository.findTemplatesForCustomer(customer)
+                .stream().map(this::mapToRepeatingOrderTemplateDTO).collect(Collectors.toList());
+    }
+
+    // Pomoćne metode za mapiranje
+    private OrderSummaryDTO mapToOrderSummaryDTO(Order order) {
+        String restaurantName = order.getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getName())
+                .orElse("Unknown Restaurant");
+
+        boolean isRated = order.getOrderRating() != null && order.getOrderRating().getId() != null;
+
+
+        return new OrderSummaryDTO(
+                order.getId(),
+                restaurantName,
+                order.getCreationDate(),
+                order.getScheduledFor(),
+                order.getTotalPrice(),
+                order.getStatus(),
+                isRated
+        );
+    }
+
+    private RepeatingOrderTemplateDTO mapToRepeatingOrderTemplateDTO(RepeatingOrder template) {
+        String restaurantName = template.getOriginalOrder().getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getName())
+                .orElse("Unknown Restaurant");
+
+        return new RepeatingOrderTemplateDTO(
+                template.getId(),
+                restaurantName,
+                template.getRepeatType(),
+                template.getDayOfWeek(),
+                template.getDeliveryTime(),
+                template.isActive(),
+                template.isUnlimited(),
+                template.getRepeatUntil(),
+                template.getOriginalOrder().getId() // Dodajemo ID originalne porudžbine
+
+        );
+    }
+
+    @Transactional(readOnly = true) // Dobra praksa za metode koje samo čitaju podatke
+    public OrderDetailDTO getOrderDetails(Long orderId, Customer customer) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // SIGURNOSNA PROVERA: Da li je ulogovani korisnik vlasnik porudžbine?
+        if (!order.getCustomer().getId().equals(customer.getId())) {
+            throw new AccessDeniedException("You are not authorized to view this order.");
+        }
+
+        // Mapiraj stavke
+        List<OrderDetailDTO.OrderItemDetailDTO> itemDTOs = order.getOrderItems().stream()
+                .map(item -> OrderDetailDTO.OrderItemDetailDTO.builder()
+                        .name(item.getMenuItemVersion().getMenuItem().getName())
+                        .imageUrl(item.getMenuItemVersion().getMenuItem().getImageUrl())
+                        .quantity(item.getQuantity())
+                        .price(item.getMenuItemVersion().getPrice())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Izračunaj subtotal ponovo radi sigurnosti
+        BigDecimal subtotal = itemDTOs.stream()
+                .map(item -> item.getPrice().multiply(new BigDecimal(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Formatiraj adresu
+        Address adr = order.getAddress();
+        String formattedAddress = String.format("%s %s, %s", adr.getStreet(), adr.getStreetNumber(), adr.getCity());
+
+        // Kreiraj i vrati glavni DTO
+        return OrderDetailDTO.builder()
+                .id(order.getId())
+                .restaurantName( // Dohvatamo ime restorana iz prve stavke
+                        order.getOrderItems().stream().findFirst()
+                                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getName())
+                                .orElse("Unknown")
+                )
+                .items(itemDTOs)
+                .subtotal(subtotal)
+                .deliveryPrice(order.getDeliveryPrice())
+                .total(order.getTotalPrice())
+                .status(order.getStatus())
+                .deliveryAddress(formattedAddress)
+                .paymentMethod(order.getPaymentType())
+                .creationDate(order.getCreationDate())
+                .couponCode(order.getUsedCoupon() != null ? order.getUsedCoupon().getCode() : null)
+                .build();
+
+    }
+
+    @Transactional
+    public RepeatingOrderTemplateDTO toggleRepeatingOrderStatus(Long templateId, Customer customer) {
+        RepeatingOrder template = repeatingOrderRepository.findById(templateId)
+                .orElseThrow(() -> new RuntimeException("Repeating order template not found."));
+
+        // Sigurnosna provera da li je korisnik vlasnik šablona
+        if (!template.getOriginalOrder().getCustomer().getId().equals(customer.getId())) {
+            throw new AccessDeniedException("You are not authorized to modify this template.");
+        }
+
+        // Promeni status
+        template.setActive(!template.isActive());
+
+        RepeatingOrder updatedTemplate = repeatingOrderRepository.save(template);
+        return mapToRepeatingOrderTemplateDTO(updatedTemplate); // Vrati ažurirani DTO
+    }
+
+    @Transactional
+    public void cancelRepeatingOrder(Long templateId, Customer customer) {
+        RepeatingOrder template = repeatingOrderRepository.findById(templateId)
+                .orElseThrow(() -> new RuntimeException("Repeating order template not found."));
+
+        // Sigurnosna provera
+        if (!template.getOriginalOrder().getCustomer().getId().equals(customer.getId())) {
+            throw new AccessDeniedException("You are not authorized to cancel this template.");
+        }
+
+        // --- LOGIKA LOGIČKOG BRISANJA ---
+        // 1. Postavi flag da je otkazano
+        template.setCancelled(true);
+
+        // 2. Dobra je praksa i deaktivirati ga
+        template.setActive(false);
+
+        // 3. Sačuvaj promene
+        repeatingOrderRepository.save(template);
+    }
 }
