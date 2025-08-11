@@ -120,7 +120,7 @@ export const addNewAddress = async (addressData) => {
 export const getMyCoupons = async () => {
     const response = await apiClient.get('/coupons/my');
     return response.data;
-
+}
 
 export const getDriverPerformance = async () => {
     try {

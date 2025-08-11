@@ -9,10 +9,7 @@ import com.iis.foodflow.model.order.*;
 import com.iis.foodflow.model.restaurant.MenuItemVersion;
 import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Customer;
-import com.iis.foodflow.repository.AddressRepository;
-import com.iis.foodflow.repository.CouponRepository;
-import com.iis.foodflow.repository.MenuItemVersionRepository;
-import com.iis.foodflow.repository.OrderRepository;
+import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,15 +31,17 @@ public class OrderService {
     private final CouponRepository couponRepository;
     private final NotificationService notificationService;
 
-    private final OrderAssignmentService orderAssignmentService; // <-- DODAJTE ZAVISNOST
+    private final RepeatingOrderRepository repeatingOrderRepository; 
+    private final NotificationService notificationService; 
+
+    private final OrderAssignmentService orderAssignmentService; 
 
     @Transactional
     public Order confirmOrder(Long orderId) {
-        // === ISPRAVKA JE U OVOJ LINIJI ===
-        // Pružamo konkretan izuzetak (exception) koji će se baciti ako porudžbina nije pronađena.
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-        // ================================
+
 
         // Postavljamo status porudžbine na CONFIRMED.
         // Ovo je signal da restoran treba da počne sa pripremom.
@@ -73,6 +72,7 @@ public class OrderService {
         orderRepository.save(order);
     }
 
+
     @Transactional
     public Order markOrderAsReadyForPickup(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -99,23 +99,21 @@ public class OrderService {
         // === KORAK 1: VALIDACIJA UNOSA ===
         Address deliveryAddress = addressRepository.findByIdAndCustomer(request.getAddressId(), customer)
                 .orElseThrow(() -> new RuntimeException("Address not found or does not belong to user."));
-
         validateRequest(request);
 
-        // === KORAK 2: PRIPREMA PODATAKA ===
+        // === KORAK 2: PRIPREMA ZAJEDNIČKIH PODATAKA ===
         Order newOrder = new Order();
         Set<OrderItem> orderItems = new HashSet<>();
         BigDecimal subtotal = calculateSubtotalAndCreateItems(request.getItems(), newOrder, orderItems);
 
-        // Odredi cenu dostave na osnovu kupona
         CouponHolder couponHolder = processCoupon(request.getCouponCode(), customer);
+        Coupon coupon = couponHolder.getCoupon();
         BigDecimal finalTotalPrice = subtotal.add(couponHolder.getEffectiveDeliveryPrice());
 
         // === KORAK 3: POPUNJAVANJE ZAJEDNIČKIH POLJA PORUDŽBINE ===
         newOrder.setCustomer(customer);
         newOrder.setAddress(deliveryAddress);
         newOrder.setCreationDate(LocalDateTime.now());
-        newOrder.setOrderType(request.getOrderType());
         newOrder.setNoteForRestaurant(request.getNoteForRestaurant());
         newOrder.setNoteForDriver(request.getNoteForDriver());
         newOrder.setOrderItems(orderItems);
@@ -125,19 +123,25 @@ public class OrderService {
 
         // === KORAK 4: SPECIFIČNA LOGIKA PO TIPU PORUDŽBINE ===
         if (request.getOrderType() == OrderType.SCHEDULED) {
-            handleScheduledOrder(newOrder, request.getScheduleInfo(), couponHolder.getCoupon());
+            handleScheduledOrder(newOrder, request.getScheduleInfo(), coupon);
+            orderRepository.save(newOrder);
         }
         else if (request.getOrderType() == OrderType.REPEATING) {
-            handleRepeatingOrder(newOrder, request.getRepeatInfo(), couponHolder.getCoupon());
+            // Prvo kreiramo i sačuvamo regularnu porudžbinu
+            newOrder.setOrderType(OrderType.REGULAR); // Prva instanca je REGULARNA
+            handleRegularOrder(newOrder, coupon);
+            Order savedOriginalOrder = orderRepository.save(newOrder);
+
+            // Zatim kreiramo šablon koji je vezan za nju
+            handleRepeatingOrder(savedOriginalOrder, request.getRepeatInfo());
         }
         else { // REGULAR
-            handleRegularOrder(newOrder, couponHolder.getCoupon());
+            newOrder.setOrderType(OrderType.REGULAR);
+            handleRegularOrder(newOrder, coupon);
+            orderRepository.save(newOrder);
         }
 
-        Order savedOrder = orderRepository.save(newOrder);
-
-
-        notificationService.sendOrderConfirmation(savedOrder);
+        notificationService.sendOrderConfirmation(newOrder);
     }
 
     // === POMOĆNE (HELPER) METODE ===
@@ -153,42 +157,45 @@ public class OrderService {
         if (scheduleInfo == null || scheduleInfo.getScheduledDate() == null || scheduleInfo.getScheduledTime() == null) {
             throw new IllegalArgumentException("Schedule date and time are required for scheduled orders.");
         }
-
-        // === KLJUČNA IZMENA JE OVDE ===
-        // Spajamo odvojeni datum i vreme u jedan LocalDateTime objekat.
         LocalDateTime scheduledFor = LocalDateTime.of(scheduleInfo.getScheduledDate(), scheduleInfo.getScheduledTime());
 
-        // Validacija (da nije u prošlosti i da nije >7 dana)
         if (scheduledFor.isBefore(LocalDateTime.now()) || scheduledFor.isAfter(LocalDateTime.now().plusDays(7))) {
             throw new IllegalArgumentException("Invalid schedule date. Must be within the next 7 days.");
         }
 
+        order.setOrderType(OrderType.SCHEDULED);
         order.setStatus(OrderStatus.SCHEDULED_PENDING);
-        order.setScheduledFor(scheduledFor); // Sada koristimo ispravno kreiran objekat
-
-        // Kupon se samo povezuje, ali ne označava kao iskorišćen. To radi scheduler.
+        order.setScheduledFor(scheduledFor);
         if (coupon != null) {
-            order.setUsedCoupon(coupon);
+            order.setUsedCoupon(coupon); // Kupon se samo povezuje, scheduler ga aktivira
         }
     }
 
-    private void handleRepeatingOrder(Order order, OrderRequestDTO.RepeatDTO repeatInfo, Coupon coupon) {
+    private void handleRepeatingOrder(Order originalOrder, OrderRequestDTO.RepeatDTO repeatInfo) {
         if (repeatInfo == null) {
             throw new IllegalArgumentException("Repeat info is required for repeating orders.");
         }
-        // Prva porudžbina se kreira odmah
-        order.setStatus(OrderStatus.CREATED);
-        // Kupon se primenjuje samo na prvu porudžbinu
-        if (coupon != null) {
-            markCouponAsUsed(coupon, order);
-        }
-        // Kreiraj i poveži šablon za ponavljanje
-        RepeatingOrder repeatingOrderTemplate = createRepeatingOrderTemplate(repeatInfo, order);
-        order.setRepeatingOrder(repeatingOrderTemplate);
+        // Kreiraj i sačuvaj šablon za ponavljanje
+        RepeatingOrder template = createRepeatingOrderTemplate(repeatInfo, originalOrder);
+        repeatingOrderRepository.save(template);
     }
 
-    private void validateRequest(OrderRequestDTO request) { // Menjamo potpis metode
-        // Provera adrese je već obavljena u `createOrder`
+    private RepeatingOrder createRepeatingOrderTemplate(OrderRequestDTO.RepeatDTO repeatInfo, Order originalOrder) {
+        RepeatingOrder template = new RepeatingOrder();
+        template.setOriginalOrder(originalOrder); // Povezujemo sa originalnom porudžbinom
+        template.setRepeatType(repeatInfo.getRepeatType());
+        template.setDayOfWeek(repeatInfo.getDayOfWeek());
+        template.setDayOfMonth(repeatInfo.getDayOfMonth());
+        template.setDeliveryTime(repeatInfo.getDeliveryTime());
+        template.setRepeatUntil(repeatInfo.getRepeatUntil());
+        template.setActive(true);
+        template.setUnlimited(repeatInfo.getRepeatUntil() == null);
+        return template;
+    }
+
+    // ... (ostale pomoćne metode: validateRequest, CouponHolder, processCoupon, itd. ostaju iste)
+
+    private void validateRequest(OrderRequestDTO request) {
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new IllegalArgumentException("Order must contain at least one item.");
         }
@@ -196,6 +203,7 @@ public class OrderService {
             validateRestaurantOperatingHours(request);
         }
     }
+
     @RequiredArgsConstructor
     @lombok.Getter
     private static class CouponHolder {
@@ -210,12 +218,10 @@ public class OrderService {
         Coupon coupon = couponRepository.findByCodeAndCustomerAndUsedFalse(couponCode, customer)
                 .orElseThrow(() -> new RuntimeException("Invalid or already used coupon."));
 
+        // Pretpostavka: Samo FREEDELIVERY kupon utiče na cenu dostave
         BigDecimal effectiveDeliveryPrice = "FREEDELIVERY".equalsIgnoreCase(coupon.getCode()) ? BigDecimal.ZERO : DELIVERY_PRICE;
         return new CouponHolder(coupon, effectiveDeliveryPrice);
     }
-
-    // ... ostatak vaših pomoćnih metoda (calculateSubtotal, populatePayment, createRepeating, markCoupon, validateHours) ostaje isti ...
-
 
     private void validateRestaurantOperatingHours(OrderRequestDTO request) {
         MenuItemVersion sampleItem = menuItemVersionRepository.findById(request.getItems().get(0).getMenuItemVersionId())
@@ -223,9 +229,9 @@ public class OrderService {
         Restaurant restaurant = sampleItem.getMenuVersion().getMenu().getRestaurant();
 
         LocalTime deliveryTime = null;
-        if (request.getOrderType() == OrderType.SCHEDULED) {
+        if (request.getOrderType() == OrderType.SCHEDULED && request.getScheduleInfo() != null) {
             deliveryTime = request.getScheduleInfo().getScheduledTime();
-        } else if (request.getOrderType() == OrderType.REPEATING) {
+        } else if (request.getOrderType() == OrderType.REPEATING && request.getRepeatInfo() != null) {
             deliveryTime = request.getRepeatInfo().getDeliveryTime();
         }
 
@@ -244,9 +250,7 @@ public class OrderService {
         for (OrderRequestDTO.OrderItemDTO itemDto : itemDtos) {
             MenuItemVersion miv = menuItemVersionRepository.findById(itemDto.getMenuItemVersionId())
                     .orElseThrow(() -> new RuntimeException("Menu item not found!"));
-
             subtotal = subtotal.add(miv.getPrice().multiply(new BigDecimal(itemDto.getQuantity())));
-
             OrderItem orderItem = new OrderItem();
             orderItem.setMenuItemVersion(miv);
             orderItem.setQuantity(itemDto.getQuantity());
@@ -274,21 +278,19 @@ public class OrderService {
         }
     }
 
-    private RepeatingOrder createRepeatingOrderTemplate(OrderRequestDTO.RepeatDTO repeatInfo, Order templateOrder) {
-        RepeatingOrder repeatingOrder = new RepeatingOrder();
-        repeatingOrder.setOrder(templateOrder);
-        repeatingOrder.setRepeatType(repeatInfo.getRepeatType());
-        repeatingOrder.setDayOfWeek(repeatInfo.getDayOfWeek());
-        repeatingOrder.setDayOfMonth(repeatInfo.getDayOfMonth());
-        repeatingOrder.setDeliveryTime(repeatInfo.getDeliveryTime());
-        repeatingOrder.setRepeatUntil(repeatInfo.getRepeatUntil());
-        repeatingOrder.setActive(true);
-        return repeatingOrder;
-    }
-
     private void markCouponAsUsed(Coupon coupon, Order order) {
         coupon.setUsed(true);
         coupon.setUsageDate(LocalDateTime.now());
         order.setUsedCoupon(coupon);
+    }
+
+    // markOrderAsDelivered metoda može da ostane, korisna je za druge delove aplikacije
+    @Transactional
+    public void markOrderAsDelivered(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setDeliveredAt(LocalDateTime.now());
+        orderRepository.save(order);
     }
 }
