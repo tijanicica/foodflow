@@ -22,34 +22,79 @@ const cardMaxWidth = '420px'; // Možete lako promijeniti ovu vrijednost (npr. '
 // FAJL: src/pages/DriverDashboard.jsx
 
 
+// FAJL: src/pages/DriverDashboard.jsx
 
+/**
+ * Komponenta za prikaz jedne kartice sa ponudom, sa poboljšanim gumbovima.
+ */
+const OfferCard = ({ offer, onAccept, onReject }) => {
+    // Definiramo stilove kao objekte da bi kod bio čitljiviji
+    const baseButtonStyle = {
+        flex: 1,
+        padding: '0.75rem',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: '600',
+        transition: 'all 0.2s ease-in-out' // Glatka tranzicija za sve promjene
+    };
 
-const OfferCard = ({ offer, onAccept, onReject }) => (
-    <div style={{
-        backgroundColor: 'white', 
-        padding: '1.5rem', // Padding ostaje isti
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)', 
-        border: '1px solid #EAEAEA',
-        transition: 'transform 0.2s ease-in-out',
-        maxWidth: cardMaxWidth, // Koristimo zajedničku širinu
-        margin: '0 6px'
-    }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-        {/* Sadržaj ostaje isti */}
-        <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Pickup: {offer.order.restaurantName}</p>
-        <p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>From: {offer.order.restaurantAddress}</p>
-        <p style={{ marginTop: '0.75rem' }}>Deliver to: {offer.order.deliveryAddress}</p>
-        <p style={{ marginTop: '0.75rem', color: '#333', fontWeight: '500' }}>Distance: {offer.order.distanceToRestaurant.toFixed(1)} km</p>
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-            <button onClick={() => onReject(offer.id)} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '2px solid #D1D5DB', color: '#4A4A4A', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: '600' }}>
-                Reject
-            </button>
-            <button onClick={() => onAccept(offer.id)} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', color: 'white', backgroundColor: '#8A643B', cursor: 'pointer', fontWeight: '600' }}>
-                Accept
-            </button>
+    const rejectButtonStyle = {
+        ...baseButtonStyle,
+        border: '2px solid #D1D5DB',
+        color: '#4A4A4A',
+        backgroundColor: 'transparent'
+    };
+    
+    const acceptButtonStyle = {
+        ...baseButtonStyle,
+        border: '2px solid #8A643B', // Dodajemo ivicu radi konzistentnosti
+        color: 'white',
+        backgroundColor: '#8A643B'
+    };
+
+    return (
+        <div style={{
+            backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid #EAEAEA',
+            transition: 'transform 0.2s ease-in-out',
+            maxWidth: cardMaxWidth,
+            margin: '0 6px'
+        }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+            <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Pickup: {offer.order.restaurantName}</p>
+            <p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>From: {offer.order.restaurantAddress}</p>
+            <p style={{ marginTop: '0.75rem' }}>Deliver to: {offer.order.deliveryAddress}</p>
+            <p style={{ marginTop: '0.75rem', color: '#333', fontWeight: '500' }}>Distance: {offer.order.distanceToRestaurant.toFixed(1)} km</p>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button
+                    onClick={() => onReject(offer.id)}
+                    style={rejectButtonStyle}
+                    // Mijenjamo stil na hover
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = '#ffffffff'; // Blago crvena pozadina
+                        e.currentTarget.style.borderColor = '#EF4444'; // Crvena ivica
+                        e.currentTarget.style.color = '#da3d3dff'; // Crveni tekst
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#404040ff';
+                    }}
+                >
+                    Reject
+                </button>
+                <button
+                    onClick={() => onAccept(offer.id)}
+                    style={acceptButtonStyle}
+                    // Mijenjamo stil na hover
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#71502f'} // Tamnija nijansa
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
+                >
+                    Accept
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /**
  * Komponenta za prikaz jedne prihvaćene porudžbine.
@@ -201,7 +246,7 @@ export function DriverDashboard() {
                         </div>
 
                         {/* DESNA KOLONA (MAPA) */}
-                        <div style={{ borderRadius: '16px', minHeight: '470px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #F3EAD9' }}>
+                        <div style={{ borderRadius: '16px', minHeight: '400px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #F3EAD9' }}>
                             {loading ? (
                                 <div style={{ backgroundColor: '#F3EAD9', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <p style={{ color: '#6B7280' }}>Loading Map...</p>
