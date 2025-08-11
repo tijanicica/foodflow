@@ -38,8 +38,6 @@ public class RatingService {
         rating.setOnTimeArrivalRating(dto.getOnTimeArrivalRating());
         rating.setHygieneRatingCustomer(dto.getHygieneRating());
         rating.setKindnessRating(dto.getKindnessRating());
-        rating.setCustomerComment(dto.getComment());
-        rating.setCustomerRatedAt(LocalDateTime.now());
         ratingRepository.save(rating);
 
         updateDriverAverageRating(driver);
@@ -59,8 +57,6 @@ public class RatingService {
         rating.setProfessionalismRating(dto.getProfessionalismRating());
         rating.setHygieneRatingRestaurant(dto.getHygieneRating());
         rating.setCommunicationRating(dto.getCommunicationRating());
-        rating.setRestaurantComment(dto.getComment());
-        rating.setRestaurantRatedAt(LocalDateTime.now());
         ratingRepository.save(rating);
 
         updateDriverAverageRating(driver);

@@ -375,7 +375,6 @@ INSERT INTO orders (id, status, payment_type, order_type, creation_date, deliver
 -- Ostali inserti za porudžbinu #1 ostaju isti...
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (1, 1, 1, 1);
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (1, 1, 2, 'ACCEPTED');
-INSERT INTO delivery (id, driver_id, order_id) VALUES (1, 2, 1);
 
 -- PORUDŽBINA #2: CANCELED, prihvaćena od Jovana (ID=2)
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id) VALUES
@@ -494,5 +493,4 @@ ALTER SEQUENCE allergen_id_seq RESTART WITH 100;
 ALTER SEQUENCE diet_type_id_seq RESTART WITH 100;
 ALTER SEQUENCE driver_rating_id_seq RESTART WITH 100;
 ALTER SEQUENCE order_offer_id_seq RESTART WITH 100;
-ALTER SEQUENCE delivery_id_seq RESTART WITH 100;
 ALTER SEQUENCE repeating_order_id_seq RESTART WITH 100;

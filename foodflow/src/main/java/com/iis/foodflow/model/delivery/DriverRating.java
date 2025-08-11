@@ -6,13 +6,13 @@ import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.model.user.Manager;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class DriverRating {
@@ -38,9 +38,6 @@ public class DriverRating {
     private Integer hygieneRatingCustomer; // Ocjena za higijenu (1-5)
     private Integer kindnessRating; // Ocjena za ljubaznost (1-5)
 
-    private String customerComment;
-    private LocalDateTime customerRatedAt;
-
     // --- Ocjena od strane RESTORANA (Menadžera) ---
     @ManyToOne
     @JoinColumn(name = "manager_id")
@@ -51,6 +48,4 @@ public class DriverRating {
     private Integer hygieneRatingRestaurant; // Ocjena za higijenu (1-5)
     private Integer communicationRating; // Ocjena za komunikaciju (1-5)
 
-    private String restaurantComment;
-    private LocalDateTime restaurantRatedAt;
 }
