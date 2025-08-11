@@ -474,6 +474,37 @@ INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for
 
 
 
+-- ====================================================================
+-- KUPONI ZA KORISNIKA ID=1
+-- ====================================================================
+INSERT INTO coupon (id, code, date_from, date_to, active, used, customer_id) VALUES
+    (1, 'FREEDELIVERY', '2025-08-01', '2025-09-01', true, false, 1),
+    (2, 'FREEDELIVERY', '2025-08-01', '2025-09-01', true, false, 1);
+
+
+-- ====================================================================
+-- NOVA PORUDŽBINA #30: DELIVERED, SA KUPONOM I OCENOM
+-- Računica: (1x Biftek @ 2800) + Dostava @ 150 - Kupon = 2800.00
+-- ====================================================================
+
+-- KORAK 1: Kreiramo porudžbinu i povezujemo je sa kuponom ID=1
+-- Važno: total_price je 2800.00 jer je delivery_price 0 zbog kupona.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, card_amount, delivered_at, coupon_id) VALUES
+    (30, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '3 day', 0.00, 2800.00, 1, 1, 8, 2800.00, NOW() - INTERVAL '3 day' + INTERVAL '30 minute', 1);
+
+-- KORAK 2: Dodajemo stavke za porudžbinu
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (30, 1, 30, 26); -- 1x Biftek u sosu od bibera
+
+-- KORAK 3: Označavamo kupon ID=1 kao iskorišćen
+UPDATE coupon SET used = true, usage_date = NOW() - INTERVAL '3 day' WHERE id = 1;
+
+-- KORAK 4: Dodajemo ocenu za porudžbinu (OrderRating)
+-- ID mora da se poklapa sa ID-jem porudžbine
+INSERT INTO order_rating (id, quality, taste, portion_size) VALUES
+    (30, 5, 5, 4); -- Odličan kvalitet i ukus, porcija dobra
+
+
 
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU
 INSERT INTO problem_category (id, name, parent_category_id) VALUES

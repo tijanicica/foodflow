@@ -101,6 +101,8 @@ export function CheckoutPage() {
              return toast.error("Please enter a valid amount for the card payment.");
         }
 
+        const currentOrderType = scheduleInfo ? 'SCHEDULED' : repeatInfo ? 'REPEATING' : 'REGULAR';
+
         const orderData = {
             restaurantId: restaurantInfo.id,
             addressId: selectedAddressId,
@@ -110,9 +112,9 @@ export function CheckoutPage() {
             paymentType: paymentMethod.toUpperCase(),
             cardAmount: paymentMethod === 'Combined' ? cardAmount : null,
             couponCode: couponApplied ? selectedCouponCode : null,
-            orderType,
-            scheduleInfo: orderType === 'SCHEDULED' ? scheduleInfo : null,
-            repeatInfo: orderType === 'REPEATING' ? repeatInfo : null
+            orderType : currentOrderType,
+            scheduleInfo: scheduleInfo,
+            repeatInfo: repeatInfo
         };
 
         setIsPlacingOrder(true);
@@ -146,6 +148,26 @@ export function CheckoutPage() {
         // ne treba izvršiti ako je porudžbina uspešna (jer sledi preusmeravanje)
     };
     
+    // === IZMENA #3: Nova logika za otvaranje modala i resetovanje stanja ===
+    const handleScheduleClick = () => {
+        if (scheduleInfo) { // Ako je već aktivno, deaktiviraj
+            setScheduleInfo(null);
+            toast.success('Scheduled delivery cancelled.');
+        } else { // Ako nije aktivno, otvori modal
+            setModalOpen('schedule');
+        }
+    };
+
+    const handleRepeatClick = () => {
+        if (repeatInfo) { // Ako je već aktivno, deaktiviraj
+            setRepeatInfo(null);
+            toast.success('Repeating order cancelled.');
+        } else { // Ako nije aktivno, otvori modal
+            setModalOpen('repeat');
+        }
+    };
+
+
     if (!restaurantInfo) return null;
 
     return (
@@ -229,10 +251,28 @@ export function CheckoutPage() {
                                 </div>
                             )}
 
-                            <div className="mt-8 flex gap-2">
-                               <Button variant="outline" className="w-full" onClick={() => setModalOpen('schedule')}>Schedule</Button>
-                               <Button variant="outline" className="w-full" onClick={() => setModalOpen('repeat')}>Repeat</Button>
-                               <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder}>{isPlacingOrder ? 'Placing...' : 'Order Now'}</Button>
+                             <div className="mt-8 flex gap-2">
+                               <Button 
+                                   variant={scheduleInfo ? 'default' : 'outline'} 
+                                   className="w-full" 
+                                   onClick={handleScheduleClick}
+                               >
+                                   Schedule
+                               </Button>
+                               <Button 
+                                   variant={repeatInfo ? 'default' : 'outline'} 
+                                   className="w-full" 
+                                   onClick={handleRepeatClick}
+                               >
+                                   Repeat
+                               </Button>
+                               <Button 
+                                   className="w-full" 
+                                   onClick={handlePlaceOrder} 
+                                   disabled={isPlacingOrder}
+                               >
+                                   {isPlacingOrder ? 'Placing...' : 'Order Now'}
+                               </Button>
                             </div>
                         </div>
                     </div>
@@ -246,31 +286,28 @@ export function CheckoutPage() {
                 onAddressAdded={handleAddressAdded}
             />
             <ScheduleDeliveryModal 
-            isOpen={modalOpen === 'schedule'} 
-            onClose={() => setModalOpen(null)}
-            onConfirm={(data) => {
-                setScheduleInfo(data);
-                setOrderType('SCHEDULED');
-                setModalOpen(null);
-                toast.success('Delivery scheduled! Click "Order Now" to confirm.');
-            }}
-            // === KLJUČNA IZMENA ===
-            // Prosleđujemo radno vreme iz korpe u modal
-            openingTime={restaurantInfo?.openingTime}
-            closingTime={restaurantInfo?.closingTime}
-        />
-            <RepeatOrderModal 
-                 isOpen={modalOpen === 'repeat'} 
+                isOpen={modalOpen === 'schedule'} 
+                onClose={() => setModalOpen(null)}
+                onConfirm={(data) => {
+                    setScheduleInfo(data);   // Postavi schedule podatke
+                    setRepeatInfo(null);     // Poništi repeat podatke
+                    setModalOpen(null);
+                    toast.success('Delivery scheduled! Click "Order Now" to confirm.');
+                }}
                 openingTime={restaurantInfo?.openingTime}
                 closingTime={restaurantInfo?.closingTime}
-
+            />
+          <RepeatOrderModal 
+                 isOpen={modalOpen === 'repeat'} 
                  onClose={() => setModalOpen(null)}
                  onSave={(data) => {
-                    setRepeatInfo(data);
-                    setOrderType('REPEATING');
+                    setRepeatInfo(data);     // Postavi repeat podatke
+                    setScheduleInfo(null); // Poništi schedule podatke
                     setModalOpen(null);
                     toast.success('Repetition set! Click "Order Now" to place the first order.');
                  }}
+                 openingTime={restaurantInfo?.openingTime}
+                 closingTime={restaurantInfo?.closingTime}
             />
         </>
     );

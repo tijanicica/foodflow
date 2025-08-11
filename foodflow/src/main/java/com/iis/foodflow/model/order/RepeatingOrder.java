@@ -47,5 +47,6 @@ public class RepeatingOrder {
     @ToString.Exclude
     private Set<Order> createdInstances = new HashSet<>();
 
-
+    @Column(name = "is_cancelled", nullable = false, columnDefinition = "boolean default false")
+    private boolean cancelled = false;
 }

@@ -4,6 +4,7 @@ package com.iis.foodflow.repository;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.order.RepeatingOrder;
+import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
@@ -47,5 +49,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Proverava da li postoji porudžbina povezana sa određenim šablonom, a kreirana je danas.
     boolean existsByRepeatingOrderTemplateAndCreationDateBetween(RepeatingOrder template, LocalDateTime startOfDay, LocalDateTime endOfDay);
+
+
+
+    // Nova, fleksibilna metoda za Active i Past tabove
+    @Query("SELECT o FROM Order o WHERE o.customer = :customer AND o.status IN :statuses ORDER BY o.creationDate DESC")
+    List<Order> findOrdersByCustomerAndStatusIn(@Param("customer") Customer customer, @Param("statuses") Set<OrderStatus> statuses);
+
+    @Query("SELECT o FROM Order o WHERE o.customer = :customer AND o.status = 'SCHEDULED_PENDING' ORDER BY o.scheduledFor ASC")
+    List<Order> findScheduledOrdersForCustomer(@Param("customer") Customer customer);
 
 }
