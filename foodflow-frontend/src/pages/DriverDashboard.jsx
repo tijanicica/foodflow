@@ -3,6 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getDriverDashboard, acceptOffer, rejectOffer } from '@/services/api';
 
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
  */
@@ -44,48 +49,65 @@ const OfferCard = ({ offer, onAccept, onReject }) => (
         </div>
     </div>
 );
-
-/**
- * Komponenta za prikaz jedne prihvaćene porudžbine.
- */
 const AssignedDeliveryCard = ({ delivery }) => {
     const isReadyForPickup = delivery.status === 'READY_FOR_PICKUP';
-    let statusMessage = "Waiting for Restaurant...";
-    if (isReadyForPickup) {
-        statusMessage = "Order is Ready for Pickup!";
+    const isConfirmed = delivery.status === 'CONFIRMED';
+
+    let statusMessage = null;
+    if (isConfirmed) {
+        statusMessage = "Waiting for Restaurant...";
     } else if (delivery.status === 'PICKED_UP') {
         statusMessage = "On your way to customer!";
     }
 
     return (
         <div style={{
-            backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
             boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-            border: isReadyForPickup ? '2px solid #2F855A' : '1px solid #EAEAEA',
-            minWidth: '280px'
+            border: '1px solid #EAEAEA',  // Uvek ista ivica
+            minWidth: '280px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
         }}>
-            <p style={{ fontWeight: 'bold' }}>Pickup: {delivery.restaurantName}</p>
-            <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>
-                From: {delivery.restaurantAddress}
-            </p>
-            <p>Deliver to: {delivery.deliveryAddress}</p>
+            <div>
+                <p style={{ fontWeight: 'bold' }}>Pickup: {delivery.restaurantName}</p>
+                <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>
+                    From: {delivery.restaurantAddress}
+                </p>
+                <p>Deliver to: {delivery.deliveryAddress}</p>
+
+                {isReadyForPickup && (
+                    <p style={{
+                        marginTop: '0.75rem',
+                        fontWeight: '600',
+                        color: '#2F855A',   // tamno zelena boja teksta
+                        userSelect: 'none',
+                    }}>
+                        Order is Ready for Pickup!
+                    </p>
+                )}
+            </div>
 
             {isReadyForPickup ? (
-                <>
-                    <p style={{ marginTop: '1rem', color: '#2F855A', fontWeight: 'bold' }}>{statusMessage}</p>
-                    <button style={{
-                        width: '100%', marginTop: '1rem', padding: '0.75rem',
-                        borderRadius: '8px', border: 'none', color: 'white',
-                        backgroundColor: '#333', cursor: 'pointer', fontWeight: '600'
-                    }}>
-                        View on Map & Start
-                    </button>
-                </>
+                <button style={{
+                    width: '100%', marginTop: '1rem', padding: '0.75rem',
+                    borderRadius: '8px', border: 'none', color: 'white',
+                    backgroundColor: '#333', cursor: 'pointer', fontWeight: '600'
+                }}>
+                    View on Map & Start
+                </button>
             ) : (
                 <div style={{
-                    marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px',
-                    backgroundColor: '#F3EAD9', color: '#8A643B',
-                    textAlign: 'center', fontWeight: '600'
+                    marginTop: '1.5rem',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    backgroundColor: '#F3EAD9',
+                    color: '#8A643B',
+                    textAlign: 'center',
+                    fontWeight: '600'
                 }}>
                     {statusMessage}
                 </div>

@@ -274,10 +274,11 @@ public class DriverService {
 
         offer.setStatus(OfferStatus.ACCEPTED);
 
-        // Ažuriramo porudžbinu: dodjeljujemo vozača i postavljamo status na CONFIRMED
+        // Ne menjaj status porudžbine, samo poveži vozača na porudžbinu
         Order order = offer.getOrder();
         order.setDriver(driver);
-        order.setStatus(OrderStatus.CONFIRMED);
+
+        // Sačuvaj porudžbinu sa vozačem, ali bez menjanja statusa
         orderRepository.save(order);
 
         return orderOfferRepository.save(offer);
