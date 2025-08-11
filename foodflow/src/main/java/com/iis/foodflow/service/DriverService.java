@@ -39,12 +39,17 @@ public class DriverService {
      */
 // Ispravljena verzija
     @Transactional
-    public DriverResponseDTO updateStatus(String driverEmail, DriverStatus newStatus) { // 1. Promijenjen povratni tip
+    public DriverResponseDTO updateStatus(String driverEmail, DriverStatus newStatus) {
         Driver driver = findDriverByEmail(driverEmail);
         driver.setStatus(newStatus);
         Driver savedDriver = driverRepository.save(driver);
 
-        // 2. Kreiramo i vraćamo DTO umjesto cijelog entiteta
+        if (newStatus == DriverStatus.OFFLINE) {
+            // Ne brišemo postojeće prihvaćene isporuke
+            // Samo osiguravamo da nove ponude ne idu ovom vozaču (to je rešeno u algoritmu dodele)
+            System.out.println("Driver " + driverEmail + " is now OFFLINE. Keeping accepted deliveries.");
+        }
+
         return DriverResponseDTO.builder()
                 .id(savedDriver.getId())
                 .email(savedDriver.getEmail())
@@ -319,71 +324,69 @@ public class DriverService {
     public DriverDashboardResponse getDashboardData(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
 
-        if (driver.getStatus() != DriverStatus.ONLINE) {
-            return new DriverDashboardResponse(Collections.emptyList(), Collections.emptyList());
-        }
+        List<DashboardOfferDTO> newOffers = Collections.emptyList();
 
-        // --- LOGIKA ZA NOVE PONUDE (newOffers) ---
-        List<DashboardOfferDTO> newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
-                .stream()
-                .map(offer -> {
-                    Order order = offer.getOrder();
+        // Ako je ONLINE, učitavamo nove ponude
+        if (driver.getStatus() == DriverStatus.ONLINE) {
+            newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
+                    .stream()
+                    .map(offer -> {
+                        Order order = offer.getOrder();
 
-                    Restaurant restaurant = order.getOrderItems().stream()
-                            .findFirst()
-                            .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
-                            .orElse(null);
+                        Restaurant restaurant = order.getOrderItems().stream()
+                                .findFirst()
+                                .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                                .orElse(null);
 
-                    if (restaurant == null) {
+                        if (restaurant == null) {
+                            return DashboardOfferDTO.builder()
+                                    .id(offer.getId())
+                                    .order(DashboardOrderDTO.builder()
+                                            .id(order.getId())
+                                            .status(order.getStatus())
+                                            .build())
+                                    .build();
+                        }
+
+                        double distance = calculateDistance(
+                                driver.getLatitude(), driver.getLongitude(),
+                                restaurant.getAddress().getLatitude(),
+                                restaurant.getAddress().getLongitude()
+                        );
+
+                        String restaurantAddress = String.format(
+                                "%s, %s, %s",
+                                restaurant.getAddress().getStreet(),
+                                restaurant.getAddress().getCity(),
+                                restaurant.getAddress().getPostalCode()
+                        );
+
+                        String deliveryAddress = order.getCustomer().getAddresses().stream()
+                                .findFirst()
+                                .map(addr -> String.format("%s, %s, %s",
+                                        addr.getStreet(),
+                                        addr.getCity(),
+                                        addr.getPostalCode()))
+                                .orElse("N/A");
+
+                        DashboardOrderDTO orderDTO = DashboardOrderDTO.builder()
+                                .id(order.getId())
+                                .status(order.getStatus())
+                                .restaurantName(restaurant.getName())
+                                .restaurantAddress(restaurantAddress)
+                                .deliveryAddress(deliveryAddress)
+                                .distanceToRestaurant(distance)
+                                .build();
+
                         return DashboardOfferDTO.builder()
                                 .id(offer.getId())
-                                .order(DashboardOrderDTO.builder()
-                                        .id(order.getId())
-                                        .status(order.getStatus())
-                                        .build())
+                                .order(orderDTO)
                                 .build();
-                    }
+                    })
+                    .collect(Collectors.toList());
+        }
 
-                    double distance = calculateDistance(
-                            driver.getLatitude(), driver.getLongitude(),
-                            restaurant.getAddress().getLatitude(),
-                            restaurant.getAddress().getLongitude()
-                    );
-
-                    // Prava adresa restorana
-                    String restaurantAddress = String.format(
-                            "%s, %s, %s",
-                            restaurant.getAddress().getStreet(),
-                            restaurant.getAddress().getCity(),
-                            restaurant.getAddress().getPostalCode()
-                    );
-
-                    // Prava adresa dostave
-                    String deliveryAddress = order.getCustomer().getAddresses().stream()
-                            .findFirst()
-                            .map(addr -> String.format("%s, %s, %s",
-                                    addr.getStreet(),
-                                    addr.getCity(),
-                                    addr.getPostalCode()))
-                            .orElse("N/A");
-
-                    DashboardOrderDTO orderDTO = DashboardOrderDTO.builder()
-                            .id(order.getId())
-                            .status(order.getStatus())
-                            .restaurantName(restaurant.getName())
-                            .restaurantAddress(restaurantAddress)
-                            .deliveryAddress(deliveryAddress)
-                            .distanceToRestaurant(distance)
-                            .build();
-
-                    return DashboardOfferDTO.builder()
-                            .id(offer.getId())
-                            .order(orderDTO)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        // --- LOGIKA ZA AKTIVNE PORUDŽBINE (assignedDeliveries) ---
+        // Assigned deliveries uvek vraćamo, bez obzira na status
         List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
         List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
                 .stream()
@@ -434,6 +437,7 @@ public class DriverService {
 
         return new DriverDashboardResponse(newOffers, assignedDeliveries);
     }
+
 
 
     // === DODAJTE OVU POMOĆNU METODU U 'DriverService.java' AKO VEĆ NE POSTOJI ===
