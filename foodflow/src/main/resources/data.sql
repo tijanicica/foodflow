@@ -7,11 +7,12 @@
 INSERT INTO customer (id, email, password, first_name, last_name, phone, role) VALUES
     (1, 'stojicic.nikola02@gmail.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
 -- Vozaci
-INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp) VALUES
-    (2, 'driver1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'CAR', 'OFFLINE', 0, 44.8125, 20.4612, NOW());
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
-    (8, 'driver2@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '065111222', 'DRIVER', 'MOTORCYCLE', 'ONLINE', 0, 44.8040, 20.4651, NOW(), 5.0);
+    (2, 'driver1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'CAR', 'OFFLINE', 0, 44.8125, 20.4612, NOW(), 0.0);
 
+-- Drugi vozač je već ispravan
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (8, 'driver2@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '065111222', 'DRIVER', 'MOTORCYCLE', 'ONLINE', 0, 44.8040, 20.4651, NOW(), 0.0);
 -- Operator
 INSERT INTO operator (id, email, password, first_name, last_name, phone, role) VALUES
     (3, 'operator@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ana', 'Anić', '064555666', 'OPERATOR');
@@ -366,6 +367,7 @@ INSERT INTO menu_item_diet_type (menu_item_id, diet_type_id) VALUES (46,3), (47,
 INSERT INTO menu_item_allergen (menu_item_id, allergen_id) VALUES (49,2), (50,4);
 
 
+
 -- PORUDŽBINE
 -- ====================================================================
 
@@ -430,35 +432,60 @@ INSERT INTO repeating_order (id, repeat_type, day_of_week, delivery_time, active
 
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU
 INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (1, 'Problem sa porudžbinom', NULL);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (2, 'Problem sa dostavom', NULL);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (3, 'Tehnički problem', NULL);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (4, 'Ostalo', NULL);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (5, 'Nepotpuna porudžbina', 1);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (6, 'Pogrešna porudžbina', 1);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (7, 'Kašnjenje isporuke', 2);
-INSERT INTO problem_category (id, name, parent_category_id) VALUES
-    (8, 'Problem sa sajtom', 3);
+                                                                (1, 'Problem sa porudžbinom', NULL),
+                                                                (2, 'Problem sa dostavom', NULL),
+                                                                (3, 'Tehnički problem', NULL),
+                                                                (4, 'Ostalo', NULL),
+                                                                (5, 'Nepotpuna porudžbina', 1),
+                                                                (6, 'Pogrešna porudžbina', 1),
+                                                                (7, 'Kašnjenje isporuke', 2),
+                                                                (8, 'Problem sa sajtom', 3);
 
---Ocena ya dostavljaca--
-INSERT INTO driver_rating (order_id, driver_id, customer_id,
-                           on_time_arrival_rating, hygiene_rating_customer, kindness_rating, customer_comment, customer_rated_at,
-                           manager_id,
-                           professionalism_rating, hygiene_rating_restaurant, communication_rating, restaurant_comment, restaurant_rated_at)
-VALUES
-    (1, 2, 1,
-     5, 5, 4, 'Sve je bilo super, dostavljač je bio brz i ljubazan.', NOW(),
-     4,
-     5, 5, 5, 'Sve po dogovoru, profesionalno odrađeno.', NOW());
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, driver_id, eta, delivered_at) VALUES
+    (1, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '10 day', 150.00, 1400.00, 1, 2, NOW() - INTERVAL '10 day' + INTERVAL '45 minute', NOW() - INTERVAL '10 day' + INTERVAL '25 minute');
+-- Rok isporuke (eta) je 45 min, a isporučeno je za 25 min -> NA VRIJEME
 
--- Resetovanje sekvenci da bi ID-jevi išli od sledećeg broja
--- Resetovanje sekvenci na visoku vrednost
+-- Porudžbina 2: Još jedna isporučena porudžbina za Jovana (ID=2)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, driver_id, eta, delivered_at) VALUES
+    (2, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '5 day', 200.00, 1050.00, 1, 2, NOW() - INTERVAL '5 day' + INTERVAL '40 minute', NOW() - INTERVAL '5 day' + INTERVAL '50 minute');
+
+-- Porudžbina 3: Porudžbina koju će Petar (ID=8) odbiti. Nema dodijeljen driver_id.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, eta) VALUES
+    (3, 'CREATED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 900.00, 1, NOW() - INTERVAL '2 day' + INTERVAL '45 minute');
+
+-- Porudžbina 4: Uspješno isporučena od strane Petra (ID=8)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, driver_id, eta, delivered_at) VALUES
+    (4, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1800.00, 1, 8, NOW() - INTERVAL '1 day' + INTERVAL '35 minute', NOW() - INTERVAL '1 day' + INTERVAL '20 minute');
+-- Rok isporuke (eta) je 35 min, a isporučeno je za 20 min -> NA VRIJEME
+-- STAVKE PORUDŽBINA
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (1, 1, 1, 1);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (2, 1, 2, 11);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (3, 2, 3, 6);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (4, 1, 4, 21);
+
+
+-- PONUDE ZA PORUDŽBINE (OrderOffer)
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+                                                                                                (1, 1, 2, 'ACCEPTED', NOW() - INTERVAL '10 day', NULL),
+                                                                                                (2, 2, 2, 'ACCEPTED', NOW() - INTERVAL '5 day', NULL),
+                                                                                                (3, 3, 8, 'REJECTED', NOW() - INTERVAL '2 day', 'Previše udaljena lokacija.'),
+                                                                                                (4, 4, 8, 'ACCEPTED', NOW() - INTERVAL '1 day', NULL);
+
+
+-- ZAPISI O DOSTAVI (Delivery)
+INSERT INTO delivery (id, driver_id, order_id) VALUES (1, 2, 1);
+INSERT INTO delivery (id, driver_id, order_id) VALUES (2, 2, 2);
+INSERT INTO delivery (id, driver_id, order_id) VALUES (3, 8, 4);
+
+
+-- OCJENE ZA DOSTAVLJAČE (DriverRating)
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                                                                                            (1, 1, 2, 1, 5, 5, 5, 4, 5, 5, 5),
+                                                                                                                                                                                                                            (2, 2, 2, 1, 4, 5, 4, 4, 4, 5, 4),
+                                                                                                                                                                                                                            (3, 4, 8, 1, 5, 5, 5, 7, 5, 5, 5);
+
+
+-- Resetovanje sekvenci
 ALTER SEQUENCE customer_id_seq RESTART WITH 100;
 ALTER SEQUENCE driver_id_seq RESTART WITH 100;
 ALTER SEQUENCE operator_id_seq RESTART WITH 100;
@@ -476,3 +503,6 @@ ALTER SEQUENCE order_item_id_seq RESTART WITH 100;
 ALTER SEQUENCE problem_category_id_seq RESTART WITH 100;
 ALTER SEQUENCE allergen_id_seq RESTART WITH 100;
 ALTER SEQUENCE diet_type_id_seq RESTART WITH 100;
+ALTER SEQUENCE driver_rating_id_seq RESTART WITH 100;
+ALTER SEQUENCE order_offer_id_seq RESTART WITH 100;
+ALTER SEQUENCE delivery_id_seq RESTART WITH 100;

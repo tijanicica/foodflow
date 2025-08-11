@@ -1,3 +1,5 @@
+// Datoteka: vite.config.js
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
@@ -9,9 +11,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // DODAJ SAMO OVAJ DEO
+
+  
+
   server: {
-    port: 5173, // Opciono, ako želiš da fiksiraš port
-    historyApiFallback: true,
-  }
+    port: 5173, 
+    historyApiFallback: true, 
+    proxy: {
+      '/api': {
+        // === ISPRAVKA JE OVDJE ===
+        target: 'http://localhost:8088', // Promijenjeno sa 8080 na 8088
+        // ==========================
+        changeOrigin: true, 
+      },
+    },
+  },
 })
