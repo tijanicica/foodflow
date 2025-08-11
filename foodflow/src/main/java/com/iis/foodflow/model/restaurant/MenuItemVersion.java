@@ -30,4 +30,6 @@ public class MenuItemVersion {
     @JoinColumn(name = "menu_version_id")
     @ToString.Exclude
     private MenuVersion menuVersion;
+
+
 }

@@ -1,10 +1,8 @@
 package com.iis.foodflow.dto.response;
 
-import com.iis.foodflow.model.order.Address;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+@Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,6 +12,7 @@ public class AddressDTO {
     private String streetNumber;
     private String city;
     private String country;
+
     private String nickname;
     private String postalCode;
 

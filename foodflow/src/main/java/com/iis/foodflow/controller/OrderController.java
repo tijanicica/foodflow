@@ -48,6 +48,18 @@ public class OrderController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{orderId}/ready")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Void> markAsReady(@PathVariable Long orderId) {
+        orderService.markOrderAsReadyForPickup(orderId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{orderId}/confirm")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Void> confirmOrder(@PathVariable Long orderId) {
+        orderService.confirmOrder(orderId);
+        return ResponseEntity.ok().build();
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
