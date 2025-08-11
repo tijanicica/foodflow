@@ -5,10 +5,7 @@ import com.iis.foodflow.dto.request.ReportDelayRequest;
 import com.iis.foodflow.dto.request.UpdateDriverStatusRequest;
 import com.iis.foodflow.dto.request.UpdateLocationRequest;
 import com.iis.foodflow.dto.request.UpdateVehicleRequest;
-import com.iis.foodflow.dto.response.DriverDashboardResponse;
-import com.iis.foodflow.dto.response.DriverLocationResponse; // <-- DODAT JE OVAJ IMPORT
-import com.iis.foodflow.dto.response.DriverPerformanceResponse;
-import com.iis.foodflow.dto.response.DriverResponseDTO;
+import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.DriverService;
 import jakarta.validation.Valid;
@@ -37,6 +34,15 @@ public class DriverController {
         // 2. Sada će servis vratiti DTO, a ne Driver entitet
         DriverResponseDTO updatedDriverDTO = driverService.updateStatus(driverPrincipal.getEmail(), request.getNewStatus());
         return ResponseEntity.ok(updatedDriverDTO);
+    }
+
+    @GetMapping("/status")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<DriverStatusResponse> getOwnStatus(
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        DriverStatusResponse statusResponse = driverService.getDriverStatus(driverPrincipal.getEmail());
+        return ResponseEntity.ok(statusResponse);
     }
     /** Vozač periodično šalje svoju lokaciju. */
     @PutMapping("/location")

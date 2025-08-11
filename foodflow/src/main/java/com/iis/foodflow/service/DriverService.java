@@ -60,6 +60,12 @@ public class DriverService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public DriverStatusResponse getDriverStatus(String driverEmail) {
+        Driver driver = findDriverByEmail(driverEmail);
+        return new DriverStatusResponse(driver.getStatus());
+    }
+
     /**
      * Ažurira geografsku lokaciju vozača.
      */
