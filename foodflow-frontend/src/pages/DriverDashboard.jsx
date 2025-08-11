@@ -1,14 +1,9 @@
 // FAJL: src/pages/DriverDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { getDriverDashboard, acceptOffer, rejectOffer } from '@/services/api';
 import { MapComponent } from '../components/MapComponent';
-
-// Ove biblioteke su potrebne ako želite slider prikaz, kao u jednoj od prethodnih verzija
-// import Slider from "react-slick";
-// import "slick-carousel/slick/slick.css";
-// import "slick-carousel/slick/slick-theme.css";
+import { NavbarDriver } from '../components/NavbarDriver'; // <-- UVEZLI SMO NAVBAR
 
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
@@ -17,7 +12,7 @@ const OfferCard = ({ offer, onAccept, onReject }) => (
     <div style={{
         backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
         boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #EAEAEA',
-        minWidth: '280px' // Fiksna širina za bolji izgled u slideru/flexboxu
+        minWidth: '280px'
     }}>
         <p style={{ fontWeight: 'bold' }}>Pickup: {offer.order.restaurantName}</p>
         <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>From: {offer.order.restaurantAddress}</p>
@@ -70,7 +65,6 @@ const AssignedDeliveryCard = ({ delivery }) => {
 
 
 export function DriverDashboard() {
-    const navigate = useNavigate();
     const [dashboardData, setDashboardData] = useState({ newOffers: [], assignedDeliveries: [], driverCoordinates: null });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -94,22 +88,14 @@ export function DriverDashboard() {
         return () => clearInterval(intervalId);
     }, []);
 
-    const handleLogout = () => { localStorage.removeItem('jwtToken'); navigate('/login', { replace: true }); };
     const handleAccept = async (offerId) => { try { await acceptOffer(offerId); fetchData(); } catch { alert('Failed to accept offer.'); } };
     const handleReject = async (offerId) => { try { await rejectOffer(offerId); fetchData(); } catch { alert('Failed to reject offer.'); } };
 
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
-            <header style={{ backgroundColor: 'white', borderBottom: '1px solid #EAEAEA' }}>
-                <nav style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>FoodFlow Driver</h1>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <Link to="/driver" style={{ fontWeight: '600', borderBottom: '2px solid #8A643B', textDecoration: 'none', color: '#4A4A4A' }}>Dashboard</Link>
-                        <Link to="/driver/profile" style={{ textDecoration: 'none', color: '#4A4A4A' }}>My Profile</Link>
-                        <button onClick={handleLogout} style={{ backgroundColor: '#8A643B', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>Logout</button>
-                    </div>
-                </nav>
-            </header>
+            
+            {/* KORISTIMO NOVU NAVBAR KOMPONENTU */}
+            <NavbarDriver />
 
             <main style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 1.5rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
@@ -146,8 +132,7 @@ export function DriverDashboard() {
                         </section>
                     </div>
 
-                    {/* === AŽURIRANA DESNA KOLONA SA MAPOM === */}
-                    <div style={{ borderRadius: '8px', minHeight: '400px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', position: 'relative' /* Važno za pozicioniranje legende */ }}>
+                    <div style={{ borderRadius: '8px', minHeight: '400px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', position: 'relative' }}>
                         {loading ? (
                             <div style={{ backgroundColor: '#F3EAD9', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <p style={{ color: '#6B7280' }}>Loading Map...</p>
