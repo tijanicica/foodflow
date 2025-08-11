@@ -156,34 +156,34 @@ export function DriverProfilePage() {
             color: '#4A4A4A'
         }}>
             {/* Navigacija */}
-            <header style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-                borderBottom: '1px solid #EAEAEA' 
+            <header style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                borderBottom: '1px solid #EAEAEA'
             }}>
-                <nav style={{ 
-                    maxWidth: '1200px', 
-                    margin: '0 auto', 
-                    padding: '1rem 1.5rem', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center' 
+                <nav style={{
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
                 }}>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>FoodFlow Driver</h1>
                     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <Link 
-                            to="/driver" 
+                        <Link
+                            to="/driver"
                             style={{ textDecoration: 'none', color: '#4A4A4A' }}
                         >
                             Dashboard
                         </Link>
-                        <Link 
-                            to="/driver/profile" 
+                        <Link
+                            to="/driver/profile"
                             style={{ fontWeight: '600', borderBottom: '2px solid #8A643B', textDecoration: 'none', color: '#4A4A4A' }}
                         >
                             My Profile
                         </Link>
-                        <button 
-                            onClick={handleLogout} 
+                        <button
+                            onClick={handleLogout}
                             style={{
                                 backgroundColor: '#8A643B',
                                 border: 'none',
@@ -200,68 +200,79 @@ export function DriverProfilePage() {
             </header>
 
             {/* Glavni Sadržaj */}
-            <main style={{ maxWidth: '1000px', margin: '2rem auto', padding: '0 1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                    <div>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: 0, color: '#333' }}>{performance.firstName} {performance.lastName}</h2>
-                        <p style={{ marginTop: '0.5rem', fontSize: '1.2rem', color: '#6B7280' }}>Driver Profile & Performance</p>
+            <main style={{ padding: '2rem 10rem' }}>
+                {/* OVDE DODAJEMO POTKONTEJNER */}
+                <div style={{
+                    maxWidth: '1400px',
+                    margin: '0 auto',
+                    backgroundColor: '#FDFDF5',
+                    borderRadius: '24px',
+                    padding: '2.5rem',
+                    boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)',
+                    border: '1px solid #F3EAD9'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                        <div>
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: 0, color: '#333' }}>{performance.firstName} {performance.lastName}</h2>
+                            <p style={{ marginTop: '0.5rem', fontSize: '1.2rem', color: '#6B7280' }}>Driver Profile & Performance</p>
+                        </div>
+                        <StatusToggle isOnline={isOnline} onToggle={handleToggleStatus} />
                     </div>
-                    <StatusToggle isOnline={isOnline} onToggle={handleToggleStatus} />
-                </div>
 
-                <section>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Performance Metrics</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-                        <PerformanceCard label="Total Deliveries" value={performance.totalDeliveries ?? 0} icon={<FiTruck />} />
-                        <PerformanceCard label="On-time Rate" value={`${((performance.onTimeRate ?? 0) * 100).toFixed(0)}%`} icon={<FiClock />} />
-                        <PerformanceCard label="Rejections" value={performance.rejections ?? 0} icon={<FiThumbsDown />} />
-                        <PerformanceCard label="Average Rating" value={(performance.averageRating ?? 0).toFixed(1)} icon={<FiStar />} />
-                    </div>
-                </section>
+                    <section>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Performance Metrics</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                            <PerformanceCard label="Total Deliveries" value={performance.totalDeliveries ?? 0} icon={<FiTruck />} />
+                            <PerformanceCard label="On-time Rate" value={`${((performance.onTimeRate ?? 0) * 100).toFixed(0)}%`} icon={<FiClock />} />
+                            <PerformanceCard label="Rejections" value={performance.rejections ?? 0} icon={<FiThumbsDown />} />
+                            <PerformanceCard label="Average Rating" value={(performance.averageRating ?? 0).toFixed(1)} icon={<FiStar />} />
+                        </div>
+                    </section>
 
-                <section style={{ marginTop: '3rem' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Account Settings</h3>
-                    <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <span style={{ color: '#6B7280', fontSize: '1rem', whiteSpace: 'nowrap' }}>Vehicle Type:</span>
-                                {editingVehicle ? (
-                                    <select
-                                        value={newVehicle}
-                                        onChange={(e) => setNewVehicle(e.target.value)}
-                                        style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '1rem' }}
-                                    >
-                                        <option value="" disabled>Select vehicle</option>
-                                        {VEHICLE_OPTIONS.map(opt => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', color: '#333' }}>
-                                        <VehicleIcon vehicleType={performance.vehicleType} />
-                                        {performance.vehicleType ? VEHICLE_OPTIONS.find(v => v.value === performance.vehicleType).label : 'Not set'}
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                {editingVehicle ? (
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={handleVehicleSave} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#28a745', color: 'white', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: 'none', fontWeight: '600' }}>
-                                            <FiSave /> Save
+                    <section style={{ marginTop: '3rem' }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Account Settings</h3>
+                        <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <span style={{ color: '#6B7280', fontSize: '1rem', whiteSpace: 'nowrap' }}>Vehicle Type:</span>
+                                    {editingVehicle ? (
+                                        <select
+                                            value={newVehicle}
+                                            onChange={(e) => setNewVehicle(e.target.value)}
+                                            style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '1rem' }}
+                                        >
+                                            <option value="" disabled>Select vehicle</option>
+                                            {VEHICLE_OPTIONS.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', color: '#333' }}>
+                                            <VehicleIcon vehicleType={performance.vehicleType} />
+                                            {performance.vehicleType ? VEHICLE_OPTIONS.find(v => v.value === performance.vehicleType).label : 'Not set'}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    {editingVehicle ? (
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button onClick={handleVehicleSave} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#28a745', color: 'white', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: 'none', fontWeight: '600' }}>
+                                                <FiSave /> Save
+                                            </button>
+                                            <button onClick={() => setEditingVehicle(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#6c757d', color: 'white', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: 'none', fontWeight: '600' }}>
+                                                <FiXCircle /> Cancel
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setEditingVehicle(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'transparent', border: 'none', color: '#8A643B', cursor: 'pointer', fontWeight: '600', fontSize: '1rem' }}>
+                                            <FiEdit2 /> Edit
                                         </button>
-                                        <button onClick={() => setEditingVehicle(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#6c757d', color: 'white', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: 'none', fontWeight: '600' }}>
-                                            <FiXCircle /> Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button onClick={() => setEditingVehicle(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'transparent', border: 'none', color: '#8A643B', cursor: 'pointer', fontWeight: '600', fontSize: '1rem' }}>
-                                        <FiEdit2 /> Edit
-                                    </button>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
             </main>
         </div>
     );
