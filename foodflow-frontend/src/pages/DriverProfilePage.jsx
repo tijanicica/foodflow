@@ -96,44 +96,49 @@ export function DriverProfilePage() {
     const [error, setError] = useState('');
     const [editingVehicle, setEditingVehicle] = useState(false);
     const [newVehicle, setNewVehicle] = useState('');
-    const [isOnline, setIsOnline] = useState(true);
+
+    // === IZMJENA #1: Funkcija za čitanje inicijalnog statusa iz localStorage ===
+    // Pretpostavljamo da ste prilikom logina spremili status u localStorage
+    const getInitialStatus = () => {
+        const storedStatus = localStorage.getItem('driverStatus');
+        return storedStatus === 'ONLINE';
+    };
+
+    // === IZMJENA #2: Inicijaliziramo stanje sa vrijednošću iz localStorage ===
+    const [isOnline, setIsOnline] = useState(getInitialStatus());
 
     useEffect(() => {
-        async function fetchData() {
-            try {
-                const data = await getDriverPerformance();
-                setPerformance(data);
-                setNewVehicle(data.vehicleType || '');
-                setIsOnline(data.isOnline ?? true);
-            } catch (err) {
-                setError('Could not load performance data. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
+    async function fetchData() {
+        try {
+            const data = await getDriverPerformance();
+            setPerformance(data);
+            setNewVehicle(data.vehicleType || '');
+            // VIŠE NE DIRAMO 'isOnline' STANJE OVDJE!
+        } catch (err) { // <-- ISPRAVKA JE OVDJE, UKLONJENO '=>'
+            setError('Could not load performance data. Please try again later.');
+        } finally {
+            setLoading(false);
         }
-        fetchData();
-    }, []);
+    }
+    fetchData();
+}, []);
 
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
+        localStorage.removeItem('driverStatus'); // Brišemo i status
         navigate('/login', { replace: true });
     };
 
-    const handleVehicleSave = async () => {
-        try {
-            if (!newVehicle) return alert('Please select a vehicle.');
-            await updateDriverVehicle({ newVehicleType: newVehicle });
-            setPerformance(prev => ({ ...prev, vehicleType: newVehicle }));
-            setEditingVehicle(false);
-        } catch (err) {
-            alert('Failed to update vehicle. Please try again.');
-        }
-    };
+    const handleVehicleSave = async () => { /* ... ostaje isto ... */ };
 
     const handleToggleStatus = async () => {
         try {
             const newStatus = isOnline ? "OFFLINE" : "ONLINE";
             await updateDriverStatus({ newStatus });
+            
+            // === IZMJENA #3: Ažuriramo stanje i u localStorage ===
+            localStorage.setItem('driverStatus', newStatus);
+            
             setIsOnline(prev => !prev);
         } catch (err) {
             alert('Failed to update status. Please try again.');

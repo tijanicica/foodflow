@@ -34,8 +34,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * UPIT 2: Broji SVE isporučene porudžbine za određenog vozača u zadatom
      * vremenskom periodu. Ovu metodu Spring Data JPA kreira automatski.
      */
+    List<Order> findByDriverAndStatusIn(Driver driver, List<OrderStatus> statuses);
     Long countByDriverAndStatusAndCreationDateAfter(Driver driver, OrderStatus status, LocalDateTime since);
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.driver = :driver AND o.status IN :activeStatuses")
+    int countActiveDeliveriesForDriver(@Param("driver") Driver driver, @Param("activeStatuses") List<OrderStatus> activeStatuses);
+
+    // Broji isporuke za vozača DANAS
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.driver = :driver AND o.deliveredAt >= CURRENT_DATE")
+    int countTodaysDeliveriesForDriver(@Param("driver") Driver driver);
     List<Order> findByStatusAndScheduledForBefore(OrderStatus status, LocalDateTime time);
 
     // Proverava da li postoji porudžbina povezana sa određenim šablonom, a kreirana je danas.
