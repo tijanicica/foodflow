@@ -147,7 +147,7 @@ export function DriverDashboard() {
                     </div>
 
                     {/* === AŽURIRANA DESNA KOLONA SA MAPOM === */}
-                    <div style={{ borderRadius: '8px', minHeight: '400px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                    <div style={{ borderRadius: '8px', minHeight: '400px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', position: 'relative' /* Važno za pozicioniranje legende */ }}>
                         {loading ? (
                             <div style={{ backgroundColor: '#F3EAD9', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <p style={{ color: '#6B7280' }}>Loading Map...</p>
@@ -155,7 +155,8 @@ export function DriverDashboard() {
                         ) : (
                             <MapComponent 
                                 driverLocation={dashboardData.driverCoordinates} 
-                                deliveries={[...dashboardData.assignedDeliveries, ...dashboardData.newOffers.map(o => o.order)]} // Prikazuje i nove ponude i prihvaćene
+                                assignedDeliveries={dashboardData.assignedDeliveries}
+                                newOffers={dashboardData.newOffers}
                             />
                         )}
                     </div>
