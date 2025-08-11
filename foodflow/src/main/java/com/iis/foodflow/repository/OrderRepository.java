@@ -39,6 +39,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByStatusAndScheduledForBefore(OrderStatus status, LocalDateTime time);
 
     // Proverava da li postoji porudžbina povezana sa određenim šablonom, a kreirana je danas.
-    boolean existsByRepeatingOrderAndCreationDateBetween(RepeatingOrder repeatingOrder, LocalDateTime startOfDay, LocalDateTime endOfDay);
+    boolean existsByRepeatingOrderTemplateAndCreationDateBetween(RepeatingOrder template, LocalDateTime startOfDay, LocalDateTime endOfDay);
 
 }

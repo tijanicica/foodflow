@@ -368,39 +368,58 @@ INSERT INTO menu_item_allergen (menu_item_id, allergen_id) VALUES (49,2), (50,4)
 
 
 
+
 -- PORUDŽBINE
 -- ====================================================================
 
--- --------------------------------------------------------------------
 -- PORUDŽBINA #1: DELIVERED, CARD
 -- Računica: (1x Carbonara @ 1250) + Dostava @ 150 = 1400.00
 -- --------------------------------------------------------------------
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount, delivered_at) VALUES
-    (1, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 1, 1400.00, 0.00, NOW() - INTERVAL '1 day');
+    (1, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 1, 1400.00, 0.00, NOW());
 -- Stavke za porudžbinu #1
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (1, 1, 1, 1); -- 1x Pasta Carbonara
+
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (1, 1, 2, 'ACCEPTED', NOW() - INTERVAL '1 day', NULL);
+
+INSERT INTO delivery (id, driver_id, order_id) VALUES (1, 2, 1);
+
 
 -- --------------------------------------------------------------------
 -- PORUDŽBINA #2: CANCELED, CASH
 -- Računica: (1x Cheeseburger @ 850) + (1x Pomfrit @ 300) + Dostava @ 150 = 1300.00
 -- --------------------------------------------------------------------
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, cash_amount, card_amount) VALUES
-    (2, 'CANCELED', 'CASH', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1300.00, 1, 1, 1300.00, 0.00);
+    (2, 'CANCELED', 'CASH', 'REGULAR', NOW() - INTERVAL '50 minute', 150.00, 1300.00, 1, 1, 1300.00, 0.00);
 -- Stavke za porudžbinu #2
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (2, 1, 2, 11), -- 1x Classic Cheeseburger
                                                                           (3, 1, 2, 14); -- 1x Pomfrit
+
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (2, 2, 2, 'ACCEPTED', NOW() - INTERVAL '45 minute', NULL);
+
+INSERT INTO delivery (id, driver_id, order_id) VALUES (2, 2, 2);
+
 
 -- --------------------------------------------------------------------
 -- PORUDŽBINA #3: IN_PREPARATION, CASH
 -- Računica: (2x Ćevapi @ 600) + Dostava @ 150 = 1350.00
 -- --------------------------------------------------------------------
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, cash_amount, card_amount) VALUES
-    (3, 'IN_PREPARATION', 'CASH', 'REGULAR', NOW() - INTERVAL '30 minute', 150.00, 1350.00, 1, 1, 1350.00, 0.00);
+    (3, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '30 minute', 150.00, 1350.00, 1, 1, 1350.00, 0.00);
 -- Stavke za porudžbinu #3
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (4, 2, 3, 21); -- 2x Ćevapi
+
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (3, 3, 2, 'ACCEPTED', NOW() - INTERVAL '45 minute', NULL);
+
+INSERT INTO delivery (id, driver_id, order_id) VALUES (3, 2, 3);
+
+
 
 -- --------------------------------------------------------------------
 -- PORUDŽBINA #4: SCHEDULED za sutra
@@ -413,19 +432,29 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (5, 2, 4, 16), -- 2x California Roll
                                                                           (6, 1, 4, 20); -- 1x Spicy Tuna Roll
 
+
 -- --------------------------------------------------------------------
--- PORUDŽBINA #5: REPEATING (WEEKLY - FRIDAY), prva instanca
--- Računica: (1x Caesar Salata @ 1150) + (1x Piletina @ 1350) + Dostava @ 150 = 2650.00
+-- PORUDŽBINA #5: Originalna porudžbina koja će služiti kao osnova za šablon.
+-- Njen order_type je sada REGULAR, jer je to samo prva instanca.
 -- --------------------------------------------------------------------
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
-    (5, 'CREATED', 'COMBINED', 'REPEATING', NOW(), 150.00, 2650.00, 1, 1, 2000.00, 650.00);
--- Stavke za porudžbinu #5
+    (5, 'CREATED', 'COMBINED', 'REGULAR', NOW(), 150.00, 2650.00, 1, 1, 2000.00, 650.00);
+
+-- Stavke za porudžbinu #5 ostaju iste
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (7, 1, 5, 6), -- 1x Caesar Salata
                                                                           (8, 1, 5, 9); -- 1x Pileći file sa grilovanim povrćem
--- Šablon za ponavljanje
-INSERT INTO repeating_order (id, repeat_type, day_of_week, delivery_time, active, unlimited) VALUES
-    (5, 'WEEKLY', 'FRIDAY', '19:00:00', true, true);
+
+-- Šablon za ponavljanje. Sada ima svoj ID i referencira originalnu porudžbinu (original_order_id = 5)
+-- Ime tabele je 'repeating_order'
+INSERT INTO repeating_order (id, original_order_id, repeat_type, day_of_week, delivery_time, active, unlimited) VALUES
+    (1, 5, 'WEEKLY', 'FRIDAY', '19:00:00', true, true);
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (4, 5, 2, 'ACCEPTED', NOW() - INTERVAL '45 minute', NULL);
+
+INSERT INTO delivery (id, driver_id, order_id) VALUES (4, 2, 5);
+
+
 
 
 
@@ -441,48 +470,9 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
                                                                 (7, 'Kašnjenje isporuke', 2),
                                                                 (8, 'Problem sa sajtom', 3);
 
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, driver_id, eta, delivered_at) VALUES
-    (1, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '10 day', 150.00, 1400.00, 1, 2, NOW() - INTERVAL '10 day' + INTERVAL '45 minute', NOW() - INTERVAL '10 day' + INTERVAL '25 minute');
--- Rok isporuke (eta) je 45 min, a isporučeno je za 25 min -> NA VRIJEME
-
--- Porudžbina 2: Još jedna isporučena porudžbina za Jovana (ID=2)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, driver_id, eta, delivered_at) VALUES
-    (2, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '5 day', 200.00, 1050.00, 1, 2, NOW() - INTERVAL '5 day' + INTERVAL '40 minute', NOW() - INTERVAL '5 day' + INTERVAL '50 minute');
-
--- Porudžbina 3: Porudžbina koju će Petar (ID=8) odbiti. Nema dodijeljen driver_id.
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, eta) VALUES
-    (3, 'CREATED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 900.00, 1, NOW() - INTERVAL '2 day' + INTERVAL '45 minute');
-
--- Porudžbina 4: Uspješno isporučena od strane Petra (ID=8)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, driver_id, eta, delivered_at) VALUES
-    (4, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1800.00, 1, 8, NOW() - INTERVAL '1 day' + INTERVAL '35 minute', NOW() - INTERVAL '1 day' + INTERVAL '20 minute');
--- Rok isporuke (eta) je 35 min, a isporučeno je za 20 min -> NA VRIJEME
--- STAVKE PORUDŽBINA
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (1, 1, 1, 1);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (2, 1, 2, 11);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (3, 2, 3, 6);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (4, 1, 4, 21);
-
-
--- PONUDE ZA PORUDŽBINE (OrderOffer)
-INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
-                                                                                                (1, 1, 2, 'ACCEPTED', NOW() - INTERVAL '10 day', NULL),
-                                                                                                (2, 2, 2, 'ACCEPTED', NOW() - INTERVAL '5 day', NULL),
-                                                                                                (3, 3, 8, 'REJECTED', NOW() - INTERVAL '2 day', 'Previše udaljena lokacija.'),
-                                                                                                (4, 4, 8, 'ACCEPTED', NOW() - INTERVAL '1 day', NULL);
-
-
--- ZAPISI O DOSTAVI (Delivery)
-INSERT INTO delivery (id, driver_id, order_id) VALUES (1, 2, 1);
-INSERT INTO delivery (id, driver_id, order_id) VALUES (2, 2, 2);
-INSERT INTO delivery (id, driver_id, order_id) VALUES (3, 8, 4);
-
-
 -- OCJENE ZA DOSTAVLJAČE (DriverRating)
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
-                                                                                                                                                                                                                            (1, 1, 2, 1, 5, 5, 5, 4, 5, 5, 5),
-                                                                                                                                                                                                                            (2, 2, 2, 1, 4, 5, 4, 4, 4, 5, 4),
-                                                                                                                                                                                                                            (3, 4, 8, 1, 5, 5, 5, 7, 5, 5, 5);
+(1, 1, 2, 1, 5, 5, 5, 4, 5, 5, 5);
 
 
 -- Resetovanje sekvenci
@@ -506,3 +496,4 @@ ALTER SEQUENCE diet_type_id_seq RESTART WITH 100;
 ALTER SEQUENCE driver_rating_id_seq RESTART WITH 100;
 ALTER SEQUENCE order_offer_id_seq RESTART WITH 100;
 ALTER SEQUENCE delivery_id_seq RESTART WITH 100;
+ALTER SEQUENCE repeating_order_id_seq RESTART WITH 100;

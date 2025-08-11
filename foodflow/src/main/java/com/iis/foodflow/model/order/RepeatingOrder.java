@@ -8,7 +8,9 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
- // <-- VAŽNO: Importujte ugrađeni Java enum
+import java.util.HashSet;
+import java.util.Set;
+// <-- VAŽNO: Importujte ugrađeni Java enum
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,6 +19,7 @@ import java.time.LocalTime;
 @Entity
 public class RepeatingOrder {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Svoj, automatski generisan ID
     private Long id;
 
     @Enumerated(EnumType.STRING)
@@ -33,8 +36,16 @@ public class RepeatingOrder {
     private LocalDate repeatUntil;
     private boolean unlimited;
 
+    // Veza ka ORIGINALNOJ porudžbini koja služi kao osnova za ovaj šablon
     @OneToOne
-    @MapsId
-    @JoinColumn(name = "id")
-    private Order order;
+    @JoinColumn(name = "original_order_id", referencedColumnName = "id", nullable = false)
+    private Order originalOrder;
+
+    // Veza ka svim NOVIM porudžbinama koje su kreirane na osnovu ovog šablona
+    // mappedBy pokazuje na polje 'repeatingOrderTemplate' u klasi Order
+    @OneToMany(mappedBy = "repeatingOrderTemplate")
+    @ToString.Exclude
+    private Set<Order> createdInstances = new HashSet<>();
+
+
 }
