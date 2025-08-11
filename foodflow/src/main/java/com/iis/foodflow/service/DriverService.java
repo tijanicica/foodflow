@@ -1,12 +1,9 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.response.*;
-import com.iis.foodflow.enums.DriverStatus;
-import com.iis.foodflow.enums.OfferStatus;
+import com.iis.foodflow.enums.*;
 import com.iis.foodflow.model.order.Address;
 import com.iis.foodflow.enums.DriverStatus;
-import com.iis.foodflow.enums.OrderStatus;
-import com.iis.foodflow.enums.VehicleType;
 import com.iis.foodflow.model.delivery.OrderOffer;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.restaurant.Restaurant;
@@ -31,6 +28,7 @@ public class DriverService {
     // --- SVE POTREBNE ZAVISNOSTI ---
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
+    private final SystemSettingsService systemSettingsService;
     private final DriverRatingRepository driverRatingRepository; // <-- ISPRAVKA: Dodana zavisnost
     private final OrderOfferRepository orderOfferRepository;   // <-- ISPRAVKA: Dodana zavisnost
 
@@ -171,6 +169,10 @@ public class DriverService {
         if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
             throw new IllegalStateException("Cannot pick up order. It is not ready yet.");
         }
+
+        LocalDateTime eta = calculateEta(order, driver);
+        order.setEta(eta);
+
 
         order.setStatus(OrderStatus.PICKED_UP);
 
@@ -437,6 +439,91 @@ public class DriverService {
                 .collect(Collectors.toList());
 
         return new DriverDashboardResponse(newOffers, assignedDeliveries);
+    }
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE POSTOJEĆU 'calculateEta' METODU SA OVOM
+
+    /**
+     * Računa ETA od trenutka preuzimanja na osnovu vozila, distance, vremena i prijavljenih kašnjenja.
+     * @param order Porudžbina za koju se računa ETA.
+     * @param driver Vozač koji vrši dostavu.
+     * @return Procijenjeno vrijeme dolaska.
+     */
+    private LocalDateTime calculateEta(Order order, Driver driver) {
+
+        // --- KORAK 1: DOHVAĆANJE RESTORANA ---
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElseThrow(() -> new IllegalStateException("Cannot calculate ETA: Order has no items or restaurant link."));
+
+        // --- KORAK 2: OSNOVNO VRIJEME PUTOVANJA NA OSNOVU DISTANCE I VOZILA ---
+        double deliveryDistance = calculateDistance(
+                restaurant.getAddress().getLatitude(),
+                restaurant.getAddress().getLongitude(),
+                order.getAddress().getLatitude(),
+                order.getAddress().getLongitude()
+        );
+
+        double minutesPerKm;
+        switch (driver.getVehicleType()) {
+            case MOTORCYCLE: minutesPerKm = 2.5; break;
+            case CAR: minutesPerKm = 3.5; break;
+            case BICYCLE: default: minutesPerKm = 5.0; break;
+        }
+        long travelTime = (long) (deliveryDistance * minutesPerKm);
+
+        // --- KORAK 3: DODATNO VRIJEME ZBOG VREMENSKIH UVJETA ---
+        long weatherDelay = 0;
+        WeatherCondition weather = systemSettingsService.getCurrentWeather();
+        if (weather == WeatherCondition.RAINY) {
+            weatherDelay = 10;
+        } else if (weather == WeatherCondition.SNOWY || weather == WeatherCondition.STORMY) {
+            weatherDelay = 20; // Vraćeno na 20 radi veće razlike
+        }
+
+        // --- KORAK 4: DODATNO VRIJEME KOJE JE PRIJAVIO VOZAČ ---
+        long driverReportedDelay = (order.getDriverReportedDelay() != null) ? order.getDriverReportedDelay() : 0;
+
+        // --- KORAK 5: KONAČNI IZRAČUN ---
+        // Zbrajamo sve komponente da dobijemo ukupno trajanje putovanja
+        long totalTravelMinutes = travelTime + weatherDelay + driverReportedDelay;
+
+        System.out.println(
+                String.format("ETA calculated for order %d: TravelTime= %d min, WeatherDelay= %d min, DriverDelay= %d min. TOTAL= %d min.",
+                        order.getId(), travelTime, weatherDelay, driverReportedDelay, totalTravelMinutes)
+        );
+
+        // Vraćamo TRENUTNO VRIJEME + izračunato ukupno vrijeme putovanja
+        return LocalDateTime.now().plusMinutes(totalTravelMinutes);
+    }
+
+// OBAVEZNO dodajte import za Restaurant ako ga nemate
+// import com.iis.foodflow.model.restaurant.Restaurant;
+
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+
+    @Transactional
+    public Order reportDelay(String driverEmail, Long orderId, Integer delayMinutes) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Provjere sigurnosti...
+        if (!order.getDriver().equals(driver)) {
+            throw new SecurityException("This is not your order.");
+        }
+
+        // 1. Zabilježi kašnjenje koje je vozač prijavio
+        order.setDriverReportedDelay(delayMinutes);
+
+        // 2. Ponovo izračunaj i AŽURIRAJ ETA sa novim informacijama
+        LocalDateTime newEta = calculateEta(order, driver);
+        order.setEta(newEta);
+
+        // TODO: Poslati notifikaciju kupcu o novom, ažuriranom ETA.
+
+        return orderRepository.save(order);
     }
 
 

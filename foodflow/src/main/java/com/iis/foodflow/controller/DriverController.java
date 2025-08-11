@@ -1,6 +1,7 @@
 // Datoteka: src/main/java/com/iis/foodflow/controller/DriverController.java
 package com.iis.foodflow.controller;
 
+import com.iis.foodflow.dto.request.ReportDelayRequest;
 import com.iis.foodflow.dto.request.UpdateDriverStatusRequest;
 import com.iis.foodflow.dto.request.UpdateLocationRequest;
 import com.iis.foodflow.dto.request.UpdateVehicleRequest;
@@ -10,6 +11,7 @@ import com.iis.foodflow.dto.response.DriverPerformanceResponse;
 import com.iis.foodflow.dto.response.DriverResponseDTO;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.DriverService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -146,6 +148,20 @@ public class DriverController {
             @PathVariable Long orderId,
             @AuthenticationPrincipal Driver driverPrincipal) {
         driverService.markOrderAsDelivered(driverPrincipal.getEmail(), orderId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/orders/{orderId}/report-delay")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> reportDeliveryDelay(
+            @PathVariable Long orderId,
+            @Valid @RequestBody ReportDelayRequest request, // <-- KORISTIMO DTO I @Valid
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        // Nema više potrebe za 'if' provjerom!
+        // Ako validacija padne, Spring će automatski vratiti 400 Bad Request sa porukom.
+
+        driverService.reportDelay(driverPrincipal.getEmail(), orderId, request.getDelayMinutes());
         return ResponseEntity.ok().build();
     }
 }
