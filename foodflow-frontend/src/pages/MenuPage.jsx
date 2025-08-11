@@ -33,7 +33,7 @@ const MenuItemCard = ({ item, restaurant }) => { // Prima i informaciju o restor
                     ))}
                     {item.allergens?.map(allergen => (
                         <span key={allergen} className="px-2.5 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-                            Sadrži: {allergen}
+                            Contains: {allergen}
                         </span>
                     ))}
                 </div>
@@ -110,7 +110,8 @@ export function MenuPage() {
                             <MenuItemCard 
                                 key={item.id} 
                                 item={item} 
-                                restaurant={{ id: restaurantId, name: menuData.restaurantName }}
+                                restaurant={{ id: restaurantId, address: menuData.address ,name: menuData.restaurantName, openingTime: menuData.openingTime,
+                    closingTime: menuData.closingTime }}
                             />
                         ))
                     ) : (

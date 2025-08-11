@@ -1,21 +1,34 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useCart } from '@/context/CartContext'; // Importuj hook da pristupiš korpi
-import { ShoppingCart } from 'lucide-react';    // Importuj ikonicu za korpu
+import { useCart } from '@/context/CartContext'; // Uvozimo hook da pristupimo korpi
+import { ShoppingCart } from 'lucide-react';    // Uvozimo ikonicu za korpu
+import toast from 'react-hot-toast';          // Uvozimo toast za notifikacije
 
 export const Navbar = () => {
     const navigate = useNavigate();
-    const { totalItemsInCart } = useCart(); // Uzmi ukupan broj stavki iz konteksta
+    const { totalItemsInCart } = useCart(); // Uzimamo ukupan broj stavki iz konteksta
 
-    // Kompletna funkcija za logout
+    // Funkcija za odjavljivanje korisnika
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
         navigate('/login', { replace: true }); 
     };
 
+    // === NOVA FUNKCIJA ===
+    // Proverava da li je korpa prazna PRE navigacije
+    const handleCartClick = (event) => {
+        if (totalItemsInCart === 0) {
+            // 1. Spreči podrazumevano ponašanje (navigaciju)
+            event.preventDefault(); 
+            // 2. Prikaži poruku o grešci samo jednom
+            toast.error("Your cart is empty!");
+        }
+        // Ako korpa nije prazna, event.preventDefault() se ne poziva i <Link> radi normalno
+    };
+
     return (
         <header className="flex items-center h-16 px-4 border-b shrink-0 md:px-6 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-            {/* Logo koji na klik takođe odjavljuje korisnika */}
+            {/* Logo */}
             <Link 
                 to="/login" 
                 onClick={handleLogout} 
@@ -34,8 +47,11 @@ export const Navbar = () => {
     
             {/* Desni deo sa korpom i logout dugmetom */}
             <div className="flex items-center gap-4 ml-6">
-                {/* Link ka checkout stranici koji obmotava ikonicu korpe */}
-                <Link to="/checkout"> 
+                {/* 
+                  Link ka checkout stranici sada ima onClick handler
+                  koji će se izvršiti pre nego što se desi navigacija.
+                */}
+                <Link to="/checkout" onClick={handleCartClick}> 
                     <Button variant="ghost" size="icon" className="rounded-full relative">
                         <ShoppingCart className="h-6 w-6 text-brand-primary/80" />
                         
