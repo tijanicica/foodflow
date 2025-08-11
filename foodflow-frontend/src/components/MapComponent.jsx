@@ -1,11 +1,10 @@
 // FAJL: src/components/MapComponent.jsx
-
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// ISPRAVKA ZA IKONICE: Rješava problem sa default ikonicama u Leafletu i Vite/Reactu
+// Rješavanje problema sa default ikonicama
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
@@ -13,7 +12,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
 });
 
-// Komponenta za automatsko centriranje mape
+// Komponenta za automatsko centriranje
 const FitBoundsToMarkers = ({ bounds }) => {
     const map = useMap();
     useEffect(() => {
@@ -24,26 +23,43 @@ const FitBoundsToMarkers = ({ bounds }) => {
     return null;
 };
 
-// Funkcija za kreiranje custom, obojenih ikonica
-const createColoredIcon = (color) => {
+// --- STILIZIRANE IKONICE ---
+// Dodajemo keyframes animaciju za pulsiranje
+const pulseKeyframes = `@keyframes pulse {
+    0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+    100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}`;
+
+const createColoredIcon = (color, pulse = false) => {
+    const animation = pulse ? 'animation: pulse 1.5s infinite;' : '';
     return new L.DivIcon({
-        className: 'custom-div-icon', // Važno za CSS, ali inline stilovi rade posao
-        html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 0 6px rgba(0,0,0,0.6);"></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        className: 'custom-div-icon',
+        html: `
+            <style>${pulseKeyframes}</style>
+            <div style="
+                background-color: ${color};
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                ${animation}
+            "></div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
     });
 };
 
 // Definicija ikonica
-const driverIcon = createColoredIcon('#FFD700');          // Žuta (Vi)
-const assignedRestaurantIcon = createColoredIcon('#8A643B'); // Smeđa (Restoran - prihvaćeno)
-const assignedDeliveryIcon = createColoredIcon('#2F855A');   // Zelena (Kupac - prihvaćeno)
-const offerRestaurantIcon = createColoredIcon('#D2B48C');    // Svijetlo smeđa (Restoran - ponuda)
-const offerDeliveryIcon = createColoredIcon('#90EE90');      // Svijetlo zelena (Kupac - ponuda)
-
+const driverIcon = createColoredIcon('#FFB300', true); // Jarka žuta sa pulsiranjem
+const assignedRestaurantIcon = createColoredIcon('#8A643B');
+const assignedDeliveryIcon = createColoredIcon('#2E7D32');
+const offerRestaurantIcon = createColoredIcon('#D2B48C');
+const offerDeliveryIcon = createColoredIcon('#9CCC65');
 
 export const MapComponent = ({ driverLocation, assignedDeliveries, newOffers }) => {
-    // Skupljamo sve koordinate u jednu listu da bismo automatski centrirali mapu
     const allPoints = [];
     if (driverLocation?.lat) allPoints.push([driverLocation.lat, driverLocation.lng]);
     assignedDeliveries.forEach(d => {
@@ -55,61 +71,51 @@ export const MapComponent = ({ driverLocation, assignedDeliveries, newOffers }) 
         if (o.order.deliveryCoordinates?.lat) allPoints.push([o.order.deliveryCoordinates.lat, o.order.deliveryCoordinates.lng]);
     });
 
-    // Ako nema točaka, centriramo na default lokaciju (npr. Beograd)
     const center = allPoints.length > 0 ? allPoints[0] : [44.7866, 20.4489];
 
-    // Stilovi za legendu
+    // --- STILIZIRANA LEGENDA ---
     const legendStyle = {
-        position: 'absolute', bottom: '10px', right: '10px',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '10px',
-        borderRadius: '5px', boxShadow: '0 1px 5px rgba(0,0,0,0.4)',
-        zIndex: 401, // Mora biti veći od zIndex-a tile-ova mape
-        fontSize: '12px', lineHeight: '1.4'
+        position: 'absolute', bottom: '20px', right: '20px',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '12px 15px',
+        borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+        zIndex: 1000, fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.5'
     };
-    const itemStyle = { display: 'flex', alignItems: 'center', marginBottom: '4px' };
-    const colorBox = (color) => ({ width: '16px', height: '16px', backgroundColor: color, borderRadius: '50%', marginRight: '8px', border: '2px solid white', boxShadow: '0 0 2px gray' });
+    const itemStyle = { display: 'flex', alignItems: 'center', marginBottom: '5px' };
+    const colorBox = (color) => ({ width: '18px', height: '18px', backgroundColor: color, borderRadius: '50%', marginRight: '10px', border: '2px solid white', boxShadow: '0 0 3px gray' });
 
     return (
         <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%', borderRadius: '8px' }}>
             <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
 
-            {/* Marker za vozača */}
-            {driverLocation?.lat && (
-                <Marker position={[driverLocation.lat, driverLocation.lng]} icon={driverIcon}>
-                    <Popup>Your Location</Popup>
-                </Marker>
-            )}
+            {driverLocation?.lat && <Marker position={[driverLocation.lat, driverLocation.lng]} icon={driverIcon}><Popup><b>Your Location</b></Popup></Marker>}
 
-            {/* Markeri za PRIHVAĆENE dostave */}
             {assignedDeliveries.map(delivery => (
                 <React.Fragment key={`assigned-${delivery.id}`}>
-                    {delivery.restaurantCoordinates?.lat && <Marker position={[delivery.restaurantCoordinates.lat, delivery.restaurantCoordinates.lng]} icon={assignedRestaurantIcon}><Popup><b>Pickup:</b> {delivery.restaurantName}</Popup></Marker>}
+                    {delivery.restaurantCoordinates?.lat && <Marker position={[delivery.restaurantCoordinates.lat, delivery.restaurantCoordinates.lng]} icon={assignedRestaurantIcon}><Popup><b>Pickup:</b> {delivery.restaurantName}<br/>{delivery.restaurantAddress}</Popup></Marker>}
                     {delivery.deliveryCoordinates?.lat && <Marker position={[delivery.deliveryCoordinates.lat, delivery.deliveryCoordinates.lng]} icon={assignedDeliveryIcon}><Popup><b>Deliver to:</b> {delivery.deliveryAddress}</Popup></Marker>}
                 </React.Fragment>
             ))}
 
-            {/* Markeri za NOVE PONUDE */}
             {newOffers.map(offer => (
                 <React.Fragment key={`offer-${offer.id}`}>
-                    {offer.order.restaurantCoordinates?.lat && <Marker position={[offer.order.restaurantCoordinates.lat, offer.order.restaurantCoordinates.lng]} icon={offerRestaurantIcon}><Popup><b>New Offer Pickup:</b> {offer.order.restaurantName}</Popup></Marker>}
+                    {offer.order.restaurantCoordinates?.lat && <Marker position={[offer.order.restaurantCoordinates.lat, offer.order.restaurantCoordinates.lng]} icon={offerRestaurantIcon}><Popup><b>New Offer Pickup:</b> {offer.order.restaurantName}<br/>{offer.order.restaurantAddress}</Popup></Marker>}
                     {offer.order.deliveryCoordinates?.lat && <Marker position={[offer.order.deliveryCoordinates.lat, offer.order.deliveryCoordinates.lng]} icon={offerDeliveryIcon}><Popup><b>New Offer Drop-off:</b> {offer.order.deliveryAddress}</Popup></Marker>}
                 </React.Fragment>
             ))}
 
             <FitBoundsToMarkers bounds={allPoints} />
             
-            {/* Legenda se renderira kao direktno dijete MapContainer-a */}
             <div style={legendStyle}>
-                <div style={itemStyle}><div style={colorBox('#FFD700')}></div> You</div>
-                <div style={{marginTop: '8px', marginBottom: '4px', fontWeight: 'bold'}}>Assigned:</div>
-                <div style={itemStyle}><div style={colorBox('#8A643B')}></div> Pickup (Restaurant)</div>
-                <div style={itemStyle}><div style={colorBox('#2F855A')}></div> Drop-off (Customer)</div>
-                <div style={{marginTop: '8px', marginBottom: '4px', fontWeight: 'bold'}}>New Offers:</div>
-                <div style={itemStyle}><div style={colorBox('#D2B48C')}></div> Pickup (Restaurant)</div>
-                <div style={itemStyle}><div style={colorBox('#90EE90')}></div> Drop-off (Customer)</div>
+                <div style={itemStyle}><div style={colorBox('#FFB300')}></div> You (Current Location)</div>
+                <div style={{marginTop: '10px', marginBottom: '5px', fontWeight: 'bold', borderTop: '1px solid #ddd', paddingTop: '8px'}}>Assigned Deliveries:</div>
+                <div style={itemStyle}><div style={colorBox('#8A643B')}></div> Pickup Location</div>
+                <div style={itemStyle}><div style={colorBox('#2E7D32')}></div> Drop-off Location</div>
+                <div style={{marginTop: '10px', marginBottom: '5px', fontWeight: 'bold', borderTop: '1px solid #ddd', paddingTop: '8px'}}>New Opportunities:</div>
+                <div style={itemStyle}><div style={colorBox('#D2B48C')}></div> Pickup Location</div>
+                <div style={itemStyle}><div style={colorBox('#9CCC65')}></div> Drop-off Location</div>
             </div>
         </MapContainer>
     );
