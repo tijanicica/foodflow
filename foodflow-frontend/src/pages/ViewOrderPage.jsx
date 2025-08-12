@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
 import { getOrderDetails } from '../services/api';
+import toast from 'react-hot-toast'; 
 // Uvozimo ikonice
 import { FiMapPin, FiUser, FiAlertTriangle, FiXCircle, FiCheckCircle, FiNavigation } from 'react-icons/fi';
 // TODO: Uvezite API funkcije za: markAsPickedUp, reportDelay, cancelDelivery
@@ -32,7 +33,17 @@ export function ViewOrderPage() {
     }, [orderId]);
 
     const handleMarkAsPickedUp = () => alert("TODO: Implement Mark as Picked Up!");
-    const handleReportDelay = () => alert("TODO: Implement Report Delay!");
+const handleReportDelay = () => {
+        // Provjeravamo da li je status porudžbine 'PICKED_UP'
+        if (order.status !== 'PICKED_UP') {
+            // Ako NIJE, prikazujemo poruku o grešci
+            toast.error("You can't report a delay for an order that hasn't been picked up yet.");
+            return; // I prekidamo izvršavanje funkcije
+        }
+
+        // Ako JESTE, onda otvaramo prozor za unos kašnjenja
+        alert("TODO: Implement Report Delay Modal!");
+    };
     const handleCancelDelivery = () => alert("TODO: Implement Cancel Delivery!");
 
     // Stilovi za gumbe
@@ -92,18 +103,18 @@ export function ViewOrderPage() {
                             </p>
                         </div>
                         
-                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' }}>
+                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' , opacity: 1.6,}}>
                             <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#8A643B', display: 'flex', alignItems: 'center' }}>
                                 <FiMapPin style={{ marginRight: '0.5rem' }} /> Step 1: Pickup
                             </p>
                             <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>{order.restaurantName}</p>
                             <p style={{ color: '#6B7280', margin: 0 }}>{order.restaurantAddress}</p>
-                            <p style={{ color: '#333', margin: '0.5rem 0 0 0', fontWeight: '500' }}>
+                            <p style={{ color: '#6B7280', margin: 0 }}>
                                 Distance from you: {order.distanceDriverToRestaurant.toFixed(1)} km
                             </p>
                         </div>
 
-                        <div style={{ marginTop: '1.5rem' }}>
+                        <div style={{ marginTop: '1.5rem' ,opacity: 0.6, transition: 'opacity 0.3s ease'}}>
                             <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
                                 <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
                             </p>
@@ -133,14 +144,34 @@ export function ViewOrderPage() {
                                 </button>
                             )}
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <button
-                                    onClick={handleReportDelay}
-                                    style={secondaryButtonStyle}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#a1a618ff'; e.currentTarget.style.backgroundColor = '#fffeeeff'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#a5a83eff'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#7a7d21ff'; }}
-                                >
-                                    <FiAlertTriangle size={14} /> Report Delay
-                                </button>
+                             <button
+    onClick={handleReportDelay}
+    // Provjeravamo da li je status 'PICKED_UP'. Ako nije, primjenjujemo stilove za blokiran izgled.
+    style={{
+        ...secondaryButtonStyle, // Počinjemo sa osnovnim stilom
+        backgroundColor: order.status !== 'PICKED_UP' ? '#F3F4F6' : 'white', // Siva pozadina ako je blokirano
+        color: order.status !== 'PICKED_UP' ? '#9CA3AF' : '#4A4A4A', // Siva boja teksta ako je blokirano
+        borderColor: order.status !== 'PICKED_UP' ? '#E5E7EB' : '#D1D5DB', // Svjetlija siva ivica ako je blokirano
+        cursor: order.status !== 'PICKED_UP' ? 'not-allowed' : 'pointer' // Mijenjamo kursor
+    }}
+    // Onemogućavamo hover efekt ako gumb treba izgledati blokirano
+    onMouseEnter={e => {
+        if (order.status === 'PICKED_UP') {
+            e.currentTarget.style.borderColor = '#bc9124';
+            e.currentTarget.style.backgroundColor = '#FFFBEB';
+            e.currentTarget.style.color = '#bc9124';
+        }
+    }}
+    onMouseLeave={e => {
+        if (order.status === 'PICKED_UP') {
+            e.currentTarget.style.borderColor = '#D1D5DB';
+            e.currentTarget.style.backgroundColor = 'white';
+            e.currentTarget.style.color = '#4A4A4A';
+        }
+    }}
+>
+    <FiAlertTriangle size={14} /> Report Delay
+</button>
                                 <button
                                     onClick={handleCancelDelivery}
                                     style={secondaryButtonStyle}
