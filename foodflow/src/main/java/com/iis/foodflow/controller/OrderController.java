@@ -21,14 +21,14 @@ public class OrderController {
     private final OrderAssignmentService orderAssignmentService;
     private final OrderService orderService;
 
-    @PostMapping("/{orderId}/accept")
+    /*@PostMapping("/{orderId}/accept")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> acceptOrder(@PathVariable Long orderId, @AuthenticationPrincipal Driver driverPrincipal) {
         orderAssignmentService.acceptOrderOffer(orderId, driverPrincipal.getEmail());
         return ResponseEntity.ok().build();
-    }
+    }*/
 
-    @PostMapping("/{orderId}/reject")
+    /*@PostMapping("/{orderId}/reject")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> rejectOrder(
             @PathVariable Long orderId,
@@ -39,7 +39,7 @@ public class OrderController {
         orderAssignmentService.rejectOrderOffer(orderId, driverPrincipal.getEmail(), reason);
 
         return ResponseEntity.ok().build();
-    }
+    }*/
 
     @PostMapping("/{orderId}/deliver")
     @PreAuthorize("hasRole('DRIVER')")

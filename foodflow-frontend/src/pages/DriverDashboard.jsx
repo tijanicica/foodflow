@@ -207,10 +207,10 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
         <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0px 0px', minHeight: '220px' /* Visina da spriječimo skakanje */ }}>
             {offers.length > 1 && (
                 <>
-                    <button onClick={goPrev} style={{ ...navButtonStyle, left: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                    <button onClick={goPrev} style={{ ...navButtonStyle, left: '-35px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
                         <FiArrowLeft size={32} />
                     </button>
-                    <button onClick={goNext} style={{ ...navButtonStyle, right: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                    <button onClick={goNext} style={{ ...navButtonStyle, right: '-35px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
                         <FiArrowRight size={32} />
                     </button>
                 </>
@@ -248,10 +248,10 @@ const AssignedDeliveryCarousel = ({ deliveries }) => {
         <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0 0', minHeight: '220px' }}>
             {deliveries.length > 1 && (
                 <>
-                    <button onClick={goPrev} style={{ ...navButtonStyle, left: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                    <button onClick={goPrev} style={{ ...navButtonStyle, left: '-36px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
                         <FiArrowLeft size={32} />
                     </button>
-                    <button onClick={goNext} style={{ ...navButtonStyle, right: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                    <button onClick={goNext} style={{ ...navButtonStyle, right: '-35px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
                         <FiArrowRight size={32} />
                     </button>
                 </>

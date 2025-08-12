@@ -30,6 +30,7 @@ public class DriverService {
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
     private final SystemSettingsService systemSettingsService;
+    private final OrderAssignmentService orderAssignmentService;
     private final DriverRatingRepository driverRatingRepository; // <-- ISPRAVKA: Dodana zavisnost
     private final OrderOfferRepository orderOfferRepository;   // <-- ISPRAVKA: Dodana zavisnost
 
@@ -316,20 +317,32 @@ public class DriverService {
             throw new IllegalStateException("This offer is no longer available.");
         }
 
-        // Ažuriramo status ponude
+        // 1. Ažuriramo status ponude
         offer.setStatus(OfferStatus.REJECTED);
         offer.setReasonForRejection(reason);
 
-        // === KLJUČNA ISPRAVKA: Povećavamo brojač odbijanja za vozača ===
+        // 2. Povećavamo brojač odbijanja za vozača
         int currentRejections = (driver.getRejectionCount() == null) ? 0 : driver.getRejectionCount();
         driver.setRejectionCount(currentRejections + 1);
         driverRepository.save(driver);
-        // ================================================================
 
-        // TODO: Ovdje implementirati logiku za slanje ponude sljedećem vozaču.
+        // Spremamo ažuriranu ponudu. Važno je da ovo uradimo prije vraćanja.
+        OrderOffer savedOffer = orderOfferRepository.save(offer);
 
-        return orderOfferRepository.save(offer);
+        // 3. === TODO JE RIJEŠEN: POKREĆEMO PONOVNU DODJELU ===
+        // Uzimamo porudžbinu iz ponude koju je vozač odbio
+        Order orderToReassign = offer.getOrder();
+        System.out.println("Driver " + driver.getFirstName() + " REJECTED offer. Finding next driver for order " + orderToReassign.getId());
+
+        // Pozivamo OrderAssignmentService da pronađe sljedećeg kandidata
+        orderAssignmentService.findAndAssignBestDriver(orderToReassign);
+        // ========================================================
+
+        // Vraćamo originalnu, sada odbačenu ponudu, kao što je i traženo.
+        return savedOffer;
     }
+
+
 // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 // ZAMIJENITE CIJELU 'getDashboardData' METODU
 

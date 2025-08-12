@@ -155,7 +155,7 @@ public class OrderAssignmentService {
         return dist;
     }
 
-    @Transactional
+    /*@Transactional
     public void rejectOrderOffer(Long offerId, String driverEmail, String reason) {
         OrderOffer offer = orderOfferRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
@@ -213,5 +213,5 @@ public class OrderAssignmentService {
         orderRepository.save(order);
 
         System.out.println("Driver " + offer.getDriver().getFirstName() + " ACCEPTED offer for order " + order.getId());
-    }
+    }*/
 }
