@@ -125,6 +125,7 @@ INSERT INTO menu_version (id, version_number, creation_date, active, menu_id) VA
 INSERT INTO menu_version (id, version_number, creation_date, active, menu_id) VALUES
     (12, 1, NOW(), true, 12);
 
+ 
 -- ALERGENI I TIPOVI ISHRANE
 INSERT INTO allergen (id, name) VALUES
     (1, 'Gluten');
@@ -546,6 +547,7 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (2, 1, 2, 9), -- Tiramisu
     (3, 1, 2, 11); -- Cheesecake
 
+
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (2, 2, 2, 'ACCEPTED');
 
@@ -575,8 +577,9 @@ INSERT INTO orders (id, status, payment_type, order_type, creation_date, deliver
     (5, 'CREATED', 'COMBINED', 'REPEATING', NOW(), 150.00, 1050.00, 1, 1);
 
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
-    (7, 1, 5, 6),
-    (8, 1, 5, 9);
+                                                                          (7, 1, 5, 6),
+                                                                          (8, 1, 5, 9);
+
 
 INSERT INTO repeating_order (id, original_order_id, repeat_type, day_of_week, delivery_time, active, unlimited) VALUES
     (1, 5, 'WEEKLY', 'FRIDAY', '19:00:00', true, true);
@@ -669,6 +672,41 @@ INSERT INTO order_rating (id, quality, taste, portion_size) VALUES
 
 
 
+
+-- Porudžbina je potvrđena od strane restorana i sada čeka na dodjelu
+-- Ne može imati 'delivered_at' i ne bi trebala još imati 'driver_id'
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (20, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 11, 1400.00, 0.00);
+
+-- Stavke za porudžbinu #7
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (20, 1, 20, 1); -- 1x Pasta Carbonara
+
+
+-- Ponuda je poslana Jovanu (ID=2) i ima status 'SENT'
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (20, 20, 2, 'SENT', NOW() - INTERVAL '1 day', NULL);
+
+
+
+-- Porudžbina je potvrđena od strane restorana i sada čeka na dodjelu
+-- Ne može imati 'delivered_at' i ne bi trebala još imati 'driver_id'
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (21, 'READY_FOR_PICKUP', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 13, 1400.00, 0.00);
+
+-- Stavke za porudžbinu #7
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (21, 1, 21, 2); -- 1x Pasta Carbonara
+
+
+-- Ponuda je poslana Jovanu (ID=2) i ima status 'SENT'
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (21, 21, 2, 'SENT', NOW() - INTERVAL '1 day', NULL);
+
+
+
+
+
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU
 INSERT INTO problem_category (id, name, parent_category_id) VALUES
                                                                 (1, 'Problem sa porudžbinom', NULL),
@@ -684,7 +722,7 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
 
 -- OCJENE ZA DOSTAVLJAČE (DriverRating)
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
-(1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
+    (1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
 
 
 -- Resetovanje sekvenci

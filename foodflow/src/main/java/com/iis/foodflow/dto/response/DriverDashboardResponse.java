@@ -19,4 +19,6 @@ public class DriverDashboardResponse {
     // Polja sada moraju biti tipa DTO-a koje kreiramo u servisu
     private List<DashboardOfferDTO> newOffers;
     private List<DashboardOrderDTO> assignedDeliveries;
+
+    private CoordinatesDTO driverCoordinates;
 }
