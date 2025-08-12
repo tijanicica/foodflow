@@ -5,6 +5,7 @@ import com.iis.foodflow.dto.request.OrderRequestDTO;
 import com.iis.foodflow.dto.response.OrderDetailDTO;
 import com.iis.foodflow.dto.response.OrderSummaryDTO;
 import com.iis.foodflow.dto.response.RepeatingOrderTemplateDTO;
+import com.iis.foodflow.dto.response.TrackOrderDTO;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.OrderType;
 import com.iis.foodflow.enums.PaymentType;
@@ -12,6 +13,7 @@ import com.iis.foodflow.model.order.*;
 import com.iis.foodflow.model.restaurant.MenuItemVersion;
 import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -461,5 +463,39 @@ public class OrderService {
 
         // 3. Sačuvaj promene
         repeatingOrderRepository.save(template);
+    }
+
+
+    @Transactional(readOnly = true)
+    public TrackOrderDTO getTrackingInfo(Long orderId, Customer customer) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // Sigurnosna provera vlasništva
+        if (!order.getCustomer().getId().equals(customer.getId())) {
+            throw new AccessDeniedException("You are not authorized to track this order.");
+        }
+        // Provera statusa
+        if (order.getStatus() != OrderStatus.PICKED_UP) {
+            throw new IllegalStateException("Order can only be tracked when status is PICKED_UP.");
+        }
+
+        Driver driver = order.getDriver();
+        Address customerAddress = order.getAddress();
+        // Dohvatamo adresu restorana preko prve stavke
+        Address restaurantAddress = order.getOrderItems().stream().findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getAddress())
+                .orElseThrow(() -> new IllegalStateException("Restaurant address not found."));
+
+        return TrackOrderDTO.builder()
+                .orderId(order.getId())
+                .driverName(driver.getFirstName() + " " + driver.getLastName().charAt(0) + ".")
+                .customerName(customer.getFirstName() + " " + customer.getLastName())
+                .customerAddress(customerAddress.toString())
+                .eta(order.getEta())
+                .restaurantLocation(new TrackOrderDTO.Point(restaurantAddress.getLatitude(), restaurantAddress.getLongitude()))
+                .driverLocation(new TrackOrderDTO.Point(driver.getLatitude(), driver.getLongitude()))
+                .customerLocation(new TrackOrderDTO.Point(customerAddress.getLatitude(), customerAddress.getLongitude()))
+                .build();
     }
 }

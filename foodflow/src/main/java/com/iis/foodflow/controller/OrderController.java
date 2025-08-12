@@ -5,6 +5,7 @@ import com.iis.foodflow.dto.request.RejectOfferRequest;
 import com.iis.foodflow.dto.response.OrderDetailDTO;
 import com.iis.foodflow.dto.response.OrderSummaryDTO;
 import com.iis.foodflow.dto.response.RepeatingOrderTemplateDTO;
+import com.iis.foodflow.dto.response.TrackOrderDTO;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.OrderAssignmentService;
@@ -124,5 +125,14 @@ public class OrderController {
     ) {
         orderService.cancelRepeatingOrder(templateId, customer);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/track")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<TrackOrderDTO> getTrackingInfo(
+            @PathVariable("id") Long id, // Eksplicitno kažemo: "Uzmi 'id' iz putanje"
+            @AuthenticationPrincipal Customer customer
+    ) {
+        return ResponseEntity.ok(orderService.getTrackingInfo(id, customer));
     }
 }

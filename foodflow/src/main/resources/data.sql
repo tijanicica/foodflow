@@ -708,6 +708,19 @@ INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for
 
 
 
+-- Track on map
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (9, 'driver3@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Marko', 'Marković', '066123456', 'DRIVER', 'CAR', 'ONLINE', 0, 45.2550, 19.8456, NOW(), 0.0);
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta) VALUES
+    (31, 'PICKED_UP', 'CARD', 'REGULAR', NOW() - INTERVAL '15 minute', 150.00, 1450.00, 1, 11, 9, NOW() + INTERVAL '15 minute');
+-- Stavka je iz restorana "Wok Express", koji se nalazi na adresi id=21 u Novom Sadu
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (31, 1, 31, 122); -- 1x Piletina sa karijem
+
+-- Ponudu je prihvatio novi vozač
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+    (31, 31, 9, 'ACCEPTED');
 
 
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU

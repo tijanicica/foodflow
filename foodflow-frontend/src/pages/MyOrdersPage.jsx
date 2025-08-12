@@ -8,6 +8,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 
 
+
 // --- POMOĆNE FUNKCIJE ---
 
 const formatStatus = (status) => {
@@ -57,6 +58,15 @@ const OrderCard = ({ order }) => {
 
             {/* Kolona 4: Dugmad */}
             <div className="col-span-12 md:col-span-3 flex justify-end gap-4">
+               
+                {order.status === 'PICKED_UP' && (
+                    <Link to={`/track/${order.id}`}>
+                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-700">
+                            Track on map
+                        </Button>
+                    </Link>
+                )}
+               
                 {order.status === 'DELIVERED' && (
                     <Button 
                         variant={order.rated ? "secondary" : "default"} 

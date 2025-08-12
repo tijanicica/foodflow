@@ -325,3 +325,13 @@ export const cancelRepeatingOrder = async (templateId) => {
         throw error;
     }
 };
+
+export const getTrackingInfo = async (orderId) => {
+    try {
+        const response = await apiClient.get(`/orders/${orderId}/track`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching tracking info:", error);
+        throw error;
+    }
+};
