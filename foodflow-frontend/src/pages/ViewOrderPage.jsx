@@ -66,9 +66,9 @@ export function ViewOrderPage() {
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <NavbarDriver />
-            <main style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 2rem' }}>
+            <main style={{ maxWidth: '1500px', margin: '25px 90px'}}>
                 <div style={{
-                    backgroundColor: '#FDF8E8', padding: '2rem', borderRadius: '24px',
+                    backgroundColor: '#FDFDF5', padding: '2rem', borderRadius: '24px',
                     border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)',
                     display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start'
                 }}>
