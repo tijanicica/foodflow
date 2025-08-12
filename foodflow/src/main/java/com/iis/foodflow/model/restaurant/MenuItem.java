@@ -1,5 +1,6 @@
 package com.iis.foodflow.model.restaurant;
 
+import com.iis.foodflow.enums.MenuItemType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,6 +19,9 @@ public class MenuItem {
     private String name;
     private String description;
     private String imageUrl;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MenuItemType type;
 
     @ManyToMany
     @JoinTable(
