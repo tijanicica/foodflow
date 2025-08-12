@@ -511,19 +511,45 @@ public class DriverService {
 
 
     // === DODAJTE OVU POMOĆNU METODU U 'DriverService.java' AKO VEĆ NE POSTOJI ===
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        if ((lat1 == lat2) && (lon1 == lon2)) {
-            return 0;
+// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE POSTOJEĆU 'calculateDistance' METODU
+
+    /**
+     * Računa PROCJENJENU udaljenost putem na osnovu zračne udaljenosti.
+     * Koristi Haversine formulu i dodaje faktor korekcije za gradsku vožnju.
+     * @return Procijenjena udaljenost putem u kilometrima (km).
+     */
+    private double calculateDistance(Double lat1, Double lon1, Double lat2, Double lon2) {
+        // Sigurnosna provjera
+        if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) {
+            return 9999.0;
         }
-        final int R = 6371; // Radius Zemlje u km
+        if (lat1.equals(lat2) && lon1.equals(lon2)) {
+            return 0.0;
+        }
+
+        final int R = 6371; // Radijus Zemlje
+
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
+
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
 
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Prvo izračunamo zračnu udaljenost
+        double airDistance = R * c;
+
+        // === KLJUČNA ISPRAVKA: DODAJEMO FAKTOR KOREKCIJE ===
+        // Množimo zračnu udaljenost sa 1.3 da bismo simulirali da je
+        // stvarni put u prosjeku 30% duži zbog ulica.
+        // Možete se igrati sa ovim brojem (npr. 1.25, 1.4).
+        double estimatedRoadDistance = airDistance * 1.35;
+        // =======================================================
+
+        return estimatedRoadDistance;
+    }
 
 }
