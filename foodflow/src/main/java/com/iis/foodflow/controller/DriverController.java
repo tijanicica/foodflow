@@ -1,10 +1,7 @@
 // Datoteka: src/main/java/com/iis/foodflow/controller/DriverController.java
 package com.iis.foodflow.controller;
 
-import com.iis.foodflow.dto.request.ReportDelayRequest;
-import com.iis.foodflow.dto.request.UpdateDriverStatusRequest;
-import com.iis.foodflow.dto.request.UpdateLocationRequest;
-import com.iis.foodflow.dto.request.UpdateVehicleRequest;
+import com.iis.foodflow.dto.request.*;
 import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.DriverService;
@@ -132,20 +129,7 @@ public class DriverController {
         return ResponseEntity.ok(orderDetails);
     }
 
-    /** POST endpoint kojim vozač otkazuje porudžbinu koja mu je već dodijeljena. */
-    @PostMapping("/orders/{orderId}/cancel")
-    @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> cancelAssignedOrder(
-            @PathVariable Long orderId,
-            @RequestBody Map<String, String> payload,
-            @AuthenticationPrincipal Driver driverPrincipal) {
-        String reason = payload.get("reason");
-        if (reason == null || reason.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build(); // Razlog je obavezan
-        }
-        driverService.cancelAssignedDelivery(driverPrincipal.getEmail(), orderId, reason);
-        return ResponseEntity.ok().build();
-    }
+
 
     /** POST endpoint kojim vozač označava da je preuzeo porudžbinu. */
     @PostMapping("/orders/{orderId}/pickup")
@@ -178,6 +162,20 @@ public class DriverController {
         // Ako validacija padne, Spring će automatski vratiti 400 Bad Request sa porukom.
 
         driverService.reportDelay(driverPrincipal.getEmail(), orderId, request.getDelayMinutes());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/orders/{orderId}/cancel")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> cancelAssignedDelivery(
+            @PathVariable Long orderId,
+            @Valid @RequestBody CancelDeliveryRequest request,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        // Nema potrebe za provjerom razloga, @Valid i @NotBlank to rade za nas.
+        // Ako je 'reason' prazan, Spring će automatski vratiti 400 Bad Request.
+
+        driverService.cancelAssignedDelivery(driverPrincipal.getEmail(), orderId, request.getReason());
         return ResponseEntity.ok().build();
     }
 }

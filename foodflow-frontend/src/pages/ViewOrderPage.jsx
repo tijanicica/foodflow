@@ -4,11 +4,58 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
-import { getOrderDetails } from '../services/api';
-import toast from 'react-hot-toast'; 
-// Uvozimo ikonice
-import { FiMapPin, FiUser, FiAlertTriangle, FiXCircle, FiCheckCircle, FiNavigation } from 'react-icons/fi';
+import { getOrderDetails,cancelDelivery  } from '../services/api';
+import toast, { Toaster } from 'react-hot-toast';
+import { FiMapPin, FiUser, FiAlertTriangle, FiXCircle, FiCheckCircle, FiNavigation, FiClock } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+
 // TODO: Uvezite API funkcije za: markAsPickedUp, reportDelay, cancelDelivery
+const CancelOrderModal = ({ onConfirm, onCancel }) => {
+    const [reason, setReason] = useState('');
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            style={{
+                backgroundColor: '#FFFBEB', borderRadius: '16px',
+                padding: '2rem', width: '400px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                border: '1px solid #F3EAD9'
+            }}
+        >
+            <h3 style={{ margin: '0 0 1.5rem 0', textAlign: 'center', fontSize: '1.5rem' }}>Cancel Order</h3>
+            <label htmlFor="cancel-reason" style={{ fontWeight: '500', color: '#6B7280' }}>Reason (Optional):</label>
+            <textarea
+                id="cancel-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="e.g., Car accident"
+                style={{
+                    width: '100%', minHeight: '100px', border: '1px solid #ccc',
+                    borderRadius: '8px', padding: '0.75rem', marginTop: '0.5rem',
+                    boxSizing: 'border-box', resize: 'vertical'
+                }}
+            />
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button
+                    onClick={onCancel}
+                    style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1.5px solid #D1D5DB', backgroundColor: 'white', fontWeight: '600', cursor: 'pointer' }}
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={() => onConfirm(reason)}
+                    style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none', backgroundColor: '#B91C1C', color: 'white', fontWeight: '600', cursor: 'pointer' }}
+                >
+                    Confirm Cancellation
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
 
 export function ViewOrderPage() {
     const { orderId } = useParams();
@@ -16,6 +63,7 @@ export function ViewOrderPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [driverLocation, setDriverLocation] = useState({ lat: 44.8125, lng: 20.4612 });
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -44,7 +92,23 @@ const handleReportDelay = () => {
         // Ako JESTE, onda otvaramo prozor za unos kašnjenja
         alert("TODO: Implement Report Delay Modal!");
     };
-    const handleCancelDelivery = () => alert("TODO: Implement Cancel Delivery!");
+    const handleCancelDelivery = async (reason) => {
+        if (!reason || reason.trim() === '') {
+            toast.error("Reason for cancellation is mandatory.");
+            return;
+        }
+        try {
+            toast.loading('Cancelling delivery...');
+            await cancelDelivery(orderId, reason);
+            toast.dismiss();
+            toast.success('Delivery has been cancelled.');
+            setIsCancelModalOpen(false);
+            navigate('/driver'); // Vraćamo vozača na dashboard
+        } catch (err) {
+            toast.dismiss();
+            toast.error('Failed to cancel delivery.');
+        }
+    };
 
     // Stilovi za gumbe
     const primaryButtonStyle = {
@@ -77,6 +141,22 @@ const handleReportDelay = () => {
     
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
+             <Toaster position="top-center" />
+            
+            {/* OVERLAY I MODAL */}
+            {isCancelModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9998,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    backdropFilter: 'blur(5px)'
+                }}>
+                    <CancelOrderModal
+                        onCancel={() => setIsCancelModalOpen(false)}
+                        onConfirm={handleCancelDelivery}
+                    />
+                </div>
+            )}
             <NavbarDriver />
             <main style={{ maxWidth: '1500px', margin: '20px 90px' }}>
                 <div style={{
@@ -173,10 +253,10 @@ const handleReportDelay = () => {
     <FiAlertTriangle size={14} /> Report Delay
 </button>
                                 <button
-                                    onClick={handleCancelDelivery}
+                                    onClick={() => setIsCancelModalOpen(true)}
                                     style={secondaryButtonStyle}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#EF4444'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#a5a83eff'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#7a7d21ff'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#4A4A4A'; }}
                                 >
                                     <FiXCircle size={14} /> Cancel Delivery
                                 </button>

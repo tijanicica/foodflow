@@ -325,3 +325,14 @@ export const cancelRepeatingOrder = async (templateId) => {
         throw error;
     }
 };
+
+
+export const cancelDelivery = async (orderId, reason) => {
+    try {
+        const response = await apiClient.post(`/drivers/orders/${orderId}/cancel`, { reason });
+        return response.data;
+    } catch (error) {
+        console.error("Error cancelling delivery:", error);
+        throw error;
+    }
+};

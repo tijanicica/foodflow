@@ -222,20 +222,29 @@ public class DriverService {
      * @param orderId ID porudžbine koja se otkazuje
      * @param reason Obavezan razlog za otkazivanje
      */
+// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+
+    /**
+     * Vozač OTKAZUJE porudžbinu koju je VEĆ PRIHVATIO.
+     * Ovo je finalna akcija i porudžbina se NE dodjeljuje ponovo.
+     * @param driverEmail Email ulogiranog vozača
+     * @param orderId ID porudžbine koja se otkazuje
+     * @param reason Obavezan razlog za otkazivanje
+     * @return Ažurirana (sada otkazana) porudžbina.
+     */
     @Transactional
     public Order cancelAssignedDelivery(String driverEmail, Long orderId, String reason) {
         Driver driver = findDriverByEmail(driverEmail);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // KLJUČNA PROVJERA: Da li je porudžbina zaista dodijeljena ovom vozaču?
+        // Sigurnosna provjera: Da li je porudžbina zaista dodijeljena ovom vozaču?
         if (order.getDriver() == null || !order.getDriver().equals(driver)) {
             throw new SecurityException("Forbidden: This order is not assigned to you.");
         }
 
-        // KLJUČNA PROVJERA: Da li se porudžbina može otkazati? Ne može ako je već isporučena ili otkazana.
+        // Sigurnosna provjera: Da li se porudžbina može otkazati?
         List<OrderStatus> cancellableStatuses = List.of(
-                OrderStatus.CONFIRMED,
                 OrderStatus.READY_FOR_PICKUP,
                 OrderStatus.PICKED_UP
         );
@@ -247,16 +256,11 @@ public class DriverService {
         order.setStatus(OrderStatus.CANCELED);
         order.setCancellationReason(reason);
 
-        // Opcionalno, ali preporučeno: Ovdje se porudžbina "oslobađa" od vozača.
-        // Sistem bi je onda trebao ponovo dodijeliti drugom vozaču.
-        order.setDriver(null);
-
-        // TODO: Ovdje pozvati logiku koja će pokrenuti proces ponovne dodjele porudžbine.
+        // Ovdje NE SMIJE biti logike za ponovnu dodjelu.
+        // TODO: Ovdje treba dodati logiku za slanje notifikacije KUPCU i RESTORANU da je porudžbina otkazana.
 
         return orderRepository.save(order);
     }
-
-
 
     /**
      * Vozač prihvata ponuđenu porudžbinu.
