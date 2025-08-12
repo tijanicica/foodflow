@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { getMyOrders, getMyRepeatingOrders, toggleRepeatingOrderStatus, cancelRepeatingOrder } from '@/services/api';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom'; 
+import { Link, useSearchParams } from 'react-router-dom'; 
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 
 
@@ -166,10 +166,17 @@ export function MyOrdersPage() {
         { label: 'Repeating', value: 'Repeating' },
     ];
 
-    const [activeTab, setActiveTab] = useState(TABS[0].value); // Početni tab je 'Active'
+    const [searchParams] = useSearchParams();
+    
+    // 3. Proveravamo da li postoji 'tab' parametar, ako ne, podrazumevana vrednost je 'Active'
+    const initialTab = searchParams.get('tab') || TABS[0].value;
+
+    // 4. Inicijalizujemo stanje sa vrednošću iz URL-a
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [orders, setOrders] = useState([]);
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
+
 
     useEffect(() => {
         const fetchData = async () => {
