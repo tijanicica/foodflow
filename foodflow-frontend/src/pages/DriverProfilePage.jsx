@@ -205,7 +205,7 @@ export function DriverProfilePage() {
                 <div style={{
                     maxWidth: '1400px',
                     margin: '0 auto',
-                    backgroundColor: '#FDFDF5',
+                    backgroundColor: '#fffff9ff',
                     borderRadius: '24px',
                     padding: '2.5rem',
                     boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)',

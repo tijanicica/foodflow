@@ -492,6 +492,19 @@ INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for
 
 
 
+-- Porudžbina je potvrđena od strane restorana i sada čeka na dodjelu
+-- Ne može imati 'delivered_at' i ne bi trebala još imati 'driver_id'
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (21, 'READY_FOR_PICKUP', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 13, 1400.00, 0.00);
+
+-- Stavke za porudžbinu #7
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (21, 1, 21, 2); -- 1x Pasta Carbonara
+
+
+-- Ponuda je poslana Jovanu (ID=2) i ima status 'SENT'
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (21, 21, 2, 'SENT', NOW() - INTERVAL '1 day', NULL);
 
 
 

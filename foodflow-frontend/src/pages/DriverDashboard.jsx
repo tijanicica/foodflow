@@ -14,19 +14,53 @@ import { NavbarDriver } from '../components/NavbarDriver';
 // FAJL: src/pages/DriverDashboard.jsx
 
 // Definiramo zajedničku širinu kao varijablu na vrhu
-const cardMaxWidth = '420px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
-
-/**
- * Komponenta za prikaz jedne kartice sa ponudom.
- */
-// FAJL: src/pages/DriverDashboard.jsx
+const cardMaxWidth = '450px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
 
 
-// FAJL: src/pages/DriverDashboard.jsx
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 
-/**
- * Komponenta za prikaz jedne kartice sa ponudom, sa poboljšanim gumbovima.
- */
+
+
+// Novi stil za strelice - veće, bez okvira, sa hover efektom
+const navButtonStyle = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '50%',
+    width: '50px',
+    height: '50px',
+    cursor: 'pointer',
+    color: '#333',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transition: 'background-color 0.2s ease, color 0.2s ease', // Tranzicija za hover
+    zIndex: 10,
+};
+
+// Nova, suptilnija animacija (cross-fade & scale)
+const slideVariants = {
+    initial: {
+        opacity: 0,
+        scale: 0.95, // Počinje malo manji
+        zIndex: 1,
+    },
+    animate: {
+        opacity: 1,
+        scale: 1,
+        zIndex: 1,
+    },
+    exit: {
+        opacity: 0,
+        scale: 1.05, // Odlazi malo veći
+        zIndex: 0,
+    }
+};
+
 const OfferCard = ({ offer, onAccept, onReject }) => {
     // Definiramo stilove kao objekte da bi kod bio čitljiviji
     const baseButtonStyle = {
@@ -143,12 +177,12 @@ const EmptyState = ({ message, details }) => (
     <div style={{
         border: '2px dashed #D1D5DB', 
         borderRadius: '12px',
-        padding: '3rem 1.5rem', // <-- PROMIJENILI SMO PADDING DA BUDE USKLAĐEN
+        padding: '3rem 1.2rem', // <-- PROMIJENILI SMO PADDING DA BUDE USKLAĐEN
         textAlign: 'center', 
         color: '#6B7280',
         backgroundColor: '#FDFDF5',
-        maxWidth: cardMaxWidth, // Koristimo zajedničku širinu
-        margin: '0 auto',
+        maxWidth: '440px', // Koristimo zajedničku širinu
+        margin: '0 6px',
         // Da bi bio iste visine kao kartice, možemo dodati minHeight
         boxSizing: 'border-box' // Važno da padding bude uračunat u širinu/visinu
     }}>
@@ -157,96 +191,125 @@ const EmptyState = ({ message, details }) => (
     </div>
 );
 
+const OfferCarousel = ({ offers, onAccept, onReject }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
 
+    useEffect(() => { setCurrentIndex(0); }, [offers]);
+
+    const goPrev = () => { setCurrentIndex(prev => (prev > 0 ? prev - 1 : offers.length - 1)); };
+    const goNext = () => { setCurrentIndex(prev => (prev < offers.length - 1 ? prev + 1 : 0)); };
+
+    if (offers.length === 0) {
+        return <EmptyState message="No new orders available." details="You will be notified..." />;
+    }
+
+    return (
+        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0px 0px', minHeight: '220px' /* Visina da spriječimo skakanje */ }}>
+            {offers.length > 1 && (
+                <>
+                    <button onClick={goPrev} style={{ ...navButtonStyle, left: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                        <FiArrowLeft size={32} />
+                    </button>
+                    <button onClick={goNext} style={{ ...navButtonStyle, right: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                        <FiArrowRight size={32} />
+                    </button>
+                </>
+            )}
+            
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentIndex} // Animacija se pokreće kada se ovaj key promijeni
+                    variants={slideVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                >
+                    <OfferCard offer={offers[currentIndex]} onAccept={onAccept} onReject={onReject} />
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+};
+
+const AssignedDeliveryCarousel = ({ deliveries }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => { setCurrentIndex(0); }, [deliveries]);
+
+    const goPrev = () => { setCurrentIndex(prev => (prev > 0 ? prev - 1 : deliveries.length - 1)); };
+    const goNext = () => { setCurrentIndex(prev => (prev < deliveries.length - 1 ? prev + 1 : 0)); };
+
+    if (deliveries.length === 0) {
+        return <EmptyState message="You have no active deliveries." details="Accepted orders will appear here." />;
+    }
+
+    return (
+        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0 0', minHeight: '220px' }}>
+            {deliveries.length > 1 && (
+                <>
+                    <button onClick={goPrev} style={{ ...navButtonStyle, left: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                        <FiArrowLeft size={32} />
+                    </button>
+                    <button onClick={goNext} style={{ ...navButtonStyle, right: '-30px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
+                        <FiArrowRight size={32} />
+                    </button>
+                </>
+            )}
+            
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentIndex}
+                    variants={slideVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                >
+                    <AssignedDeliveryCard delivery={deliveries[currentIndex]} />
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+};
+// FAJL: src/pages/DriverDashboard.jsx
+
+// ... (importi i pomoćne komponente ostaju iste) ...
 export function DriverDashboard() {
     const [dashboardData, setDashboardData] = useState({ newOffers: [], assignedDeliveries: [], driverCoordinates: null });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchData = async () => {
-        try {
-            const data = await getDriverDashboard();
-            setDashboardData(data);
-        } catch (err) {
-            setError('Could not load dashboard data.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-        const intervalId = setInterval(() => {
-            getDriverDashboard().then(setDashboardData).catch(() => setError('Failed to refresh data.'));
-        }, 15000);
-        return () => clearInterval(intervalId);
-    }, []);
-
-    const handleAccept = async (offerId) => {
-        try {
-            await acceptOffer(offerId);
-            fetchData();
-        } catch (err) {
-            alert('Failed to accept offer.');
-        }
-    };
-
-    const handleReject = async (offerId) => {
-        try {
-            await rejectOffer(offerId);
-            fetchData();
-        } catch (err) {
-            alert('Failed to reject offer.');
-        }
-    };
+    const fetchData = async () => { try { const data = await getDriverDashboard(); setDashboardData(data); } catch (err) { setError('Could not load dashboard data.'); } finally { setLoading(false); } };
+    useEffect(() => { fetchData(); const intervalId = setInterval(fetchData, 15000); return () => clearInterval(intervalId); }, []);
+    const handleAccept = async (offerId) => { try { await acceptOffer(offerId); fetchData(); } catch (err) { alert('Failed to accept offer.'); } };
+    const handleReject = async (offerId) => { try { await rejectOffer(offerId); fetchData(); } catch (err) { alert('Failed to reject offer.'); } };
 
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <NavbarDriver />
-
-            <main style={{ padding: '2rem 6rem' }}>
-                <div style={{
-                    maxWidth: '1400px', margin: '0 auto',
-                    backgroundColor: '#FDFDF5', // Svijetla krem boja za podkontejner
-                    borderRadius: '24px',
-                    padding: '2.5rem', 
-                    boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)', // Topla sjenka
-                    border: '1px solid #F3EAD9'
-                }}>
+            <main style={{ padding: '2rem 5%' }}>
+                <div style={{ maxWidth: '1400px', margin: '0 auto', backgroundColor: '#FDFDF5', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)', border: '1px solid #F3EAD9' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '2.5rem' }}>
-                        {/* LIJEVA KOLONA */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                             <section>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid #F3EAD9', paddingBottom: '0.75rem' }}>New Order Opportunities</h2>
                                 {loading ? <p>Loading...</p> : error ? <p style={{ color: 'red' }}>{error}</p> :
-                                    dashboardData.newOffers.length > 0 ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
-                                            {dashboardData.newOffers.map(offer => (
-                                                <OfferCard key={offer.id} offer={offer} onAccept={handleAccept} onReject={handleReject} />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <EmptyState message="No new orders available." details="You will be notified when a new opportunity appears." />
-                                    )}
+                                    <OfferCarousel
+                                        offers={dashboardData.newOffers}
+                                        onAccept={handleAccept}
+                                        onReject={handleReject}
+                                    />
+                                }
                             </section>
-
                             <section>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid #F3EAD9', paddingBottom: '0.75rem' }}>My Assigned Deliveries</h2>
                                 {loading ? <p>Loading...</p> :
-                                    dashboardData.assignedDeliveries.length > 0 ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
-                                            {dashboardData.assignedDeliveries.map(delivery => (
-                                                <AssignedDeliveryCard key={delivery.id} delivery={delivery} />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <EmptyState message="You have no active deliveries." details="Accepted orders will appear here." />
-                                    )}
+                                    <AssignedDeliveryCarousel deliveries={dashboardData.assignedDeliveries} />
+                                }
                             </section>
                         </div>
-
-                        {/* DESNA KOLONA (MAPA) */}
-                        <div style={{ borderRadius: '16px', minHeight: '400px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #F3EAD9' }}>
+                        <div style={{ borderRadius: '16px', minHeight: '600px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #F3EAD9' }}>
                             {loading ? (
                                 <div style={{ backgroundColor: '#F3EAD9', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <p style={{ color: '#6B7280' }}>Loading Map...</p>
