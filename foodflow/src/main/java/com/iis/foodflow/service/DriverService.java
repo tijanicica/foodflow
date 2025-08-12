@@ -1,12 +1,9 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.response.*;
-import com.iis.foodflow.enums.DriverStatus;
-import com.iis.foodflow.enums.OfferStatus;
+import com.iis.foodflow.enums.*;
 import com.iis.foodflow.model.order.Address;
 import com.iis.foodflow.enums.DriverStatus;
-import com.iis.foodflow.enums.OrderStatus;
-import com.iis.foodflow.enums.VehicleType;
 import com.iis.foodflow.model.delivery.OrderOffer;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.restaurant.Restaurant;
@@ -22,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +29,8 @@ public class DriverService {
     // --- SVE POTREBNE ZAVISNOSTI ---
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
+    private final SystemSettingsService systemSettingsService;
+    private final OrderAssignmentService orderAssignmentService;
     private final DriverRatingRepository driverRatingRepository; // <-- ISPRAVKA: Dodana zavisnost
     private final OrderOfferRepository orderOfferRepository;   // <-- ISPRAVKA: Dodana zavisnost
 
@@ -59,6 +59,12 @@ public class DriverService {
                 .vehicleType(savedDriver.getVehicleType())
                 .status(savedDriver.getStatus())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public DriverStatusResponse getDriverStatus(String driverEmail) {
+        Driver driver = findDriverByEmail(driverEmail);
+        return new DriverStatusResponse(driver.getStatus());
     }
 
     /**
@@ -171,6 +177,10 @@ public class DriverService {
         if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
             throw new IllegalStateException("Cannot pick up order. It is not ready yet.");
         }
+
+        LocalDateTime eta = calculateEta(order, driver);
+        order.setEta(eta);
+
 
         order.setStatus(OrderStatus.PICKED_UP);
 
@@ -307,154 +317,239 @@ public class DriverService {
             throw new IllegalStateException("This offer is no longer available.");
         }
 
-        // Ažuriramo status ponude
+        // 1. Ažuriramo status ponude
         offer.setStatus(OfferStatus.REJECTED);
         offer.setReasonForRejection(reason);
 
-        // === KLJUČNA ISPRAVKA: Povećavamo brojač odbijanja za vozača ===
+        // 2. Povećavamo brojač odbijanja za vozača
         int currentRejections = (driver.getRejectionCount() == null) ? 0 : driver.getRejectionCount();
         driver.setRejectionCount(currentRejections + 1);
         driverRepository.save(driver);
-        // ================================================================
 
-        // TODO: Ovdje implementirati logiku za slanje ponude sljedećem vozaču.
+        // Spremamo ažuriranu ponudu. Važno je da ovo uradimo prije vraćanja.
+        OrderOffer savedOffer = orderOfferRepository.save(offer);
 
-        return orderOfferRepository.save(offer);
+        // 3. === TODO JE RIJEŠEN: POKREĆEMO PONOVNU DODJELU ===
+        // Uzimamo porudžbinu iz ponude koju je vozač odbio
+        Order orderToReassign = offer.getOrder();
+        System.out.println("Driver " + driver.getFirstName() + " REJECTED offer. Finding next driver for order " + orderToReassign.getId());
+
+        // Pozivamo OrderAssignmentService da pronađe sljedećeg kandidata
+        orderAssignmentService.findAndAssignBestDriver(orderToReassign);
+        // ========================================================
+
+        // Vraćamo originalnu, sada odbačenu ponudu, kao što je i traženo.
+        return savedOffer;
     }
+
+
+// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE CIJELU 'getDashboardData' METODU
+
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE CIJELU 'getDashboardData' METODU
+
     @Transactional(readOnly = true)
     public DriverDashboardResponse getDashboardData(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
 
-        List<DashboardOfferDTO> newOffers = Collections.emptyList();
+        // Kreiramo jednu pomoćnu metodu da ne dupliramo kod
+        // 'mapOrderToDto' će sada raditi sav posao mapiranja za nas
 
-        // Ako je ONLINE, učitavamo nove ponude
+        // Dohvaćamo nove ponude (ako je vozač online)
+        List<DashboardOfferDTO> newOffers = Collections.emptyList();
         if (driver.getStatus() == DriverStatus.ONLINE) {
             newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
                     .stream()
                     .map(offer -> {
-                        Order order = offer.getOrder();
-
-                        Restaurant restaurant = order.getOrderItems().stream()
-                                .findFirst()
-                                .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
-                                .orElse(null);
-
-                        if (restaurant == null) {
-                            return DashboardOfferDTO.builder()
-                                    .id(offer.getId())
-                                    .order(DashboardOrderDTO.builder()
-                                            .id(order.getId())
-                                            .status(order.getStatus())
-                                            .build())
-                                    .build();
-                        }
-
-                        double distance = calculateDistance(
-                                driver.getLatitude(), driver.getLongitude(),
-                                restaurant.getAddress().getLatitude(),
-                                restaurant.getAddress().getLongitude()
-                        );
-
-                        String restaurantAddress = String.format(
-                                "%s, %s, %s",
-                                restaurant.getAddress().getStreet(),
-                                restaurant.getAddress().getCity(),
-                                restaurant.getAddress().getPostalCode()
-                        );
-
-                        String deliveryAddress = order.getCustomer().getAddresses().stream()
-                                .findFirst()
-                                .map(addr -> String.format("%s, %s, %s",
-                                        addr.getStreet(),
-                                        addr.getCity(),
-                                        addr.getPostalCode()))
-                                .orElse("N/A");
-
-                        DashboardOrderDTO orderDTO = DashboardOrderDTO.builder()
-                                .id(order.getId())
-                                .status(order.getStatus())
-                                .restaurantName(restaurant.getName())
-                                .restaurantAddress(restaurantAddress)
-                                .deliveryAddress(deliveryAddress)
-                                .distanceToRestaurant(distance)
-                                .build();
-
-                        return DashboardOfferDTO.builder()
-                                .id(offer.getId())
-                                .order(orderDTO)
-                                .build();
+                        DashboardOrderDTO orderDto = mapOrderToDto(offer.getOrder(), driver);
+                        return DashboardOfferDTO.builder().id(offer.getId()).order(orderDto).build();
                     })
+                    .filter(offerDto -> offerDto.getOrder() != null)
                     .collect(Collectors.toList());
         }
 
-        // Assigned deliveries uvek vraćamo, bez obzira na status
+        // Dohvaćamo aktivne porudžbine
         List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
         List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
                 .stream()
-                .map(order -> {
-                    Restaurant restaurant = order.getOrderItems().stream()
-                            .findFirst()
-                            .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
-                            .orElse(null);
-
-                    if (restaurant == null) {
-                        return DashboardOrderDTO.builder()
-                                .id(order.getId())
-                                .status(order.getStatus())
-                                .build();
-                    }
-
-                    double distance = calculateDistance(
-                            driver.getLatitude(), driver.getLongitude(),
-                            restaurant.getAddress().getLatitude(),
-                            restaurant.getAddress().getLongitude()
-                    );
-
-                    String restaurantAddress = String.format(
-                            "%s, %s, %s",
-                            restaurant.getAddress().getStreet(),
-                            restaurant.getAddress().getCity(),
-                            restaurant.getAddress().getPostalCode()
-                    );
-
-                    String deliveryAddress = order.getCustomer().getAddresses().stream()
-                            .findFirst()
-                            .map(addr -> String.format("%s, %s, %s",
-                                    addr.getStreet(),
-                                    addr.getCity(),
-                                    addr.getPostalCode()))
-                            .orElse("N/A");
-
-                    return DashboardOrderDTO.builder()
-                            .id(order.getId())
-                            .status(order.getStatus())
-                            .restaurantName(restaurant.getName())
-                            .restaurantAddress(restaurantAddress)
-                            .deliveryAddress(deliveryAddress)
-                            .distanceToRestaurant(distance)
-                            .build();
-                })
+                .map(order -> mapOrderToDto(order, driver)) // Koristimo istu pomoćnu metodu
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        return new DriverDashboardResponse(newOffers, assignedDeliveries);
+        CoordinatesDTO driverCoordinates = new CoordinatesDTO(driver.getLatitude(), driver.getLongitude());
+        return new DriverDashboardResponse(newOffers, assignedDeliveries, driverCoordinates);
+    }
+
+
+// === DODAJTE OVU NOVU POMOĆNU METODU U ISTU KLASU ===
+    /**
+     * Pomoćna metoda koja mapira jedan Order entitet u DashboardOrderDTO,
+     * računajući pritom obje ključne distance.
+     */
+    private DashboardOrderDTO mapOrderToDto(Order order, Driver driver) {
+        // Dohvaćamo restoran preko lanca veza
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElse(null);
+
+        // Ako nema restorana, ne možemo ništa izračunati
+        if (restaurant == null) {
+            return null;
+        }
+
+        // Računamo OBJE distance
+        double distDriverToRestaurant = calculateDistance(
+                driver.getLatitude(), driver.getLongitude(),
+                restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()
+        );
+
+        double distDriverToCustomer = calculateDistance(
+                driver.getLatitude(), driver.getLongitude(),
+                order.getAddress().getLatitude(), order.getAddress().getLongitude()
+        );
+
+        return DashboardOrderDTO.builder()
+                .id(order.getId())
+                .status(order.getStatus())
+                .restaurantName(restaurant.getName())
+                .restaurantAddress(restaurant.getAddress().toString())
+                .deliveryAddress(order.getAddress().toString())
+                .distanceDriverToRestaurant(distDriverToRestaurant) // Popunjavamo novo polje
+                .distanceDriverToCustomer(distDriverToCustomer)   // Popunjavamo novo polje
+                .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
+                .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
+                .build();
+    }
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE POSTOJEĆU 'calculateEta' METODU SA OVOM
+
+    /**
+     * Računa ETA od trenutka preuzimanja na osnovu vozila, distance, vremena i prijavljenih kašnjenja.
+     * @param order Porudžbina za koju se računa ETA.
+     * @param driver Vozač koji vrši dostavu.
+     * @return Procijenjeno vrijeme dolaska.
+     */
+    private LocalDateTime calculateEta(Order order, Driver driver) {
+
+        // --- KORAK 1: DOHVAĆANJE RESTORANA ---
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(orderItem -> orderItem.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElseThrow(() -> new IllegalStateException("Cannot calculate ETA: Order has no items or restaurant link."));
+
+        // --- KORAK 2: OSNOVNO VRIJEME PUTOVANJA NA OSNOVU DISTANCE I VOZILA ---
+        double deliveryDistance = calculateDistance(
+                restaurant.getAddress().getLatitude(),
+                restaurant.getAddress().getLongitude(),
+                order.getAddress().getLatitude(),
+                order.getAddress().getLongitude()
+        );
+
+        double minutesPerKm;
+        switch (driver.getVehicleType()) {
+            case MOTORCYCLE: minutesPerKm = 2.5; break;
+            case CAR: minutesPerKm = 3.5; break;
+            case BICYCLE: default: minutesPerKm = 5.0; break;
+        }
+        long travelTime = (long) (deliveryDistance * minutesPerKm);
+
+        // --- KORAK 3: DODATNO VRIJEME ZBOG VREMENSKIH UVJETA ---
+        long weatherDelay = 0;
+        WeatherCondition weather = systemSettingsService.getCurrentWeather();
+        if (weather == WeatherCondition.RAINY) {
+            weatherDelay = 10;
+        } else if (weather == WeatherCondition.SNOWY || weather == WeatherCondition.STORMY) {
+            weatherDelay = 20; // Vraćeno na 20 radi veće razlike
+        }
+
+        // --- KORAK 4: DODATNO VRIJEME KOJE JE PRIJAVIO VOZAČ ---
+        long driverReportedDelay = (order.getDriverReportedDelay() != null) ? order.getDriverReportedDelay() : 0;
+
+        // --- KORAK 5: KONAČNI IZRAČUN ---
+        // Zbrajamo sve komponente da dobijemo ukupno trajanje putovanja
+        long totalTravelMinutes = travelTime + weatherDelay + driverReportedDelay;
+
+        System.out.println(
+                String.format("ETA calculated for order %d: TravelTime= %d min, WeatherDelay= %d min, DriverDelay= %d min. TOTAL= %d min.",
+                        order.getId(), travelTime, weatherDelay, driverReportedDelay, totalTravelMinutes)
+        );
+
+        // Vraćamo TRENUTNO VRIJEME + izračunato ukupno vrijeme putovanja
+        return LocalDateTime.now().plusMinutes(totalTravelMinutes);
+    }
+
+// OBAVEZNO dodajte import za Restaurant ako ga nemate
+// import com.iis.foodflow.model.restaurant.Restaurant;
+
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+
+    @Transactional
+    public Order reportDelay(String driverEmail, Long orderId, Integer delayMinutes) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Provjere sigurnosti...
+        if (!order.getDriver().equals(driver)) {
+            throw new SecurityException("This is not your order.");
+        }
+
+        // 1. Zabilježi kašnjenje koje je vozač prijavio
+        order.setDriverReportedDelay(delayMinutes);
+
+        // 2. Ponovo izračunaj i AŽURIRAJ ETA sa novim informacijama
+        LocalDateTime newEta = calculateEta(order, driver);
+        order.setEta(newEta);
+
+        // TODO: Poslati notifikaciju kupcu o novom, ažuriranom ETA.
+
+        return orderRepository.save(order);
     }
 
 
 
     // === DODAJTE OVU POMOĆNU METODU U 'DriverService.java' AKO VEĆ NE POSTOJI ===
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        if ((lat1 == lat2) && (lon1 == lon2)) {
-            return 0;
+// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE POSTOJEĆU 'calculateDistance' METODU
+
+    /**
+     * Računa PROCJENJENU udaljenost putem na osnovu zračne udaljenosti.
+     * Koristi Haversine formulu i dodaje faktor korekcije za gradsku vožnju.
+     * @return Procijenjena udaljenost putem u kilometrima (km).
+     */
+    private double calculateDistance(Double lat1, Double lon1, Double lat2, Double lon2) {
+        // Sigurnosna provjera
+        if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) {
+            return 9999.0;
         }
-        final int R = 6371; // Radius Zemlje u km
+        if (lat1.equals(lat2) && lon1.equals(lon2)) {
+            return 0.0;
+        }
+
+        final int R = 6371; // Radijus Zemlje
+
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
+
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
 
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Prvo izračunamo zračnu udaljenost
+        double airDistance = R * c;
+
+        // === KLJUČNA ISPRAVKA: DODAJEMO FAKTOR KOREKCIJE ===
+        // Množimo zračnu udaljenost sa 1.3 da bismo simulirali da je
+        // stvarni put u prosjeku 30% duži zbog ulica.
+        // Možete se igrati sa ovim brojem (npr. 1.25, 1.4).
+        double estimatedRoadDistance = airDistance * 1.35;
+        // =======================================================
+
+        return estimatedRoadDistance;
+    }
 
 }

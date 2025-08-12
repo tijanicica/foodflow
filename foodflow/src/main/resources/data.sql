@@ -128,7 +128,7 @@ INSERT INTO menu_version (id, version_number, creation_date, active, menu_id) VA
 -- STAVKE MENIJA I NJIHOVE VERZIJE
 INSERT INTO menu_item (id, name, description, image_url) VALUES
 -- Pasta Paradise (1-5)
-    (1, 'Pasta Carbonara', 'Pancetta, jaja, parmezan', 'https://images.unsplash.com/photo-1608797223204-a2e5f39e5855');
+(1, 'Pasta Carbonara', 'Pancetta, jaja, parmezan', 'https://images.unsplash.com/photo-1608797223204-a2e5f39e5855');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (2, 'Pizza Margherita', 'Paradajz, mocarela, bosiljak', 'https://images.unsplash.com/photo-1595854337175-53a06f8eda5e');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -170,7 +170,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (19, 'Edamame', 'Kuvana soja sa morskom solju', 'https://images.unsplash.com/photo-1599497840638-380d306b4545');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (20, 'Spicy Tuna Roll', 'Pikantna tuna, krastavac', 'https://images.unsplash.com/photo-1617196035154-9b6a6b21841b');
-    -- Meraklija Grill (21-25)
+-- Meraklija Grill (21-25)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (21, 'Ćevapi 10 komada', 'Domaći ćevapi sa lukom', 'https://images.unsplash.com/photo-1565299585323-21d1d1437a3a');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -181,7 +181,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (24, 'Šopska salata', 'Paradajz, krastavac, sir', 'https://images.unsplash.com/photo-1551248429-4e6786348237');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (25, 'Domaća lepinja', 'Sveže pečena', 'https://images.unsplash.com/photo-1533560793024-4f591a541014');
-    -- The Golden Spoon (26-30)
+-- The Golden Spoon (26-30)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (26, 'Biftek u sosu od bibera', 'Najfiniji komad mesa', 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -192,7 +192,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (29, 'Čokoladni sufle', 'Sa toplim jezgrom', 'https://images.unsplash.com/photo-1587314168485-3236d6710814');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (30, 'Creme Brulee', 'Hrskava korica od karamele', 'https://images.unsplash.com/photo-1543322778-90f3b499b80b');
-    -- Pizza Corner (31-35)
+-- Pizza Corner (31-35)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (31, 'Capricciosa', 'Šunka, pečurke, sir', 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -203,7 +203,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (34, 'Pancerota', 'Punjeno testo', 'https://images.unsplash.com/photo-1627222239595-a8a25a2e0717');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (35, 'Beli luk hleb', 'Sa sirom', 'https://images.unsplash.com/photo-1598679253443-4b5c7e753e61');
-    -- Vegan Oasis (36-40)
+-- Vegan Oasis (36-40)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (36, 'Falafel Bowl', 'Falafel, humus, salata', 'https://images.unsplash.com/photo-1594212699903-89169655fab6');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -214,7 +214,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (39, 'Sirova torta od limuna', 'Bez pečenja', 'https://images.unsplash.com/photo-1562347810-092264645332');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (40, 'Zeleni Smoothie', 'Spanać, banana, bademovo mleko', 'https://images.unsplash.com/photo-1610970881699-44a5c8a01490');
-    -- Steak House (41-45)
+-- Steak House (41-45)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (41, 'Rib-eye Steak', '300g odležalog mesa', 'https://images.unsplash.com/photo-1551028150-64b9f398f67b');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -225,7 +225,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (44, 'Krompir u foliji', 'Sa kajmakom', 'https://images.unsplash.com/photo-1518779578993-6bae68262ae2');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (45, 'Salata od rukole i čerija', 'Sveža salata', 'https://images.unsplash.com/photo-1505253716362-afb74bf60d44');
-    -- Gluten-Free Heaven (46-50)
+-- Gluten-Free Heaven (46-50)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (46, 'Bezglutenska pica', 'Sa sastojcima po izboru', 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -236,7 +236,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (49, 'Palačinke od heljde', 'Sa džemom bez šećera', 'https://images.unsplash.com/photo-1528207776546-365bb710ee93');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (50, 'Mafini od badema', 'Bez glutena i šećera', 'https://images.unsplash.com/photo-1607478900766-efe13248b125');
-    -- Fish & Chips (51-55)
+-- Fish & Chips (51-55)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (51, 'Oslić i pomfrit', 'Klasični fish and chips', 'https://images.unsplash.com/photo-1599923572242-3a5576145326');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -247,7 +247,7 @@ INSERT INTO menu_item (id, name, description, image_url) VALUES
     (54, 'Salata od morskih plodova', 'Škampi, dagnje, hobotnica', 'https://images.unsplash.com/photo-1594343384813-89510619a0a1');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (55, 'Pohovani štapići od sira', 'Sa tartar sosom', 'https://images.unsplash.com/photo-1608797223204-a2e5f39e5855');
-    -- Wok Express (56-60)
+-- Wok Express (56-60)
 INSERT INTO menu_item (id, name, description, image_url) VALUES
     (56, 'Piletina sa karijem', 'Piletina u crvenom kari sosu', 'https://images.unsplash.com/photo-1565299585323-21d1d1437a3a');
 INSERT INTO menu_item (id, name, description, image_url) VALUES
@@ -379,8 +379,10 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (1, 1, 2, 'ACCE
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id) VALUES
     (2, 'CANCELED', 'CASH', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1300.00, 1, 1, 2);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
-    (2, 1, 2, 11),
-    (3, 1, 2, 14);
+                                                                          (2, 1, 2, 11),
+                                                                          (3, 1, 2, 14);
+
+
 
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (2, 2, 2, 'ACCEPTED');
@@ -403,8 +405,9 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, scheduled_for) VALUES
     (4, 'SCHEDULED_PENDING', 'CARD', 'SCHEDULED', NOW(), 150.00, 4750.00, 1, 1, NOW() + INTERVAL '1 day');
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
-    (5, 2, 4, 16),
-    (6, 1, 4, 20);
+                                                                          (5, 2, 4, 16),
+                                                                          (6, 1, 4, 20);
+
 
 
 -- PORUDŽBINA #5: CREATED (nema vozača, čeka potvrdu menadžera)
@@ -412,8 +415,9 @@ INSERT INTO orders (id, status, payment_type, order_type, creation_date, deliver
     (5, 'CREATED', 'COMBINED', 'REPEATING', NOW(), 150.00, 2650.00, 1, 1);
 
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
-    (7, 1, 5, 6),
-    (8, 1, 5, 9);
+                                                                          (7, 1, 5, 6),
+                                                                          (8, 1, 5, 9);
+
 
 INSERT INTO repeating_order (id, original_order_id, repeat_type, day_of_week, delivery_time, active, unlimited) VALUES
     (1, 5, 'WEEKLY', 'FRIDAY', '19:00:00', true, true);
@@ -506,6 +510,41 @@ INSERT INTO order_rating (id, quality, taste, portion_size) VALUES
 
 
 
+
+-- Porudžbina je potvrđena od strane restorana i sada čeka na dodjelu
+-- Ne može imati 'delivered_at' i ne bi trebala još imati 'driver_id'
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (20, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 11, 1400.00, 0.00);
+
+-- Stavke za porudžbinu #7
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (20, 1, 20, 1); -- 1x Pasta Carbonara
+
+
+-- Ponuda je poslana Jovanu (ID=2) i ima status 'SENT'
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (20, 20, 2, 'SENT', NOW() - INTERVAL '1 day', NULL);
+
+
+
+-- Porudžbina je potvrđena od strane restorana i sada čeka na dodjelu
+-- Ne može imati 'delivered_at' i ne bi trebala još imati 'driver_id'
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (21, 'READY_FOR_PICKUP', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 13, 1400.00, 0.00);
+
+-- Stavke za porudžbinu #7
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (21, 1, 21, 2); -- 1x Pasta Carbonara
+
+
+-- Ponuda je poslana Jovanu (ID=2) i ima status 'SENT'
+INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for_rejection) VALUES
+    (21, 21, 2, 'SENT', NOW() - INTERVAL '1 day', NULL);
+
+
+
+
+
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU
 INSERT INTO problem_category (id, name, parent_category_id) VALUES
                                                                 (1, 'Problem sa porudžbinom', NULL),
@@ -521,7 +560,7 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
 
 -- OCJENE ZA DOSTAVLJAČE (DriverRating)
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
-(1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
+    (1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
 
 
 -- Resetovanje sekvenci

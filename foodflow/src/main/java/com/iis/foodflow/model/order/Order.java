@@ -81,4 +81,7 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "address_id", nullable = false) // Svaka porudžbina MORA imati adresu
     private Address address;
+
+    @Column(name = "driver_reported_delay")
+    private Integer driverReportedDelay = 0; // U minutama, početna vrijednost 0
 }

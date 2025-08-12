@@ -10,6 +10,7 @@ import lombok.*;
 @Getter
 @Setter
 @Entity
+@ToString
 public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,4 +30,16 @@ public class Address {
 
     @OneToOne(mappedBy = "address")
     private Restaurant restaurant;
+
+    // === DODAJTE OVU METODU NA KRAJ KLASE ===
+    @Override
+    public String toString() {
+        // Možete formatirati string kako god želite da se prikazuje
+        return String.format("%s %s, %s, %s",
+                this.street,
+                this.streetNumber,
+                this.postalCode,
+                this.city
+        );
+    }
 }
