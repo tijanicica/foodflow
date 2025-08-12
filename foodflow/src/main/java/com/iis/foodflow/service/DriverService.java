@@ -388,18 +388,13 @@ public class DriverService {
      * računajući pritom obje ključne distance.
      */
     private DashboardOrderDTO mapOrderToDto(Order order, Driver driver) {
-        // Dohvaćamo restoran preko lanca veza
         Restaurant restaurant = order.getOrderItems().stream()
                 .findFirst()
                 .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
                 .orElse(null);
 
-        // Ako nema restorana, ne možemo ništa izračunati
-        if (restaurant == null) {
-            return null;
-        }
+        if (restaurant == null) return null;
 
-        // Računamo OBJE distance
         double distDriverToRestaurant = calculateDistance(
                 driver.getLatitude(), driver.getLongitude(),
                 restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()
@@ -413,14 +408,31 @@ public class DriverService {
         return DashboardOrderDTO.builder()
                 .id(order.getId())
                 .status(order.getStatus())
+                .eta(order.getEta()) // Dodajemo ETA
                 .restaurantName(restaurant.getName())
                 .restaurantAddress(restaurant.getAddress().toString())
                 .deliveryAddress(order.getAddress().toString())
-                .distanceDriverToRestaurant(distDriverToRestaurant) // Popunjavamo novo polje
-                .distanceDriverToCustomer(distDriverToCustomer)   // Popunjavamo novo polje
+                .customerFirstName(order.getCustomer().getFirstName()) // Dodajemo ime kupca
+                .customerLastName(order.getCustomer().getLastName())   // Dodajemo prezime kupca
+                .distanceDriverToRestaurant(distDriverToRestaurant)
+                .distanceDriverToCustomer(distDriverToCustomer)
                 .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
                 .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
                 .build();
+    }
+    @Transactional(readOnly = true)
+    public DashboardOrderDTO getAssignedOrderDetails(String driverEmail, Long orderId) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // Sigurnosna provjera: Da li porudžbina zaista pripada ovom vozaču?
+        if (!driver.equals(order.getDriver())) {
+            throw new SecurityException("Forbidden: This order is not assigned to you.");
+        }
+
+        // Koristimo postojeću pomoćnu metodu da mapiramo podatke
+        return mapOrderToDto(order, driver);
     }
     // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 // ZAMIJENITE POSTOJEĆU 'calculateEta' METODU SA OVOM

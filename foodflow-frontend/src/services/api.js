@@ -297,7 +297,7 @@ export const getMyRepeatingOrders = async () => {
 
 export const getOrderDetails = async (orderId) => {
     try {
-        const response = await apiClient.get(`/orders/${orderId}`);
+        const response = await apiClient.get(`drivers/orders/${orderId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching details for order ${orderId}:`, error);

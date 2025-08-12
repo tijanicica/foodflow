@@ -122,6 +122,16 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/orders/{orderId}")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<DashboardOrderDTO> getSingleOrderDetails(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        DashboardOrderDTO orderDetails = driverService.getAssignedOrderDetails(driverPrincipal.getEmail(), orderId);
+        return ResponseEntity.ok(orderDetails);
+    }
+
     /** POST endpoint kojim vozač otkazuje porudžbinu koja mu je već dodijeljena. */
     @PostMapping("/orders/{orderId}/cancel")
     @PreAuthorize("hasRole('DRIVER')")
