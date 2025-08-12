@@ -111,7 +111,12 @@ public class RestaurantService {
                 item.getImageUrl(),
                 miv.getPrice(),
                 allergenNames,
-                dietTypeNames
+                dietTypeNames,
+                item.getType(),
+                miv.isAvailable(),
+                miv.isPopular(),
+                miv.getTimeFrom(),
+                miv.getTimeTo()
         );
     }
 }
