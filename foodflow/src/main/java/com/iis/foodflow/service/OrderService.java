@@ -39,7 +39,8 @@ public class OrderService {
 
     private final RepeatingOrderRepository repeatingOrderRepository; 
 
-    private final OrderAssignmentService orderAssignmentService; 
+    private final OrderAssignmentService orderAssignmentService;
+    private final DriverRatingRepository driverRatingRepository;
 
     @Transactional
     public Order confirmOrder(Long orderId) {
@@ -338,8 +339,10 @@ public class OrderService {
                 .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getName())
                 .orElse("Unknown Restaurant");
 
-        boolean isRated = order.getOrderRating() != null && order.getOrderRating().getId() != null;
+        boolean hasOrderRating = order.getOrderRating() != null;
+        boolean hasDriverRatingByCustomer = driverRatingRepository.existsByOrder_IdAndRatedByCustomerIsNotNull(order.getId());
 
+        boolean isRated = hasOrderRating || hasDriverRatingByCustomer;
 
         return new OrderSummaryDTO(
                 order.getId(),

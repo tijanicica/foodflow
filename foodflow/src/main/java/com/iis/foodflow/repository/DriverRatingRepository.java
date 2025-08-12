@@ -32,4 +32,8 @@ public interface DriverRatingRepository extends JpaRepository<DriverRating, Long
     @Query("SELECT AVG( (dr.onTimeArrivalRating + dr.hygieneRatingCustomer + dr.kindnessRating + dr.professionalismRating + dr.hygieneRatingRestaurant + dr.communicationRating) / 6.0 ) " +
             "FROM DriverRating dr WHERE dr.driver.id = :driverId")
     Optional<Double> findAverageRatingByDriverId(@Param("driverId") Long driverId);
+
+    boolean existsByOrder_IdAndRatedByCustomerIsNotNull(Long orderId);
+
+
 }

@@ -31,9 +31,11 @@ const MenuItemCard = ({ item, restaurant }) => {
     
     const available = isItemAvailable(item);
 
+    const imageUrl = item.imageUrl || "https://via.placeholder.com/100";
+
     return (
         <div className={`bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-opacity ${!available ? 'opacity-50' : ''} ${item.popular && available ? 'border-yellow-400 border-2' : ''}`}>
-            <img src={item.imageUrl || "https://via.placeholder.com/100"} alt={item.name} className="w-full sm:w-24 h-40 sm:h-24 rounded-md object-cover" />
+          <img src={imageUrl} alt={item.name} className="w-full sm:w-24 h-40 sm:h-24 rounded-md object-cover" />
       
             <div className="flex-grow">
                 <div className="flex items-center gap-2 mb-1">
@@ -150,6 +152,9 @@ export function MenuPage() {
         fetchMenu();
     }, [restaurantId, searchParams]);
 
+    const headerImageUrl = menuData?.restaurantImageUrl || '';
+
+
     if (loading) return <div className="flex justify-center items-center h-screen">Loading menu...</div>;
     if (error) return <div className="flex justify-center items-center h-screen text-red-500">{error}</div>;
 
@@ -158,7 +163,7 @@ export function MenuPage() {
             <Navbar />
             <header 
                 className="h-56 bg-gray-400 bg-center bg-cover flex items-end p-8" 
-                style={{backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${menuData.restaurantImageUrl})`}}
+                style={{backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${headerImageUrl})`}}
             >
                 <div>
                     <h1 className="text-5xl font-bold text-white">{menuData.restaurantName}</h1>
