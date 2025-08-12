@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,13 +72,30 @@ public class DriverService {
      * Ažurira geografsku lokaciju vozača.
      */
     @Transactional
-    public void updateLocation(String driverEmail, Double latitude, Double longitude) {
+    public DashboardOrderDTO updateDriverLocation(String driverEmail, CoordinatesDTO newLocation) {
         Driver driver = findDriverByEmail(driverEmail);
-        driver.setLatitude(latitude);
-        driver.setLongitude(longitude);
-        driver.setTimestamp(LocalDateTime.now());
+
+        // Update lokacije vozača
+        driver.setLatitude(newLocation.getLat());
+        driver.setLongitude(newLocation.getLng());
         driverRepository.save(driver);
+
+        // Napravi listu statusa
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
+
+        // Pronađi aktivnu porudžbinu (ako postoji)
+        Optional<Order> activeOrderOpt = orderRepository.findActiveOrderByDriver(driver, activeStatuses);
+
+        if (activeOrderOpt.isEmpty()) {
+            throw new RuntimeException("No active order assigned");
+        }
+
+        Order activeOrder = activeOrderOpt.get();
+
+        // Vraćamo DTO sa aktuelnim podacima
+        return mapOrderToDto(activeOrder, driver);
     }
+
 
     /**
      * Mijenja tip vozila za prijavljenog vozača.

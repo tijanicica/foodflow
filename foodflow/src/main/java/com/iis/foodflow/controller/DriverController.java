@@ -48,7 +48,10 @@ public class DriverController {
     public ResponseEntity<Void> updateOwnLocation(
             @RequestBody UpdateLocationRequest request,
             @AuthenticationPrincipal Driver driverPrincipal) {
-        driverService.updateLocation(driverPrincipal.getEmail(), request.getLatitude(), request.getLongitude());
+
+        CoordinatesDTO newLocation = new CoordinatesDTO(request.getLatitude(), request.getLongitude());
+        driverService.updateDriverLocation(driverPrincipal.getEmail(), newLocation);
+
         return ResponseEntity.ok().build();
     }
 

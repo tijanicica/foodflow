@@ -12,6 +12,7 @@ import com.iis.foodflow.model.order.*;
 import com.iis.foodflow.model.restaurant.MenuItemVersion;
 import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,7 +41,14 @@ public class OrderService {
 
     private final RepeatingOrderRepository repeatingOrderRepository; 
 
-    private final OrderAssignmentService orderAssignmentService; 
+    private final OrderAssignmentService orderAssignmentService;
+
+    @Transactional(readOnly = true)
+    public Optional<Order> findActiveOrderByDriver(Driver driver) {
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
+        return orderRepository.findActiveOrderByDriver(driver, activeStatuses);
+    }
+
 
     @Transactional
     public Order confirmOrder(Long orderId) {
