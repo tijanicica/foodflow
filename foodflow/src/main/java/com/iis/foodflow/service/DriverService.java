@@ -222,28 +222,21 @@ public class DriverService {
      * @param orderId ID porudžbine koja se otkazuje
      * @param reason Obavezan razlog za otkazivanje
      */
-// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
-
-    /**
-     * Vozač OTKAZUJE porudžbinu koju je VEĆ PRIHVATIO.
-     * Ovo je finalna akcija i porudžbina se NE dodjeljuje ponovo.
-     * @param driverEmail Email ulogiranog vozača
-     * @param orderId ID porudžbine koja se otkazuje
-     * @param reason Obavezan razlog za otkazivanje
-     * @return Ažurirana (sada otkazana) porudžbina.
-     */
     @Transactional
-    public Order cancelAssignedDelivery(String driverEmail, Long orderId, String reason) {
+    public CancelDeliveryResponse cancelAssignedDelivery(String driverEmail, Long orderId, String reason) {
         Driver driver = findDriverByEmail(driverEmail);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // Sigurnosna provjera: Da li je porudžbina zaista dodijeljena ovom vozaču?
+        // Provera da li je porudžbina dodijeljena ovom vozaču
         if (order.getDriver() == null || !order.getDriver().equals(driver)) {
             throw new SecurityException("Forbidden: This order is not assigned to you.");
         }
+        if (order.getStatus() == OrderStatus.CANCELED) {
+            throw new IllegalStateException("This order can no longer be canceled. Current status: " + order.getStatus());
+        }
 
-        // Sigurnosna provjera: Da li se porudžbina može otkazati?
+        // Provera statusa koji se može otkazati
         List<OrderStatus> cancellableStatuses = List.of(
                 OrderStatus.READY_FOR_PICKUP,
                 OrderStatus.PICKED_UP
@@ -256,11 +249,16 @@ public class DriverService {
         order.setStatus(OrderStatus.CANCELED);
         order.setCancellationReason(reason);
 
-        // Ovdje NE SMIJE biti logike za ponovnu dodjelu.
-        // TODO: Ovdje treba dodati logiku za slanje notifikacije KUPCU i RESTORANU da je porudžbina otkazana.
+        Order savedOrder = orderRepository.save(order);
 
-        return orderRepository.save(order);
+        // Vraćamo DTO, a ne entitet
+        return new CancelDeliveryResponse(
+                savedOrder.getId(),
+                savedOrder.getStatus(),
+                savedOrder.getCancellationReason()
+        );
     }
+
 
     /**
      * Vozač prihvata ponuđenu porudžbinu.

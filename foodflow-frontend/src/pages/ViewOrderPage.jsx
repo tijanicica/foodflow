@@ -1,53 +1,162 @@
 // FAJL: src/pages/ViewOrderPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
-import { getOrderDetails,cancelDelivery  } from '../services/api';
+import { getOrderDetails, cancelDelivery } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { FiMapPin, FiUser, FiAlertTriangle, FiXCircle, FiCheckCircle, FiNavigation, FiClock } from 'react-icons/fi';
+import {
+  FiMapPin,
+  FiUser,
+  FiAlertTriangle,
+  FiXCircle,
+  FiCheckCircle,
+  FiNavigation,
+  FiClock,
+  FiEdit3
+} from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
-// TODO: Uvezite API funkcije za: markAsPickedUp, reportDelay, cancelDelivery
+const predefinedReasons = [
+    { id: 1, text: "Vehicle breakdown", icon: <FiAlertTriangle /> },
+    { id: 2, text: "Traffic jam" },
+    { id: 3, text: "Customer unavailable", icon: <FiClock /> },
+    { id: 4, text: "Wrong address", icon: <FiMapPin /> }
+];
+
 const CancelOrderModal = ({ onConfirm, onCancel }) => {
-    const [reason, setReason] = useState('');
+    const [selectedReasons, setSelectedReasons] = useState([]);
+    const [customReason, setCustomReason] = useState("");
+
+    const toggleReason = (id) => {
+        setSelectedReasons((prev) =>
+            prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
+        );
+    };
+
+    const handleConfirm = () => {
+        // Uzimamo tekstove iz predefinisanih razloga
+        const selectedTexts = predefinedReasons
+            .filter(r => selectedReasons.includes(r.id))
+            .map(r => r.text);
+
+        // Ako postoji custom reason, dodaj ga
+        if (customReason.trim()) {
+            selectedTexts.push(customReason.trim());
+        }
+
+        // Ako nema ničega izabrano, obavesti korisnika
+        if (selectedTexts.length === 0) {
+            alert("Please select or enter at least one reason before confirming.");
+            return;
+        }
+
+        // SPOJIMO niz u jedan string, odvojen zarezima
+        const finalReason = selectedTexts.join(", ");
+
+        // Pošaljemo samo jedan string backendu
+        onConfirm(finalReason);
+    };
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             style={{
-                backgroundColor: '#FFFBEB', borderRadius: '16px',
-                padding: '2rem', width: '400px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                backgroundColor: '#FFFBEB',
+                borderRadius: '20px',
+                padding: '2.5rem',
+                width: '550px',
+                boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
                 border: '1px solid #F3EAD9'
             }}
         >
-            <h3 style={{ margin: '0 0 1.5rem 0', textAlign: 'center', fontSize: '1.5rem' }}>Cancel Order</h3>
-            <label htmlFor="cancel-reason" style={{ fontWeight: '500', color: '#6B7280' }}>Reason (Optional):</label>
-            <textarea
-                id="cancel-reason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="e.g., Car accident"
-                style={{
-                    width: '100%', minHeight: '100px', border: '1px solid #ccc',
-                    borderRadius: '8px', padding: '0.75rem', marginTop: '0.5rem',
-                    boxSizing: 'border-box', resize: 'vertical'
-                }}
-            />
+            <h3 style={{ margin: '0 0 2rem 0', textAlign: 'center', fontSize: '1.8rem', color: '#B91C1C' }}>
+                Cancel Order
+            </h3>
+
+            <p style={{ color: '#6B7280', marginBottom: '1rem' }}>
+                Please select one or more reasons for cancellation (optional), or write your own.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {predefinedReasons.map((reason) => (
+                    <div
+                        key={reason.id}
+                        onClick={() => toggleReason(reason.id)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            border: selectedReasons.includes(reason.id) ? '2px solid #B91C1C' : '1.5px solid #E5E7EB',
+                            backgroundColor: selectedReasons.includes(reason.id) ? '#FEE2E2' : 'white',
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <span style={{ fontSize: '1.2rem', color: selectedReasons.includes(reason.id) ? '#B91C1C' : '#6B7280' }}>
+                            {reason.icon}
+                        </span>
+                        <span style={{ fontWeight: '500', color: selectedReasons.includes(reason.id) ? '#B91C1C' : '#374151' }}>
+                            {reason.text}
+                        </span>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ marginTop: '1.5rem' }}>
+                <label htmlFor="cancel-reason" style={{ fontWeight: '500', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FiEdit3 /> Custom reason:
+                </label>
+                <textarea
+                    id="cancel-reason"
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    placeholder="e.g., Emergency situation"
+                    style={{
+                        width: '100%',
+                        minHeight: '90px',
+                        border: '1.5px solid #ccc',
+                        borderRadius: '8px',
+                        padding: '0.75rem',
+                        marginTop: '0.5rem',
+                        boxSizing: 'border-box',
+                        resize: 'vertical'
+                    }}
+                />
+            </div>
+
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                 <button
                     onClick={onCancel}
-                    style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1.5px solid #D1D5DB', backgroundColor: 'white', fontWeight: '600', cursor: 'pointer' }}
+                    style={{
+                        flex: 1,
+                        padding: '1rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #D1D5DB',
+                        backgroundColor: 'white',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                    }}
                 >
                     Cancel
                 </button>
                 <button
-                    onClick={() => onConfirm(reason)}
-                    style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none', backgroundColor: '#B91C1C', color: 'white', fontWeight: '600', cursor: 'pointer' }}
+                    onClick={handleConfirm}
+                    style={{
+                        flex: 1,
+                        padding: '1rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        backgroundColor: '#B91C1C',
+                        color: 'white',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                    }}
                 >
                     Confirm Cancellation
                 </button>
@@ -64,6 +173,7 @@ export function ViewOrderPage() {
     const [error, setError] = useState('');
     const [driverLocation, setDriverLocation] = useState({ lat: 44.8125, lng: 20.4612 });
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -93,22 +203,18 @@ const handleReportDelay = () => {
         alert("TODO: Implement Report Delay Modal!");
     };
     const handleCancelDelivery = async (reason) => {
-        if (!reason || reason.trim() === '') {
-            toast.error("Reason for cancellation is mandatory.");
-            return;
-        }
-        try {
-            toast.loading('Cancelling delivery...');
-            await cancelDelivery(orderId, reason);
-            toast.dismiss();
-            toast.success('Delivery has been cancelled.');
-            setIsCancelModalOpen(false);
-            navigate('/driver'); // Vraćamo vozača na dashboard
-        } catch (err) {
-            toast.dismiss();
-            toast.error('Failed to cancel delivery.');
-        }
-    };
+  try {
+    // Poziv backend api da otkažeš delivery
+    await cancelDelivery(orderId, reason);  // orderId i reason se šalju
+
+    toast.success("Order successfully canceled!");
+    // Ovde ide preusmeravanje na dashboard, na primer:
+    navigate('/driver'); // ako koristiš react-router-dom useNavigate()
+  } catch (error) {
+    toast.error("Error cancelling delivery: " + (error.response?.data?.message || error.message));
+  }
+};
+
 
     // Stilovi za gumbe
     const primaryButtonStyle = {

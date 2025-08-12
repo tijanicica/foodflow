@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -172,10 +173,11 @@ public class DriverController {
             @Valid @RequestBody CancelDeliveryRequest request,
             @AuthenticationPrincipal Driver driverPrincipal) {
 
-        // Nema potrebe za provjerom razloga, @Valid i @NotBlank to rade za nas.
-        // Ako je 'reason' prazan, Spring će automatski vratiti 400 Bad Request.
+        System.out.println("Logged in driver: " + driverPrincipal);
+        System.out.println("Roles: " + SecurityContextHolder.getContext().getAuthentication().getAuthorities());
 
         driverService.cancelAssignedDelivery(driverPrincipal.getEmail(), orderId, request.getReason());
         return ResponseEntity.ok().build();
     }
+
 }
