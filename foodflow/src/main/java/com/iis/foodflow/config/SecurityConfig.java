@@ -5,6 +5,7 @@ import com.iis.foodflow.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -65,7 +66,7 @@ public class SecurityConfig {
 
         // === PREPORUČENA IZMENA ===
         // Eksplicitno navodimo dozvoljene metode
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
         // === PREPORUČENA IZMENA ===
         // Eksplicitno navodimo dozvoljene headere (Authorization je ključan za JWT)

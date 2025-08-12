@@ -19,6 +19,8 @@ import { DriverDashboard } from './pages/DriverDashboard.jsx';
 import { CheckoutPage } from './pages/CheckoutPage.jsx';
 import { MyOrdersPage } from './pages/MyOrdersPage.jsx';
 import { DriverProfilePage } from './pages/DriverProfilePage.jsx'; 
+import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
+
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
@@ -40,16 +42,12 @@ const router = createBrowserRouter([
     path: "/home",
     element: <HomePage />,
   },
+
   {
     path: "/restaurant/:restaurantId", // Dvotačka označava dinamički segment
     element: <MenuPage />,
   },
-
-  {
-  path: "/driver",
-  element: <DriverDashboard />,
-  },
-  {
+   {
     path: "/checkout",
     element: <CheckoutPage />,
   },
@@ -57,11 +55,21 @@ const router = createBrowserRouter([
     path: "/orders",
     element: <MyOrdersPage />,
   },
+      {
+    path: "/order/:orderId", // Dinamička ruta sa ID-jem porudžbine
+    element: <OrderDetailPage />,
+  },
 
-    {
-      path: "/driver/profile",
-      element: <DriverProfilePage />,
-    },
+  {
+  path: "/driver",
+  element: <DriverDashboard />,
+  },
+ 
+  {
+    path: "/driver/profile",
+    element: <DriverProfilePage />,
+  },
+
   // Ovde ćeš kasnije dodavati i druge rute
   // {
   //   path: "/dashboard",

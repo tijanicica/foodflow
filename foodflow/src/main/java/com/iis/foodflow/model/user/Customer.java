@@ -6,20 +6,18 @@ import com.iis.foodflow.model.order.Card;
 import com.iis.foodflow.model.order.Coupon;
 import com.iis.foodflow.model.order.Order;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import java.util.*;
+
+import org.hibernate.proxy.HibernateProxy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class Customer implements UserDetails {
     @Id
@@ -42,15 +40,19 @@ public class Customer implements UserDetails {
     private String phone;
 
     @OneToMany(mappedBy = "customer")
+    @ToString.Exclude
     private Set<Address> addresses = new HashSet<>();
 
     @OneToMany(mappedBy = "customer")
+    @ToString.Exclude
     private Set<Card> cards = new HashSet<>();
 
     @OneToMany(mappedBy = "customer")
+    @ToString.Exclude
     private Set<Coupon> coupons = new HashSet<>();
 
     @OneToMany(mappedBy = "customer")
+    @ToString.Exclude
     private Set<Order> orders = new HashSet<>();
     @Enumerated(EnumType.STRING) // <-- JAKO VAŽNO!
     @Column(nullable = false)
@@ -74,4 +76,20 @@ public class Customer implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
     @Override
     public boolean isEnabled() { return true; }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        Customer customer = (Customer) o;
+        return getId() != null && Objects.equals(getId(), customer.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return getClass().hashCode();
+    }
 }

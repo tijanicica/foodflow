@@ -273,3 +273,55 @@ export const rejectOffer = async (offerId, reason = null) => {
         throw error;
     }
 };
+
+export const getMyOrders = async (tab) => {
+    try {
+        // Parametar se šalje kao 'params' objekat
+        const response = await apiClient.get('/orders/my-orders', { params: { tab } });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching ${tab} orders:`, error);
+        throw error;
+    }
+};
+
+export const getMyRepeatingOrders = async () => {
+    try {
+        const response = await apiClient.get('/orders/my-repeating-orders');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching repeating orders:", error);
+        throw error;
+    }
+};
+
+export const getOrderDetails = async (orderId) => {
+    try {
+        const response = await apiClient.get(`/orders/${orderId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching details for order ${orderId}:`, error);
+        throw error;
+    }
+};
+
+export const toggleRepeatingOrderStatus = async (templateId) => {
+    try {
+        // PATCH zahtev vraća ažurirani objekat
+        const response = await apiClient.patch(`/orders/repeating/${templateId}/toggle-status`);
+        return response.data;
+    } catch (error) {
+        console.error("Error toggling repeating order status:", error);
+        throw error;
+    }
+};
+
+export const cancelRepeatingOrder = async (templateId) => {
+    try {
+        // DELETE zahtev ne vraća ništa
+        await apiClient.delete(`/orders/repeating/${templateId}`);
+    } catch (error) {
+        console.error("Error canceling repeating order:", error);
+        throw error;
+    }
+};
