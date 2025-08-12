@@ -14,15 +14,15 @@ import {
   FiCheckCircle,
   FiNavigation,
   FiClock,
-  FiEdit3
+  FiEdit3,
 } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 const predefinedReasons = [
     { id: 1, text: "Vehicle breakdown", icon: <FiAlertTriangle /> },
     { id: 2, text: "Traffic jam" },
-    { id: 3, text: "Customer unavailable", icon: <FiClock /> },
-    { id: 4, text: "Wrong address", icon: <FiMapPin /> }
+ { id: 3, text: "Spilled order", icon: <FiXCircle /> },
+    { id: 4, text: "Personal reasons", icon: <FiUser /> }
 ];
 
 const CancelOrderModal = ({ onConfirm, onCancel }) => {
