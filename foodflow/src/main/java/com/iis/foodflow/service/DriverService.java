@@ -346,93 +346,81 @@ public class DriverService {
 // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 // ZAMIJENITE CIJELU 'getDashboardData' METODU
 
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+// ZAMIJENITE CIJELU 'getDashboardData' METODU
+
     @Transactional(readOnly = true)
     public DriverDashboardResponse getDashboardData(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
 
-        List<DashboardOfferDTO> newOffers = Collections.emptyList();
+        // Kreiramo jednu pomoćnu metodu da ne dupliramo kod
+        // 'mapOrderToDto' će sada raditi sav posao mapiranja za nas
 
+        // Dohvaćamo nove ponude (ako je vozač online)
+        List<DashboardOfferDTO> newOffers = Collections.emptyList();
         if (driver.getStatus() == DriverStatus.ONLINE) {
             newOffers = orderOfferRepository.findByDriverAndStatus(driver, OfferStatus.SENT)
                     .stream()
                     .map(offer -> {
-                        Order order = offer.getOrder();
-
-                        Restaurant restaurant = order.getOrderItems().stream()
-                                .findFirst()
-                                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
-                                .orElse(null);
-
-                        if (restaurant == null) {
-                            return null; // Ili vrati osnovni DTO ako je potrebno
-                        }
-
-                        double distance = calculateDistance(
-                                driver.getLatitude(), driver.getLongitude(),
-                                restaurant.getAddress().getLatitude(),
-                                restaurant.getAddress().getLongitude()
-                        );
-
-                        String deliveryAddress = order.getAddress().toString();
-
-                        DashboardOrderDTO orderDTO = DashboardOrderDTO.builder()
-                                .id(order.getId())
-                                .status(order.getStatus())
-                                .restaurantName(restaurant.getName())
-                                .restaurantAddress(restaurant.getAddress().toString())
-                                .deliveryAddress(deliveryAddress)
-                                .distanceToRestaurant(distance)
-                                .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
-                                .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
-                                .build();
-
-                        return DashboardOfferDTO.builder().id(offer.getId()).order(orderDTO).build();
+                        DashboardOrderDTO orderDto = mapOrderToDto(offer.getOrder(), driver);
+                        return DashboardOfferDTO.builder().id(offer.getId()).order(orderDto).build();
                     })
-                    .filter(Objects::nonNull) // Uklanjamo null vrijednosti ako restoran nije pronađen
+                    .filter(offerDto -> offerDto.getOrder() != null)
                     .collect(Collectors.toList());
         }
 
-        // --- LOGIKA ZA AKTIVNE PORUDŽBINE ---
+        // Dohvaćamo aktivne porudžbine
         List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
         List<DashboardOrderDTO> assignedDeliveries = orderRepository.findByDriverAndStatusIn(driver, activeStatuses)
                 .stream()
-                .map(order -> {
-                    // === ISPRAVKA: Logika za dohvaćanje restorana i adrese se mora ponoviti i ovdje ===
-                    Restaurant restaurant = order.getOrderItems().stream()
-                            .findFirst()
-                            .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
-                            .orElse(null);
-
-                    if (restaurant == null) {
-                        return null; // Preskačemo porudžbine bez restorana
-                    }
-
-                    double distance = calculateDistance(
-                            driver.getLatitude(), driver.getLongitude(),
-                            restaurant.getAddress().getLatitude(),
-                            restaurant.getAddress().getLongitude()
-                    );
-
-                    String deliveryAddress = order.getAddress().toString();
-                    // =================================================================================
-
-                    return DashboardOrderDTO.builder()
-                            .id(order.getId())
-                            .status(order.getStatus())
-                            .restaurantName(restaurant.getName())
-                            .restaurantAddress(restaurant.getAddress().toString())
-                            .deliveryAddress(deliveryAddress)
-                            .distanceToRestaurant(distance)
-                            .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
-                            .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
-                            .build();
-                })
-                .filter(Objects::nonNull) // Uklanjamo null vrijednosti
+                .map(order -> mapOrderToDto(order, driver)) // Koristimo istu pomoćnu metodu
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         CoordinatesDTO driverCoordinates = new CoordinatesDTO(driver.getLatitude(), driver.getLongitude());
-
         return new DriverDashboardResponse(newOffers, assignedDeliveries, driverCoordinates);
+    }
+
+
+// === DODAJTE OVU NOVU POMOĆNU METODU U ISTU KLASU ===
+    /**
+     * Pomoćna metoda koja mapira jedan Order entitet u DashboardOrderDTO,
+     * računajući pritom obje ključne distance.
+     */
+    private DashboardOrderDTO mapOrderToDto(Order order, Driver driver) {
+        // Dohvaćamo restoran preko lanca veza
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElse(null);
+
+        // Ako nema restorana, ne možemo ništa izračunati
+        if (restaurant == null) {
+            return null;
+        }
+
+        // Računamo OBJE distance
+        double distDriverToRestaurant = calculateDistance(
+                driver.getLatitude(), driver.getLongitude(),
+                restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()
+        );
+
+        double distDriverToCustomer = calculateDistance(
+                driver.getLatitude(), driver.getLongitude(),
+                order.getAddress().getLatitude(), order.getAddress().getLongitude()
+        );
+
+        return DashboardOrderDTO.builder()
+                .id(order.getId())
+                .status(order.getStatus())
+                .restaurantName(restaurant.getName())
+                .restaurantAddress(restaurant.getAddress().toString())
+                .deliveryAddress(order.getAddress().toString())
+                .distanceDriverToRestaurant(distDriverToRestaurant) // Popunjavamo novo polje
+                .distanceDriverToCustomer(distDriverToCustomer)   // Popunjavamo novo polje
+                .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
+                .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
+                .build();
     }
     // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 // ZAMIJENITE POSTOJEĆU 'calculateEta' METODU SA OVOM
