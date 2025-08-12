@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getDriverDashboard, acceptOffer, rejectOffer } from '../services/api';
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
+import toast from 'react-hot-toast'; // <-- 1. UVOZIMO 'toast'
 
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
@@ -279,12 +280,122 @@ export function DriverDashboard() {
     const [dashboardData, setDashboardData] = useState({ newOffers: [], assignedDeliveries: [], driverCoordinates: null });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
     const fetchData = async () => { try { const data = await getDriverDashboard(); setDashboardData(data); } catch (err) { setError('Could not load dashboard data.'); } finally { setLoading(false); } };
     useEffect(() => { fetchData(); const intervalId = setInterval(fetchData, 15000); return () => clearInterval(intervalId); }, []);
     const handleAccept = async (offerId) => { try { await acceptOffer(offerId); fetchData(); } catch (err) { alert('Failed to accept offer.'); } };
-    const handleReject = async (offerId) => { try { await rejectOffer(offerId); fetchData(); } catch (err) { alert('Failed to reject offer.'); } };
+const handleReject = (offerId) => {
+         const performReject = async (reason) => {
+            try {
+                toast.loading('Rejecting offer...', { id: 'rejecting-toast' });
+                await rejectOffer(offerId, reason);
+                toast.dismiss('rejecting-toast');
+                toast.success('Offer rejected successfully.');
+                fetchData();
+            } catch (err) {
+                toast.dismiss('rejecting-toast');
+                toast.error('Failed to reject offer.');
+            } finally {
+                setIsRejectModalOpen(false);
+            }
+        };
+        
+        // --- NOVI, POBOLJŠANI MODALNI PROZOR ---
+        toast((t) => {
+            // Stilovi za predefinirane razloge
+            const predefinedReasonStyle = {
+                padding: '0.5rem 1rem',
+                borderRadius: '16px',
+                border: '1px solid #D1D5DB',
+                backgroundColor: '#F9FAFB',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s ease',
+            };
 
+            return (
+                 <div style={{
+            fontFamily: 'sans-serif',
+            width: '300px', // <-- 1. POVEĆANA ŠIRINA
+            padding: '1.5rem',
+            backgroundColor: 'white', // Dodajemo bijelu pozadinu
+            borderRadius: '12px', // Zaobljenije ivice
+            border: '1px solid #EAEAEA', // Suptilna, svjetla ivica
+        }}>
+                    <h4 style={{ margin: '0 0 1.5rem 0', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                        Reason for Rejection
+                    </h4>
+                    
+                    {/* Predefinirani razlozi */}
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#6B7280' }}>
+                        Select a common reason or write your own:
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                        {['Too far', 'Too busy', 'Vehicle issue'].map(reason => (
+                            <button
+                                key={reason}
+                                style={predefinedReasonStyle}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                                onClick={() => {
+                                    // Kada klikne na predefinirani razlog, odmah ga šaljemo
+                                    performReject(reason);
+                                    toast.dismiss(t.id);
+                                }}
+                            >
+                                {reason}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Opcionalni unos komentara */}
+                    <textarea
+                        id={`rejection-reason-${t.id}`} // Jedinstveni ID
+                        placeholder="Or write a custom reason here..."
+                        style={{
+                            width: '100%',
+                            minHeight: '80px',
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            resize: 'vertical',
+                            boxSizing: 'border-box'
+                        }}
+                    />
+                    
+                    {/* Gumbovi za akciju */}
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                        <button
+                            onClick={() => toast.dismiss(t.id)}
+                            style={{ padding: '0.6rem 1.2rem', border: '1px solid #ccc', borderRadius: '8px', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                           onClick={() => {
+    // 1. Dohvati vrijednost iz polja za unos.
+    const reasonInput = document.getElementById(`rejection-reason-${t.id}`);
+    
+    // 2. Pozovi `performReject` sa tom vrijednošću, kakva god da je (čak i prazan string).
+    performReject(reasonInput.value);
+    
+    // 3. Zatvori modalni prozor.
+    toast.dismiss(t.id);
+}}
+                            style={{ padding: '0.6rem 1.2rem', border: 'none', borderRadius: '8px', background: '#8A643B', color: 'white', cursor: 'pointer', fontWeight: '600' }}
+                        >
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            );
+        }, {
+            duration: Infinity, // Prozor ostaje otvoren dok ga korisnik ne zatvori
+            position: "top-center"
+        });
+    };
+    
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <NavbarDriver />
