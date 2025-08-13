@@ -326,6 +326,16 @@ export const cancelRepeatingOrder = async (templateId) => {
     }
 };
 
+export const getDriverInfo = async () => {
+    try {
+        const response = await apiClient.get('/drivers/vehicle');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching driver info:", error);
+        throw error; // Prosledi grešku dalje da bi se obradila
+    }
+};
+
 
 export const cancelDelivery = async (orderId, reason) => {
     try {
@@ -345,3 +355,4 @@ export const getTrackingInfo = async (orderId) => {
         throw error;
     }
 };
+

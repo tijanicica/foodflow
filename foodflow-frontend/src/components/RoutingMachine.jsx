@@ -1,34 +1,53 @@
-import { useEffect } from "react";
+// FAJL: src/components/RoutingMachine.jsx
+
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet-routing-machine";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 import { useMap } from "react-leaflet";
 
-// Ova komponenta sada prihvata niz tačaka (waypoints)
 const RoutingMachine = ({ waypoints }) => {
   const map = useMap();
+  const routingControlRef = useRef(null);
 
   useEffect(() => {
-    if (!map || !waypoints || waypoints.length < 2) return;
-
-    const routingControl = L.Routing.control({
+    // 1. Proveravamo da li kontrola već postoji. Ako postoji, ne radimo ništa.
+    // Ovo sprečava duplo kreiranje u Strict Mode-u.
+    if (routingControlRef.current) {
+      return;
+    }
+    
+    // 2. Ako ne postoji, kreiramo novu instancu
+    routingControlRef.current = L.Routing.control({
       waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
-      
-      // Opcije za izgled linije
       lineOptions: {
         styles: [{ color: "black", opacity: 0.8, weight: 4, dashArray: "10, 10" }],
-        addWaypoints: false, // Ne dozvoljavaj dodavanje novih tačaka
       },
-      
-      // === KLJUČNE IZMENE ZA SAKRIVANJE ===
-      show: false,                 // Sakrij kompletan panel sa instrukcijama
-      addWaypoints: false,         // Onemogući dodavanje novih tačaka
-      routeWhileDragging: false,   // Ne preračunavaj rutu dok se prevlači
-      createMarker: () => null,    // Ne kreiraj podrazumevane A i B markere
-      
+      show: false,
+      addWaypoints: false,
+      routeWhileDragging: false,
+      createMarker: () => null,
     }).addTo(map);
 
-    return () => map.removeControl(routingControl);
-  }, [map, waypoints]);
+    // Ova cleanup funkcija se poziva samo kada se komponenta STVARNO uništi
+    return () => {
+      if (map && routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+        // 3. KLJUČNA IZMENA: Eksplicitno postavljamo ref na null
+        // Ovo govori React-u da je kontrola definitivno uništena.
+        routingControlRef.current = null;
+      }
+    };
+  }, [map]); // Zavisnost je samo `map`, ovo je ispravno
+
+  // Ovaj useEffect služi samo za ažuriranje postojećih tačaka
+  useEffect(() => {
+    if (routingControlRef.current) {
+      routingControlRef.current.setWaypoints(
+        waypoints.map(wp => L.latLng(wp[0], wp[1]))
+      );
+    }
+  }, [waypoints]);
 
   return null;
 };

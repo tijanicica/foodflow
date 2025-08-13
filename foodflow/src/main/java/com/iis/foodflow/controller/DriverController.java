@@ -77,6 +77,15 @@ public class DriverController {
 
         return ResponseEntity.ok(updatedDriverDTO);
     }
+    @GetMapping("/vehicle")
+    @PreAuthorize("hasRole('DRIVER')")
+    // 1. Promeni povratni tip u tvoj postojeći DTO
+    public ResponseEntity<DriverResponseDTO> getOwnVehicle(@AuthenticationPrincipal Driver driverPrincipal) {
+        String driverEmail = driverPrincipal.getEmail();
+        // 2. Pozovi novu metodu iz servisa
+        DriverResponseDTO driverInfo = driverService.getDriverInfo(driverEmail);
+        return ResponseEntity.ok(driverInfo);
+    }
     @GetMapping("/performance")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverPerformanceResponse> getMyPerformance(

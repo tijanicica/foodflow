@@ -12,6 +12,7 @@ import com.iis.foodflow.repository.DriverRatingRepository;
 import com.iis.foodflow.repository.DriverRepository;
 import com.iis.foodflow.repository.OrderOfferRepository;
 import com.iis.foodflow.repository.OrderRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -582,6 +583,22 @@ public class DriverService {
         // =======================================================
 
         return estimatedRoadDistance;
+    }
+    @Transactional(readOnly = true)
+    public DriverResponseDTO getDriverInfo(String driverEmail) {
+        Driver driver = driverRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Driver not found with email: " + driverEmail));
+
+        // Mapiraj Entitet u DTO. Pretpostavljam da koristiš Builder pattern zbog @Builder anotacije
+        return DriverResponseDTO.builder()
+                .id(driver.getId())
+                .email(driver.getEmail())
+                .firstName(driver.getFirstName())
+                .lastName(driver.getLastName())
+                .phone(driver.getPhone())
+                .vehicleType(driver.getVehicleType()) // <-- Ključno polje!
+                .status(driver.getStatus())
+                .build();
     }
 
 }
