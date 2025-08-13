@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
-import { getOrderDetails } from '@/services/api';
+import { getOrderDetailsCustomer } from '@/services/api';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -19,7 +19,7 @@ export function OrderDetailPage() {
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                const data = await getOrderDetails(orderId);
+                const data = await getOrderDetailsCustomer(orderId);
                 setOrder(data);
             } catch (error) {
                 toast.error("Could not load order details.");

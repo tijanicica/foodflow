@@ -305,6 +305,17 @@ export const getOrderDetails = async (orderId) => {
     }
 };
 
+
+export const getOrderDetailsCustomer = async (orderId) => {
+    try {
+        const response = await apiClient.get(`orders/${orderId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching details for order ${orderId}:`, error);
+        throw error;
+    }
+};
+
 export const toggleRepeatingOrderStatus = async (templateId) => {
     try {
         // PATCH zahtev vraća ažurirani objekat
