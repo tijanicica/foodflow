@@ -8,7 +8,6 @@ import toast, { Toaster } from 'react-hot-toast';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import { getOrderDetails, cancelDelivery,getDriverInfo, startSimulation  } from '../services/api'; 
-
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
@@ -112,23 +111,7 @@ export function PickedUpOrderPage() {
     const handleCancelDelivery = () => setIsCancelModalOpen(true);
 
     // Memoizacija props-ova za mapu
-        // Memoizacija props-ova za mapu
-    const assignedDeliveriesForMap = useMemo(() => {
-        if (!order) {
-            return [];
-        }
-
-        // Kreiramo NOVI objekat za mapu koji sadrži SAMO potrebne podatke za ovu stranicu.
-        // Izostavljamo koordinate restorana.
-        const deliveryForMap = {
-            id: order.id,
-            deliveryAddress: order.deliveryAddress,
-            deliveryCoordinates: order.deliveryCoordinates,
-            // Polje 'restaurantCoordinates' namerno izostavljamo
-        };
-        
-        return [deliveryForMap];
-    }, [order]);
+    const assignedDeliveriesForMap = useMemo(() => order ? [order] : [], [order]);
     const newOffersForMap = useMemo(() => [], []);
 
     // Stilovi
@@ -142,11 +125,11 @@ export function PickedUpOrderPage() {
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <Toaster position="top-center" />
             <NavbarDriver />
-            <main style={{ maxWidth: '1500px', margin: '20px auto', padding: '0 2rem' }}>
+            <main style={{  maxWidth: '1500px', margin: '20px 90px' }}>
                 <div style={{ backgroundColor: '#FDFDF5', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
                     
                     {/* LEVA KOLONA - MAPA */}
-                    <div style={{ height: '75vh', borderRadius: '16px', overflow: 'hidden' }}>
+                    <div style={{ height: '85vh', borderRadius: '16px', overflow: 'hidden' }}>
                         {driverLocation && (
                             <MapComponent
                                 driverLocation={driverLocation}
@@ -166,33 +149,55 @@ export function PickedUpOrderPage() {
                                 {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </p>
                         </div>
-                        
-                        {/* Step 1 je završen, pa je blago zatamnjen */}
-                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' , opacity: 0.6 }}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#8A643B' }}>STEP 1: PICKUP</p>
-                            <p style={{ fontSize: '1.1rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>{order.restaurantName}</p>
-                        </div>
 
-                        {/* Step 2 je aktivan */}
+                        {/* --- STEP 1: PICKUP (Neaktivan/Precrtan) --- */}
+                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA', opacity: 1 }}>
+                            <p style={{
+                                textTransform: 'uppercase', fontWeight: 'bold', margin: 0,
+                                color: '#A1A1AA', // Neutralna siva boja
+                                textDecoration: 'line-through', // Precrtavanje
+                                textDecorationColor: '#D4D4D8', // Svetlo siva linija
+                                display: 'flex', alignItems: 'center'
+                            }}>
+                                <FiMapPin style={{ marginRight: '0.5rem' }} /> Step 1: Pickup
+                            </p>
+                            <p style={{
+                                fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500',
+                                color: '#A1A1AA', textDecoration: 'line-through', textDecorationColor: '#D4D4D8'
+                            }}>
+                                {order.restaurantName}
+                            </p>
+                            <p style={{
+                                color: '#A1A1AA', margin: 0, textDecoration: 'line-through', textDecorationColor: '#D4D4D8'
+                            }}>
+                                {order.restaurantAddress}
+                            </p>
+                        </div>
+                        
+                        {/* --- STEP 2: DELIVER (Aktivan) --- */}
                         <div style={{ marginTop: '1.5rem' }}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A' }}>STEP 2: DELIVER</p>
-                            <p style={{ fontSize: '1.1rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>{order.customerFirstName} {order.customerLastName}</p>
+                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
+                                <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
+                            </p>
+                            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>
+                                {order.customerFirstName} {order.customerLastName}
+                            </p>
                             <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
                         </div>
 
                         {/* DUGMAD */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
                             <button
-                                onClick={handleStartDriving}
-                                style={{ ...primaryButtonStyle, backgroundColor: '#8A643B' }}
-                            >
-                                <FiNavigation /> Start Driving to Customer
-                            </button>
-                            <button
                                 onClick={handleMarkAsDelivered}
                                 style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
                             >
                                 <FiCheckCircle /> Mark as Delivered
+                            </button>
+                                                        <button
+                                onClick={handleStartDriving}
+                                style={{ ...primaryButtonStyle, backgroundColor: '#8A643B' }}
+                            >
+                                <FiNavigation /> Start Driving to Customer
                             </button>
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
                                 <button onClick={handleReportDelay} style={secondaryButtonStyle}>
