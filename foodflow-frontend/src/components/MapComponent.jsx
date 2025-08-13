@@ -131,13 +131,17 @@ export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffer
                     {offer.order.deliveryCoordinates?.lat && <Marker position={[offer.order.deliveryCoordinates.lat, offer.order.deliveryCoordinates.lng]} icon={offerHomeIcon}><Popup><b>New Offer - Drop-off:</b> {offer.order.deliveryAddress}</Popup></Marker>}
                 </React.Fragment>
             ))}
-            <div style={legendStyle}>
-                 <div style={itemStyle}><div style={colorBox('#FFB300')}></div> You (Your Location)</div>
-                <div style={sectionTitleStyle}>Assigned Deliveries</div>
-                <div style={itemStyle}><div style={colorBox('#2E7D32')}></div> Pickup / Drop-off</div>
-                <div style={sectionTitleStyle}>New Offers</div>
-                <div style={itemStyle}><div style={colorBox('#1D4ED8')}></div> Pickup / Drop-off</div>
-            </div>
+                        {/* --- LEGENDA SA USLOVOM --- */}
+            {/* Prikazujemo legendu samo ako se ruta NE iscrtava (tj. routeWaypoints.length < 2) */}
+            {routeWaypoints.length < 2 && (
+                <div style={legendStyle}>
+                    <div style={itemStyle}><div style={colorBox('#FFB300')}></div> You (Your Location)</div>
+                    <div style={sectionTitleStyle}>Assigned Deliveries</div>
+                    <div style={itemStyle}><div style={colorBox('#2E7D32')}></div> Pickup / Drop-off</div>
+                    <div style={sectionTitleStyle}>New Offers</div>
+                    <div style={itemStyle}><div style={colorBox('#1D4ED8')}></div> Pickup / Drop-off</div>
+                </div>
+            )}
         </MapContainer>
     );
 };
