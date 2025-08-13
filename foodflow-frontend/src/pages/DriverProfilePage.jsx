@@ -46,6 +46,54 @@ const PerformanceCard = ({ label, value, icon }) => {
     );
 };
 
+// Na dnu vašeg fajla (posle glavne komponente)
+
+// --- POJEDNOSTAVLJENA FUNKCIJA ZA STILIZOVANJE DUGMIĆA ---
+const buttonStyle = (type) => {
+    // Osnovni stilovi koji važe za sva dugmad
+    const base = {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.75rem',
+        padding: '0.75rem 1.5rem',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        border: '2px solid transparent', // Važno za "ghost" stil
+        fontWeight: '600',
+        fontSize: '1rem',
+        minWidth: '180px', // Osigurava istu veličinu
+        transition: 'all 0.2s ease-in-out',
+    };
+
+    // Stilovi za primarno dugme (Save) - Brend boja
+    if (type === 'primary') return {
+        ...base,
+        backgroundColor: '#8A643B',
+        color: 'white',
+        borderColor: '#8A643B',
+    };
+
+    // Stilovi za sekundarno dugme (Cancel) - "Ghost" stil
+    if (type === 'secondary') return {
+        ...base,
+        backgroundColor: 'transparent',
+        color: '#6c757d',
+        borderColor: '#6c757d', // Vidljiv sivi border
+    };
+    
+    // Stilovi za "Edit" dugme (isto kao primarno)
+    if (type === 'edit') return {
+        ...base,
+        minWidth: 'auto', // Edit dugme ne mora biti iste širine
+        backgroundColor: '#8A643B',
+        color: 'white',
+        borderColor: '#8A643B',
+    };
+
+    return base;
+};
+
 const VehicleIcon = ({ vehicleType }) => {
     const vehicle = VEHICLE_OPTIONS.find(v => v.value === vehicleType);
     if (!vehicle) return null;
@@ -154,23 +202,6 @@ const infoTextStyle = {
 };
 // -----------------------
 
-const buttonStyle = (type) => {
-    const base = {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.6rem 1.2rem',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        border: 'none',
-        fontWeight: '600',
-        transition: 'background-color 0.2s'
-    };
-    if (type === 'primary') return { ...base, backgroundColor: '#28a745', color: 'white' };
-    if (type === 'secondary') return { ...base, backgroundColor: '#6c757d', color: 'white' };
-    if (type === 'edit') return { ...base, backgroundColor: '#8A643B', color: 'white' };
-    return base;
-};
 
     // === IZMJENA #1: Funkcija za čitanje inicijalnog statusa iz localStorage ===
     // Pretpostavljamo da ste prilikom logina spremili status u localStorage
@@ -197,6 +228,8 @@ const buttonStyle = (type) => {
     }
     fetchData();
 }, []);
+const [isSaveHovered, setIsSaveHovered] = useState(false);
+const [isCancelHovered, setIsCancelHovered] = useState(false);
     
 
 const handleSaveAll = async () => {
@@ -265,6 +298,9 @@ const handleSaveAll = async () => {
         localStorage.removeItem('driverStatus'); // Brišemo i status
         navigate('/login', { replace: true });
     };
+
+
+
 
     const handleToggleStatus = async () => {
         try {
@@ -372,45 +408,102 @@ const handleSaveAll = async () => {
             // ======================================================
             // PRIKAZ FORME KADA JE EDITOVANJE UKLJUČENO
             // ======================================================
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveAll(); }}>
-                {/* Glavni kontejner za dve kolone */}
-                <div style={{ display: 'flex', gap: '2rem' }}>
+           <form onSubmit={(e) => { e.preventDefault(); handleSaveAll(); }}>
+    {/* 
+        NOVI KONTEJNER: On centrira formu, dodaje border i padding.
+    */}
+    <div style={{
+        border: '2px solid #8A643B',
+        borderRadius: '16px',
+        padding: '2rem',
+        maxWidth: '550px',
+        margin: '0 auto', // Ključna linija za centriranje
+        backgroundColor: '#FFFDF9'
+    }}>
 
-                    {/* Leva kolona */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        <h4 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>Personal & Vehicle Info</h4>
-                        
-                        {/* Polje za Ime */}
-                        <div>
-                            <label style={labelStyle}>First Name</label>
-                            <input type="text" value={profileData.firstName} onChange={(e) => setProfileData({...profileData, firstName: e.target.value})} style={inputStyle} />
-                        </div>
+        {/* 
+            STILIZOVANI NASLOV
+        */}
+        <h4 style={{
+            textAlign: 'center',
+            marginTop: 0,
+            marginBottom: '2rem',
+            paddingBottom: '1rem',
+            borderBottom: '1px solid #F3EAD9',
+            color: '#8A643B',
+            fontSize: '1.5rem',
+            fontWeight: '600'
+        }}>
+            Edit Your Information
+        </h4>
 
-                        {/* Polje za Prezime */}
-                        <div>
-                            <label style={labelStyle}>Last Name</label>
-                            <input type="text" value={profileData.lastName} onChange={(e) => setProfileData({...profileData, lastName: e.target.value})} style={inputStyle} />
-                        </div>
-                        
-                        {/* Polje za Vozilo */}
-                        <div>
-                            <label style={labelStyle}>Vehicle Type</label>
-                            <select value={newVehicle} onChange={(e) => setNewVehicle(e.target.value)} style={inputStyle}>
-                                <option value="" disabled>Select vehicle</option>
-                                {VEHICLE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                        </div>
-                    </div>
+        {/* Kontejner za input polja */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            {/* Polje za Ime */}
+            <div>
+                <label style={labelStyle}><FiUser /> First Name</label>
+                <input 
+                    type="text" 
+                    value={profileData.firstName} 
+                    onChange={(e) => setProfileData({...profileData, firstName: e.target.value})} 
+                    style={inputStyle} 
+                />
+            </div>
 
-                
-                </div>
+            {/* Polje za Prezime */}
+            <div>
+                <label style={labelStyle}><FiUser /> Last Name</label>
+                <input 
+                    type="text" 
+                    value={profileData.lastName} 
+                    onChange={(e) => setProfileData({...profileData, lastName: e.target.value})} 
+                    style={inputStyle} 
+                />
+            </div>
+            
+            {/* Polje za Vozilo */}
+            <div>
+                {/* Ikonica se dinamički menja u labeli */}
+                <label style={labelStyle}>
+                    <VehicleIcon vehicleType={newVehicle || performance.vehicleType} /> 
+                    Vehicle Type
+                </label>
+                <select 
+                    value={newVehicle} 
+                    onChange={(e) => setNewVehicle(e.target.value)} 
+                    style={inputStyle}
+                >
+                    <option value="" disabled>Select vehicle</option>
+                    {VEHICLE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+            </div>
+        </div>
 
-                {/* Dugmići za akcije */}
-                <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
-                    <button type="button" onClick={() => setIsEditingProfile(false)} style={buttonStyle('secondary')}>Cancel</button>
-                    <button type="submit" style={buttonStyle('primary')}>Save All Changes</button>
-                </div>
-            </form>
+        {/* Dugmići za akcije - sada su centrirani */}
+      <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+    
+    {/* Cancel Dugme sa ikonicom */}
+    <button 
+        type="button" 
+        onClick={() => setIsEditingProfile(false)} 
+        style={buttonStyle('secondary')}
+    >
+        <FiXCircle /> Cancel
+    </button>
+
+    {/* Save Changes Dugme sa ikonicom i novom bojom */}
+    <button 
+        type="submit" 
+        style={buttonStyle('primary')}
+    >
+        <FiSave /> Save Changes
+    </button>
+    
+</div>
+        
+    </div> {/* Kraj novog kontejnera sa borderom */}
+</form>
         ) : (
             // ======================================================
             // PRIKAZ PODATAKA KADA JE EDITOVANJE ISKLJUČENO
@@ -440,19 +533,19 @@ const handleSaveAll = async () => {
 
             {/* Edit dugme, sada pozicionirano na kraju */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
-                <button
-                    onClick={() => {
-                        setIsEditingProfile(true);
-                        setNewVehicle(performance.vehicleType || '');
-                        setProfileData({
-                            firstName: performance.firstName,
-                            lastName: performance.lastName,
-                        });
-                    }}
-                    style={buttonStyle('edit')}
-                >
-                    <FiEdit2 /> Edit Profile & Settings
-                </button>
+                 <button
+            onClick={() => {
+                setIsEditingProfile(true);
+                setNewVehicle(performance.vehicleType || '');
+                setProfileData({
+                    firstName: performance.firstName,
+                    lastName: performance.lastName,
+                });
+            }}
+            style={buttonStyle('edit')} // <-- PRIMENJEN NOVI STIL
+        >
+            <FiEdit2 /> Edit Profile & Settings
+        </button>
             </div>
             </div>
         )}
