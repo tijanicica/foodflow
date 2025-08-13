@@ -273,12 +273,14 @@ const handleReportDelay = () => {
                 }}>
                     
                     <div style={{ height: '75vh', borderRadius: '16px', overflow: 'hidden' }}>
-                        <MapComponent
-                            driverLocation={driverLocation}
-                            assignedDeliveries={[order]}
-                            newOffers={[]}
-                        />
-                    </div>
+    <MapComponent
+        driverLocation={driverLocation}
+        assignedDeliveries={[order]} // Ovo je već ispravno
+        newOffers={[]} // I ovo je ispravno
+        // KLJUČNA IZMENA: Prosledi ID trenutne porudžbine
+        activeRouteId={order.id} 
+    />
+</div>
 
                     {/* VRAĆEN STARI DIZAJN DESNE KOLONE SA IKONICAMA */}
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

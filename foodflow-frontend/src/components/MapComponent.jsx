@@ -5,54 +5,24 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Home, Store, Bike } from 'lucide-react';
-// import RoutingMachine from './RoutingMachine'; // ROUTING IS DISABLED
+import { Home, Store, MapPin } from 'lucide-react';
+import RoutingMachine from './RoutingMachine'; // Re-enable routing
 
-// --- DYNAMIC ICON CREATION SETUP ---
-
-// Pulsing animation for the driver icon
-const pulseKeyframes = `@keyframes pulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.7); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 179, 0, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); }
-}`;
-
-// Helper function to create a Leaflet DivIcon from a React component
+// --- DYNAMIC ICON CREATION SETUP (No changes here) ---
+const pulseKeyframes = `@keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 179, 0, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); } }`;
 const createStyledIcon = (Icon, bgColor, applyPulse = false) => {
     const iconHtml = renderToStaticMarkup(
-        <div style={{
-            backgroundColor: bgColor,
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '3px solid white',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            ...(applyPulse && { animation: 'pulse 1.5s infinite' })
-        }}>
+        <div style={{ backgroundColor: bgColor, width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', ...(applyPulse && { animation: 'pulse 1.5s infinite' }) }}>
             <Icon size={20} color="white" />
         </div>
     );
-
-    return L.divIcon({
-        html: `<style>${pulseKeyframes}</style>${iconHtml}`,
-        className: 'custom-styled-icon',
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -36]
-    });
+    return L.divIcon({ html: `<style>${pulseKeyframes}</style>${iconHtml}`, className: 'custom-styled-icon', iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36] });
 };
-
-// --- DEFINE ALL OUR ICONS ---
-const driverIcon = createStyledIcon(Bike, '#FFB300', true);
+const driverIcon = createStyledIcon(MapPin, '#FFB300', true);
 const assignedRestaurantIcon = createStyledIcon(Store, '#2E7D32');
 const assignedHomeIcon = createStyledIcon(Home, '#2E7D32');
 const offerRestaurantIcon = createStyledIcon(Store, '#1D4ED8');
 const offerHomeIcon = createStyledIcon(Home, '#1D4ED8');
-
-// Helper component to fit map bounds
 const FitBoundsToMarkers = ({ bounds }) => {
     const map = useMap();
     useEffect(() => {
@@ -62,9 +32,12 @@ const FitBoundsToMarkers = ({ bounds }) => {
     }, [bounds, map]);
     return null;
 };
+// --- End of icon setup ---
+
 
 // --- MAIN MAP COMPONENT ---
-export const MapComponent = ({ driverLocation, assignedDeliveries, newOffers }) => {
+// It now accepts 'activeRouteId' to decide which route to draw
+export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffers = [], activeRouteId = null }) => {
     const allPoints = [];
     if (driverLocation?.lat) allPoints.push([driverLocation.lat, driverLocation.lng]);
     
@@ -78,37 +51,35 @@ export const MapComponent = ({ driverLocation, assignedDeliveries, newOffers }) 
         if (o.order.deliveryCoordinates?.lat) allPoints.push([o.order.deliveryCoordinates.lat, o.order.deliveryCoordinates.lng]);
     });
 
-    // --- LOGIC FOR ROUTE WAYPOINTS IS REMOVED ---
-    // const routeWaypoints = [];
-    // if (driverLocation?.lat && assignedDeliveries.length > 0) {
-    //     const activeDelivery = assignedDeliveries[0];
-    //     routeWaypoints.push([driverLocation.lat, driverLocation.lng]);
-    //     if (activeDelivery.restaurantCoordinates?.lat) routeWaypoints.push([activeDelivery.restaurantCoordinates.lat, activeDelivery.restaurantCoordinates.lng]);
-    //     if (activeDelivery.deliveryCoordinates?.lat) routeWaypoints.push([activeDelivery.deliveryCoordinates.lat, activeDelivery.deliveryCoordinates.lng]);
-    // }
+    // --- DYNAMIC ROUTE LOGIC ---
+    // This logic now dynamically finds the active route based on the passed ID
+    const routeWaypoints = [];
+    if (activeRouteId && driverLocation?.lat) {
+        const activeDelivery = assignedDeliveries.find(d => d.id === activeRouteId);
+        if (activeDelivery) {
+            routeWaypoints.push([driverLocation.lat, driverLocation.lng]); // 1. Driver
+            if (activeDelivery.restaurantCoordinates?.lat) routeWaypoints.push([activeDelivery.restaurantCoordinates.lat, activeDelivery.restaurantCoordinates.lng]); // 2. Restaurant
+            if (activeDelivery.deliveryCoordinates?.lat) routeWaypoints.push([activeDelivery.deliveryCoordinates.lat, activeDelivery.deliveryCoordinates.lng]); // 3. Customer
+        }
+    }
     
     const center = allPoints.length > 0 ? allPoints[0] : [44.7866, 20.4489];
 
-    // --- STYLED LEGEND ---
-    const legendStyle = {
-        position: 'absolute', bottom: '20px', right: '20px',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 15px',
-        borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-        zIndex: 1000, fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.6'
-    };
+    // Legend styles (no changes)
+    const legendStyle = { position: 'absolute', bottom: '20px', right: '20px', backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 15px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', zIndex: 1000, fontFamily: 'sans-serif', fontSize: '13px', lineHeight: '1.6' };
     const itemStyle = { display: 'flex', alignItems: 'center', marginBottom: '6px' };
     const colorBox = (color) => ({ width: '18px', height: '18px', backgroundColor: color, borderRadius: '50%', marginRight: '10px', border: '2px solid white', boxShadow: '0 0 5px rgba(0,0,0,0.3)' });
     const sectionTitleStyle = { marginTop: '10px', marginBottom: '5px', fontWeight: 'bold', borderTop: '1px solid #ddd', paddingTop: '8px' };
 
     return (
-        <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%', borderRadius: '8px' }}>
+        <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
             <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
 
-            {/* --- ROUTING COMPONENT IS REMOVED --- */}
-            {/* {routeWaypoints.length > 1 && <RoutingMachine waypoints={routeWaypoints} />} */}
+            {/* Render the route ONLY if waypoints have been calculated */}
+            {routeWaypoints.length > 1 && <RoutingMachine waypoints={routeWaypoints} />}
 
             {driverLocation?.lat && <Marker position={[driverLocation.lat, driverLocation.lng]} icon={driverIcon}><Popup><b>Your Location</b></Popup></Marker>}
 
@@ -130,10 +101,8 @@ export const MapComponent = ({ driverLocation, assignedDeliveries, newOffers }) 
             
             <div style={legendStyle}>
                 <div style={itemStyle}><div style={colorBox('#FFB300')}></div> You (Your Location)</div>
-                
                 <div style={sectionTitleStyle}>Assigned Deliveries</div>
                 <div style={itemStyle}><div style={colorBox('#2E7D32')}></div> Pickup / Drop-off</div>
-
                 <div style={sectionTitleStyle}>New Offers</div>
                 <div style={itemStyle}><div style={colorBox('#1D4ED8')}></div> Pickup / Drop-off</div>
             </div>
