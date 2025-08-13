@@ -22,6 +22,8 @@ import { DriverProfilePage } from './pages/DriverProfilePage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
+import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
+
 
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
@@ -79,6 +81,10 @@ const router = createBrowserRouter([
   {
     path: "/track/:orderId",
     element: <TrackOrderPage />,
+  },
+  {
+    path: "/analytics",
+    element: <AnalyticsPage />,
   },
 
   // Ovde ćeš kasnije dodavati i druge rute

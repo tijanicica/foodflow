@@ -52,29 +52,29 @@ INSERT INTO address (id, street, street_number, city, country, postal_code, lati
 
 -- RESTORAN I MENI
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (1, 'Pasta Paradise', '09:00:00', '23:00:00', 4.8, '$$', 4, 10, '/images/restaurants/Pasta_Paradise.jpeg');
+    (1, 'Pasta Paradise', '09:00:00', '23:00:00', 4.8, '$$', 4, 10, '/images/restaurants/Pasta_Paradise.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (2, 'Green Garden', '10:00:00', '22:00:00', 4.9, '$$', 7, 11, '/images/restaurants/Green-Garden.jpeg');
+    (2, 'Green Garden', '10:00:00', '22:00:00', 4.9, '$$', 7, 11, '/images/restaurants/Green-Garden.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (3, 'Burger Queen', '11:00:00', '01:00:00', 4.6, '$', 4, 12, '/images/restaurants/Burger-Queen.jpeg');
+    (3, 'Burger Queen', '11:00:00', '01:00:00', 4.6, '$', 4, 12, '/images/restaurants/Burger-Queen.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (4, 'Sushi Heaven', '12:00:00', '23:00:00', 4.7, '$$$', 7, 13, '/images/restaurants/Sushi-Heaven.jpeg');
+    (4, 'Sushi Heaven', '12:00:00', '23:00:00', 4.7, '$$$', 7, 13, '/images/restaurants/Sushi-Heaven.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (5, 'Meraklija Grill', '08:00:00', '22:00:00', 4.5, '$', 4, 14, '/images/restaurants/Meraklija-Grill.jpeg');
+    (5, 'Meraklija Grill', '08:00:00', '22:00:00', 4.5, '$', 4, 14, '/images/restaurants/Meraklija-Grill.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (6, 'The Golden Spoon', '12:00:00', '23:00:00', 5.0, '$$$', 7, 15, '/images/restaurants/The-Golden-Spoon.jpeg');
+    (6, 'The Golden Spoon', '12:00:00', '23:00:00', 5.0, '$$$', 7, 15, '/images/restaurants/The-Golden-Spoon.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (7, 'Pizza Corner', '10:00:00', '00:00:00', 4.4, '$$', 4, 16, '/images/restaurants/Pizza.jpeg');
+    (7, 'Pizza Corner', '10:00:00', '00:00:00', 4.4, '$$', 4, 16, '/images/restaurants/Pizza.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (8, 'Vegan Oasis', '09:00:00', '21:00:00', 4.9, '$$', 7, 17, '/images/restaurants/Vegan-Oasis.jpeg');
+    (8, 'Vegan Oasis', '09:00:00', '21:00:00', 4.9, '$$', 7, 17, '/images/restaurants/Vegan-Oasis.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (9, 'Steak House', '17:00:00', '01:00:00', 4.8, '$$$', 4, 18, '/images/restaurants/Steak-House.jpeg');
+    (9, 'Steak House', '17:00:00', '01:00:00', 4.8, '$$$', 4, 18, '/images/restaurants/Steak-House.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (10, 'Gluten-Free Heaven', '08:00:00', '20:00:00', 4.7, '$$', 7, 19, '/images/restaurants/Gluten-Free-Heaven.jpeg');
+    (10, 'Gluten-Free Heaven', '08:00:00', '20:00:00', 4.7, '$$', 7, 19, '/images/restaurants/Gluten-Free-Heaven.jpg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
     (11, 'Fish & Chips', '12:00:00', '22:00:00', 4.3, '$', 4, 20, '/images/restaurants/Fish-Chips.jpeg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
-    (12, 'Wok Express', '11:00:00', '23:00:00', 4.6, '$$', 7, 21, '/images/restaurants/Wok.jpeg');
+    (12, 'Wok Express', '11:00:00', '23:00:00', 4.6, '$$', 7, 21, '/images/restaurants/Wok.jpg');
 INSERT INTO menu (id, name, restaurant_id) VALUES
     (1, 'Glavni Meni', 1);
 INSERT INTO menu (id, name, restaurant_id) VALUES
@@ -721,18 +721,70 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 -- Ponudu je prihvatio novi vozač
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (31, 31, 9, 'ACCEPTED');
+-- ====================================================================
+-- PORUDŽBINE U PRETHODNIM MESECIMA (ZA GRAFIKON) SA SPECIFIČNIM BROJEM PO MESECU
+-- ====================================================================
 
+-- Mart 2025 (1 porudžbina)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
+    (80, 'DELIVERED', 'CARD', 'REGULAR', '2025-03-15 18:00:00', 150.00, 1300.00, 1, 1, 2, '2025-03-15 18:32:00');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (80, 1, 80, 67); -- Pizza Capricciosa
+
+-- April 2025 (3 porudžbine)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
+    (81, 'DELIVERED', 'CASH', 'REGULAR', '2025-04-05 13:10:00', 150.00, 1000.00, 1, 1, 8, '2025-04-05 13:45:00'),
+    (82, 'DELIVERED', 'CARD', 'REGULAR', '2025-04-18 20:00:00', 150.00, 1750.00, 1, 11, 9, '2025-04-18 20:25:00'),
+    (83, 'DELIVERED', 'CARD', 'REGULAR', '2025-04-29 19:00:00', 150.00, 2050.00, 1, 1, 2, '2025-04-29 19:33:00');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (81, 1, 81, 23), -- Classic Cheeseburger
+    (82, 1, 82, 36), -- Spicy Tuna Roll
+    (83, 2, 83, 46); -- 2x Pljeskavica with Kajmak
+
+-- Maj 2025 (4 porudžbine)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
+    (84, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-01 12:00:00', 150.00, 1450.00, 1, 11, 9, '2025-05-01 12:22:00'),
+    (85, 'DELIVERED', 'CASH', 'REGULAR', '2025-05-12 21:00:00', 150.00, 1950.00, 1, 1, 8, '2025-05-12 21:34:00'),
+    (86, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-22 14:30:00', 150.00, 1450.00, 1, 1, 2, '2025-05-22 14:58:00'),
+    (87, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-30 20:15:00', 150.00, 850.00, 1, 1, 8, '2025-05-30 20:40:00');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (84, 1, 84, 122),-- Chicken with Curry
+    (85, 1, 85, 16), -- Grilled Salmon
+    (86, 1, 86, 100),-- Gluten-Free Pizza
+    (87, 1, 87, 98); -- Chocolate Lava Cake
+
+-- Jun 2025 (2 porudžbine)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
+    (88, 'DELIVERED', 'CARD', 'REGULAR', '2025-06-10 20:00:00', 150.00, 2750.00, 1, 1, 2, '2025-06-10 20:40:00'),
+    (89, 'DELIVERED', 'CASH', 'REGULAR', '2025-06-25 13:00:00', 150.00, 1050.00, 1, 11, 9, '2025-06-25 13:21:00');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (88, 1, 88, 91), -- Rump Steak
+    (89, 1, 89, 111);-- Hake and Chips
+
+-- Juli 2025 (5 porudžbina)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
+    (90, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-02 19:10:00', 150.00, 1400.00, 1, 1, 8, '2025-07-02 19:45:00'),
+    (91, 'DELIVERED', 'CASH', 'REGULAR', '2025-07-09 14:00:00', 150.00, 1250.00, 1, 1, 2, '2025-07-09 14:28:00'),
+    (92, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-15 12:30:00', 150.00, 1400.00, 1, 11, 9, '2025-07-15 12:55:00'),
+    (93, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-22 21:00:00', 150.00, 1950.00, 1, 1, 8, '2025-07-22 21:30:00'),
+    (94, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-30 18:45:00', 150.00, 2950.00, 1, 1, 2, '2025-07-30 19:15:00');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (90, 1, 90, 1),   -- Pasta Carbonara
+    (91, 1, 91, 78),  -- Falafel Bowl
+    (92, 1, 92, 68),  -- Quattro Formaggi
+    (93, 3, 93, 45),  -- 3x Ćevapi
+    (94, 1, 94, 56);  -- Beefsteak in Pepper Sauce
 
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU
 INSERT INTO problem_category (id, name, parent_category_id) VALUES
-                                                                (1, 'Problem sa porudžbinom', NULL),
-                                                                (2, 'Problem sa dostavom', NULL),
-                                                                (3, 'Tehnički problem', NULL),
-                                                                (4, 'Ostalo', NULL),
-                                                                (5, 'Nepotpuna porudžbina', 1),
-                                                                (6, 'Pogrešna porudžbina', 1),
-                                                                (7, 'Kašnjenje isporuke', 2),
-                                                                (8, 'Problem sa sajtom', 3);
+    (1, 'Problem sa porudžbinom', NULL),
+    (2, 'Problem sa dostavom', NULL),
+    (3, 'Tehnički problem', NULL),
+    (4, 'Ostalo', NULL),
+    (5, 'Nepotpuna porudžbina', 1),
+    (6, 'Pogrešna porudžbina', 1),
+    (7, 'Kašnjenje isporuke', 2),
+    (8, 'Problem sa sajtom', 3);
 
 
 
