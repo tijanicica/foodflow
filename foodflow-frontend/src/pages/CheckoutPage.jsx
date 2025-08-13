@@ -138,8 +138,7 @@ export function CheckoutPage() {
             
             // Mala pauza pre preusmeravanja da korisnik stigne da pročita poruku
             setTimeout(() => {
-                navigate('/orders');
-            });
+             navigate('/orders?tab=Active');    });
      } catch (error) {
             toast.error(error.response?.data?.message || "Failed to place order.");
             setIsPlacingOrder(false); // Vrati dugme u normalno stanje u slučaju greške
@@ -267,7 +266,7 @@ export function CheckoutPage() {
                                    Repeat
                                </Button>
                                <Button 
-                                   className="w-full" 
+                                   className="w-full bg-green-600 hover:bg-green-700 text-white"
                                    onClick={handlePlaceOrder} 
                                    disabled={isPlacingOrder}
                                >

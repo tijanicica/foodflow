@@ -335,3 +335,13 @@ export const getTrackingInfo = async (orderId) => {
         throw error;
     }
 };
+
+export const getMyAnalytics = async () => {
+    try {
+        const response = await apiClient.get('/analytics/my-analytics');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching analytics:", error);
+        throw error;
+    }
+};

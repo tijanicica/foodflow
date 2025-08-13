@@ -25,6 +25,8 @@ import { MyOrdersPage } from './pages/MyOrdersPage.jsx';
 import { DriverProfilePage } from './pages/DriverProfilePage.jsx'; 
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
+import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
+
 
 
 
@@ -79,6 +81,10 @@ const router = createBrowserRouter([
   {
     path: "/track/:orderId",
     element: <TrackOrderPage />,
+  },
+  {
+    path: "/analytics",
+    element: <AnalyticsPage />,
   },
 
   // Ovde ćeš kasnije dodavati i druge rute
