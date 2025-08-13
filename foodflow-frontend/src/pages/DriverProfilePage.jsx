@@ -384,8 +384,8 @@ const handleSaveAll = async () => {
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                         <div>
-                            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: 0, color: '#333' }}>{performance.firstName} {performance.lastName}</h2>
-                            <p style={{ marginTop: '0.5rem', fontSize: '1.2rem', color: '#6B7280' }}>Driver Profile & Performance</p>
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: 0, color: '#333' }}>Driver Profile & Performance</h2>
+                            <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', color: '#6B7280' }}>{performance.firstName} {performance.lastName}</p>
                         </div>
                         <StatusToggle isOnline={isOnline} onToggle={handleToggleStatus} />
                     </div>

@@ -110,15 +110,6 @@ public class DriverService {
     public ProfileUpdateResponseDTO updateProfile(String driverEmail, UpdateProfileRequestDTO request) {
         Driver driverToUpdate = findDriverByEmail(driverEmail);
 
-        // Logika za lozinku ostaje ista, jer nju ne vraćamo u odgovoru
-        if (StringUtils.hasText(request.getOldPassword()) && StringUtils.hasText(request.getNewPassword())) {
-            if (!passwordEncoder.matches(request.getOldPassword(), driverToUpdate.getPassword())) {
-                throw new IllegalArgumentException("Incorrect old password.");
-            }
-            driverToUpdate.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        } else if (StringUtils.hasText(request.getNewPassword()) && !StringUtils.hasText(request.getOldPassword())) {
-            throw new IllegalArgumentException("Old password is required to set a new one.");
-        }
 
         // Ažuriranje imena i prezimena
         if (StringUtils.hasText(request.getFirstName())) {
