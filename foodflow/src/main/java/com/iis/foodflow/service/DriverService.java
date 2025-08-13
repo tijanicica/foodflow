@@ -39,9 +39,108 @@ public class DriverService {
 
     @Autowired
     private RoutingService routingService;
-    /**
-     * Mijenja status dostupnosti vozača (ONLINE/OFFLINE).
-     */
+
+    @Autowired private DriverSimulationService simulationService;
+
+    // ... tvoja metoda getAssignedOrderDetails(...) ostaje ista ...
+
+    // --- NOVA METODA KOJA POKREĆE SIMULACIJU ---
+    /*@Transactional(readOnly = true)
+    public void startSimulationForOrder(String driverEmail, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order with ID " + orderId + " not found."));
+
+        Driver driver = driverRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Driver not found."));
+
+        // Sigurnosna provera da li je vozač zaista zadužen za ovu porudžbinu
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new SecurityException("Forbidden: You cannot start simulation for an order not assigned to you.");
+        }
+
+        double endLat;
+        double endLng;
+
+        // Logika za određivanje destinacije
+        if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
+            // Pronalazimo restoran na isti način kao u mapOrderToDto
+            Restaurant restaurant = order.getOrderItems().stream()
+                    .findFirst()
+                    .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                    .orElseThrow(() -> new EntityNotFoundException("Restaurant not found for order ID: " + orderId));
+
+            endLat = restaurant.getAddress().getLatitude();
+            endLng = restaurant.getAddress().getLongitude();
+
+        } else if (order.getStatus() == OrderStatus.PICKED_UP) {
+            // Ako je porudžbina preuzeta, cilj je adresa za dostavu
+            Address customerAddress = order.getAddress();
+            endLat = customerAddress.getLatitude();
+            endLng = customerAddress.getLongitude();
+
+        } else {
+            // Ako status nije odgovarajući, ne radimo ništa
+            return;
+        }
+
+        // Pozivamo asinhronu metodu simulacije sa izračunatim ciljem
+        simulationService.simulateDriving(
+                driver.getId(),
+                driver.getLatitude(),
+                driver.getLongitude(),
+                endLat,
+                endLng,
+                order.getId()
+        );
+    }*/
+
+    @Transactional(readOnly = true)
+    public void startSimulationForOrder(String driverEmail, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+
+        Driver driver = driverRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new EntityNotFoundException("Driver not found"));
+
+        // Provera da li je porudžbina dodeljena ovom vozaču
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new SecurityException("Forbidden: Order not assigned to this driver.");
+        }
+
+        double endLat;
+        double endLng;
+
+        // AKO je porudžbina spremna, cilj je RESTORAN
+        if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
+            Restaurant restaurant = order.getOrderItems().stream()
+                    .findFirst()
+                    .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                    .orElseThrow(() -> new EntityNotFoundException("Restaurant not found for order: " + orderId));
+
+            endLat = restaurant.getAddress().getLatitude();
+            endLng = restaurant.getAddress().getLongitude();
+
+            // AKO je porudžbina preuzeta, cilj je KUPAC
+        } else if (order.getStatus() == OrderStatus.PICKED_UP) {
+            Address customerAddress = order.getAddress();
+            endLat = customerAddress.getLatitude();
+            endLng = customerAddress.getLongitude();
+
+        } else {
+            // U svim ostalim slučajevima, ne radi ništa
+            return;
+        }
+
+        // Pozivamo simulaciju sa TRENUTNOM LOKACIJOM VOZAČA IZ BAZE
+        simulationService.simulateDriving(
+                driver.getId(),
+                driver.getLatitude(),      // <-- Uvek uzima pravu lokaciju
+                driver.getLongitude(),     // <-- Uvek uzima pravu lokaciju
+                endLat,
+                endLng,
+                order.getId()
+        );
+    }
 // Ispravljena verzija
     @Transactional
     public DriverResponseDTO updateStatus(String driverEmail, DriverStatus newStatus) {
@@ -422,13 +521,13 @@ public class DriverService {
         if (restaurant == null) return null;
 
         // --- KLJUČNA IZMENA: POZIVAMO NOVU METODU ---
-        // Umesto 'calculateDistance', sada pozivamo 'getRealRoadDistance'
-        double distDriverToRestaurant = getRealRoadDistance(
+        // Umesto 'calculateDistance', sada pozivamo 'calculateDistance'
+        double distDriverToRestaurant = calculateDistance(
                 driver.getLatitude(), driver.getLongitude(),
                 restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()
         );
 
-        double distDriverToCustomer = getRealRoadDistance(
+        double distDriverToCustomer = calculateDistance(
                 driver.getLatitude(), driver.getLongitude(),
                 order.getAddress().getLatitude(), order.getAddress().getLongitude()
         );
@@ -483,7 +582,7 @@ public class DriverService {
                 .orElseThrow(() -> new IllegalStateException("Cannot calculate ETA: Order has no items or restaurant link."));
 
         // --- KORAK 2: OSNOVNO VRIJEME PUTOVANJA NA OSNOVU DISTANCE I VOZILA ---
-        double deliveryDistance = getRealRoadDistance(
+        double deliveryDistance = calculateDistance(
                 restaurant.getAddress().getLatitude(),
                 restaurant.getAddress().getLongitude(),
                 order.getAddress().getLatitude(),

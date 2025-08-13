@@ -316,6 +316,12 @@ export const toggleRepeatingOrderStatus = async (templateId) => {
     }
 };
 
+export const startSimulation = async (orderId) => {
+    // Šaljemo prazan POST zahtev na endpoint koji smo napravili
+    await apiClient.post(`/drivers/orders/${orderId}/start-simulation`);
+};
+
+
 export const cancelRepeatingOrder = async (templateId) => {
     try {
         // DELETE zahtev ne vraća ništa

@@ -142,6 +142,17 @@ public class DriverController {
         return ResponseEntity.ok(orderDetails);
     }
 
+    // U DriverController.java
+    @PostMapping("/orders/{orderId}/start-simulation")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> startDrivingSimulation(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        driverService.startSimulationForOrder(driverPrincipal.getEmail(), orderId);
+
+        return ResponseEntity.ok().build();
+    }
 
 
     /** POST endpoint kojim vozač označava da je preuzeo porudžbinu. */

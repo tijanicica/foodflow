@@ -4,8 +4,10 @@ import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
-import { getOrderDetails, cancelDelivery, getDriverInfo } from '../services/api';
+import { getOrderDetails, cancelDelivery,startSimulation, getDriverInfo } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Stomp from 'stompjs';
+import SockJS from 'sockjs-client';
 import {
   FiMapPin,
   FiUser,
@@ -176,23 +178,56 @@ export function ViewOrderPage() {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const navigate = useNavigate();
 
-    useEffect(() => {
+        useEffect(() => {
+        let stompClient = null;
+
         const fetchPageData = async () => {
             try {
                 setLoading(true);
-                const [orderDetailsData, driverInfoData] = await Promise.all([
+                const [orderDetails, driverInfo] = await Promise.all([
                     getOrderDetails(orderId),
                     getDriverInfo()
                 ]);
-                setOrder(orderDetailsData);
-                setVehicleType(driverInfoData.vehicleType);
+                setOrder(orderDetails);
+                setVehicleType(driverInfo.vehicleType);
+                
+                // Postavljamo POČETNU lokaciju vozača
+                if (orderDetails.driverCoordinates) {
+                    setDriverLocation(orderDetails.driverCoordinates);
+                }
+                return true; // Signaliziramo uspeh
             } catch (err) {
-                setError('Failed to load order details. The order might not be assigned to you.');
+                setError('Failed to load page data. The order might not be assigned to you.');
+                return false; // Signaliziramo neuspeh
             } finally {
                 setLoading(false);
             }
         };
-        fetchPageData();
+
+        fetchPageData().then((isDataLoaded) => {
+            // WebSocket konekciju uspostavljamo samo ako su podaci uspešno učitani
+            if (isDataLoaded) {
+                const socket = new SockJS('http://localhost:8088/ws'); // Proveri port
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null; // Isključi debug poruke
+
+                stompClient.connect({}, () => {
+                    console.log('Connected to WebSocket');
+                    stompClient.subscribe('/topic/driver-location/' + orderId, (message) => {
+                        const newLocation = JSON.parse(message.body);
+                        // Ažuriramo stanje sa novom lokacijom
+                        setDriverLocation({ lat: newLocation.lat, lng: newLocation.lng });
+                    });
+                });
+            }
+        });
+
+        // Cleanup funkcija za prekid konekcije
+        return () => {
+            if (stompClient && stompClient.connected) {
+                stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
+            }
+        };
     }, [orderId]);
 
     // --- KLJUČNA IZMENA: MEMOIZACIJA PROPS-OVA ZA MAPU ---
@@ -200,6 +235,19 @@ export function ViewOrderPage() {
     const assignedDeliveriesForMap = useMemo(() => {
         return order ? [order] : [];
     }, [order]);
+        // DODAJ OVU CELU FUNKCIJU
+    const handleStartDriving = async () => {
+        if (!order) return;
+        try {
+            toast.loading('Starting simulation...', { id: 'sim-start' });
+            await startSimulation(order.id);
+            toast.dismiss('sim-start');
+            toast.success("Simulation started!");
+        } catch (error) {
+            toast.dismiss('sim-start');
+            toast.error("Could not start simulation.");
+        }
+    };
 
     const newOffersForMap = useMemo(() => {
         return [];
@@ -293,15 +341,17 @@ export function ViewOrderPage() {
                     display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start'
                 }}>
                     
-                    <div style={{ height: '75vh', borderRadius: '16px', overflow: 'hidden' }}>
-                        {/* IZMENJEN POZIV MAPE KOJI KORISTI MEMOIZOVANE VREDNOSTI */}
-                        <MapComponent
-                            driverLocation={driverLocation}
-                            assignedDeliveries={assignedDeliveriesForMap}
-                            newOffers={newOffersForMap}
-                            vehicleType={vehicleType} 
-                            activeRouteId={order.id} 
-                        />
+                    <div style={{ height: '85vh', borderRadius: '16px', overflow: 'hidden' }}>
+                        {/* Prikazujemo mapu samo kada imamo lokaciju vozača */}
+                        {driverLocation && (
+                            <MapComponent
+                                driverLocation={driverLocation}
+                                assignedDeliveries={assignedDeliveriesForMap}
+                                newOffers={newOffersForMap}
+                                vehicleType={vehicleType} 
+                                activeRouteId={order.id} 
+                            />
+                        )}
                     </div>
 
                     {/* VRAĆEN STARI DIZAJN DESNE KOLONE SA IKONICAMA */}
@@ -334,52 +384,75 @@ export function ViewOrderPage() {
                             <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
+    
+                            {/* --- GLAVNO DUGME --- */}
+                            
+                            {/* Ako je status 'PICKED_UP', prikazujemo "Mark as Delivered" */}
                             {isPickedUp ? (
                                 <button
                                     style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#256627'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2E7D32'}
+                                    // onClick={handleMarkAsDelivered} // TODO
                                 >
                                     <FiCheckCircle /> Mark as Delivered
                                 </button>
                             ) : (
+                                // Ako status NIJE 'PICKED_UP', prikazujemo "Mark as Picked Up"
                                 <button
                                     onClick={handleMarkAsPickedUp}
                                     style={{ ...primaryButtonStyle, backgroundColor: '#1F2937' }}
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#111827'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1F2937'}
                                 >
-                                    <FiNavigation /> Mark as Picked Up
+                                    <FiCheckCircle /> Mark as Picked Up
                                 </button>
                             )}
+
+                            {/* --- DUGME ZA SIMULACIJU --- */}
+                            
+                            {/* Prikazujemo dugme za pokretanje simulacije samo u relevantnim statusima */}
+                            {(order.status === 'READY_FOR_PICKUP' || order.status === 'PICKED_UP') && (
+                                <button
+                                    onClick={handleStartDriving}
+                                    style={{ ...primaryButtonStyle, backgroundColor: '#8A643B' }} // Neutralna boja
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#78552f'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
+                                >
+                                    <FiNavigation /> Start Driving Simulation
+                                </button>
+                            )}
+
+                            {/* --- SEKUNDARNA DUGMAD --- */}
+                            
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                             <button
-                                onClick={handleReportDelay}
-                                style={{
-                                    ...secondaryButtonStyle,
-                                    backgroundColor: order.status !== 'PICKED_UP' ? '#F3F4F6' : 'white',
-                                    color: order.status !== 'PICKED_UP' ? '#9CA3AF' : '#4A4A4A',
-                                    borderColor: order.status !== 'PICKED_UP' ? '#E5E7EB' : '#D1D5DB',
-                                    cursor: order.status !== 'PICKED_UP' ? 'not-allowed' : 'pointer'
-                                }}
-                                onMouseEnter={e => {
-                                    if (order.status === 'PICKED_UP') {
-                                        e.currentTarget.style.borderColor = '#bc9124';
-                                        e.currentTarget.style.backgroundColor = '#FFFBEB';
-                                        e.currentTarget.style.color = '#bc9124';
-                                    }
-                                }}
-                                onMouseLeave={e => {
-                                    if (order.status === 'PICKED_UP') {
-                                        e.currentTarget.style.borderColor = '#D1D5DB';
-                                        e.currentTarget.style.backgroundColor = 'white';
-                                        e.currentTarget.style.color = '#4A4A4A';
-                                    }
-                                }}
-                            >
-                                <FiAlertTriangle size={14} /> Report Delay
-                            </button>
+                                <button
+                                    onClick={handleReportDelay}
+                                    style={{
+                                        ...secondaryButtonStyle,
+                                        backgroundColor: order.status !== 'PICKED_UP' ? '#F3F4F6' : 'white',
+                                        color: order.status !== 'PICKED_UP' ? '#9CA3AF' : '#4A4A4A',
+                                        borderColor: order.status !== 'PICKED_UP' ? '#E5E7EB' : '#D1D5DB',
+                                        cursor: order.status !== 'PICKED_UP' ? 'not-allowed' : 'pointer'
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (order.status === 'PICKED_UP') {
+                                            e.currentTarget.style.borderColor = '#bc9124';
+                                            e.currentTarget.style.backgroundColor = '#FFFBEB';
+                                            e.currentTarget.style.color = '#bc9124';
+                                        }
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (order.status === 'PICKED_UP') {
+                                            e.currentTarget.style.borderColor = '#D1D5DB';
+                                            e.currentTarget.style.backgroundColor = 'white';
+                                            e.currentTarget.style.color = '#4A4A4A';
+                                        }
+                                    }}
+                                >
+                                    <FiAlertTriangle size={14} /> Report Delay
+                                </button>
                                 <button
                                     onClick={() => setIsCancelModalOpen(true)}
                                     style={secondaryButtonStyle}

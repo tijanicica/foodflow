@@ -11,17 +11,21 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-
   
+  // --- DODAJ OVAJ BLOK ---
+  // Ovo govori Vite-u da svaku referencu na 'global' u kodu
+  // zameni sa 'window', što rešava problem sa sockjs-client bibliotekom.
+  define: {
+    'global': 'window',
+  },
+  // -------------------------
 
   server: {
     port: 5173, 
     historyApiFallback: true, 
     proxy: {
       '/api': {
-        // === ISPRAVKA JE OVDJE ===
-        target: 'http://localhost:8088', // Promijenjeno sa 8080 na 8088
-        // ==========================
+        target: 'http://localhost:8088',
         changeOrigin: true, 
       },
     },

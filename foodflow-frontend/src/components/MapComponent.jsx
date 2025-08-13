@@ -1,5 +1,3 @@
-// FILE: src/components/MapComponent.jsx
-
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -61,16 +59,38 @@ export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffer
         return points;
     }, [driverLocation, assignedDeliveries, newOffers]);
 
+    // --- useMemo SA DIJAGNOSTIKOM ---
     const routeWaypoints = useMemo(() => {
+        console.log("--- Izračunavam Waypoints ---");
+        console.log("Active Route ID:", activeRouteId);
+        
         const points = [];
         if (activeRouteId && driverLocation?.lat) {
             const activeDelivery = assignedDeliveries.find(d => d.id === activeRouteId);
+            
+            console.log("Pronađena dostava:", activeDelivery);
+
             if (activeDelivery) {
+                // Tačka 1: Vozač
                 points.push([driverLocation.lat, driverLocation.lng]);
-                if (activeDelivery.restaurantCoordinates?.lat) points.push([activeDelivery.restaurantCoordinates.lat, activeDelivery.restaurantCoordinates.lng]);
-                if (activeDelivery.deliveryCoordinates?.lat) points.push([activeDelivery.deliveryCoordinates.lat, activeDelivery.deliveryCoordinates.lng]);
+                
+                // Tačka 2: Restoran (ako postoji)
+                if (activeDelivery.restaurantCoordinates && activeDelivery.restaurantCoordinates.lat) {
+                    points.push([activeDelivery.restaurantCoordinates.lat, activeDelivery.restaurantCoordinates.lng]);
+                } else {
+                    console.error("GREŠKA: Koordinate restorana nedostaju u objektu 'activeDelivery'!");
+                }
+
+                // Tačka 3: Kupac (ako postoji)
+                if (activeDelivery.deliveryCoordinates && activeDelivery.deliveryCoordinates.lat) {
+                    points.push([activeDelivery.deliveryCoordinates.lat, activeDelivery.deliveryCoordinates.lng]);
+                } else {
+                    console.error("GREŠKA: Koordinate kupca nedostaju u objektu 'activeDelivery'!");
+                }
             }
         }
+        
+        console.log("Finalni Waypoints niz za rutu:", points);
         return points;
     }, [activeRouteId, driverLocation, assignedDeliveries]);
 
@@ -88,10 +108,10 @@ export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
             
-            {/* --- JEDINA IZMENA JE OVDE --- */}
+            {/* --- KONAČNA IZMENA ZA ISCRTAVANJE --- */}
             {routeWaypoints.length > 1 && (
                 <RoutingMachine
-                    key={JSON.stringify(routeWaypoints)}
+                    key={JSON.stringify(routeWaypoints)} // Ključ koji forsira ponovno kreiranje
                     waypoints={routeWaypoints}
                 />
             )}
