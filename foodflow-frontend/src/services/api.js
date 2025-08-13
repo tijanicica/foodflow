@@ -339,7 +339,7 @@ export const cancelRepeatingOrder = async (templateId) => {
 
 export const getDriverInfo = async () => {
     try {
-        const response = await apiClient.get('/drivers/vehicle');
+        const response = await apiClient.get('/drivers/info');
         return response.data;
     } catch (error) {
         console.error("Error fetching driver info:", error);
