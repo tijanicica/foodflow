@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'; // Dodan useState
 import { useNavigate, Link } from 'react-router-dom';
 import { getDriverPerformance, updateDriverVehicle, updateDriverStatus } from '@/services/api';
 // Ikonice
-import { FiEdit2, FiSave, FiXCircle, FiTruck, FiClock, FiThumbsDown, FiStar } from 'react-icons/fi';
+import { FiUser,FiEdit2, FiSave, FiXCircle, FiTruck, FiClock, FiThumbsDown, FiStar } from 'react-icons/fi';
 import { BsBicycle } from 'react-icons/bs';
 import { AiFillCar } from 'react-icons/ai';
 import { FaMotorcycle } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 const VEHICLE_OPTIONS = [
     { value: 'CAR', label: 'Car', icon: <AiFillCar /> },
@@ -50,6 +51,25 @@ const VehicleIcon = ({ vehicleType }) => {
     if (!vehicle) return null;
     return <span style={{ marginRight: '0.5rem' }}>{vehicle.icon}</span>;
 };
+const ProfileInfoItem = ({ icon, label, value }) => (
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1.5rem',
+        backgroundColor: '#F9FAFB',
+        padding: '1rem 1.5rem',
+        borderRadius: '12px',
+        border: '1px solid #E5E7EB'
+    }}>
+        <div style={{ color: '#8A643B', fontSize: '2rem' }}>
+            {icon}
+        </div>
+        <div>
+            <p style={{ margin: 0, color: '#6B7280', fontSize: '0.9rem', fontWeight: '500' }}>{label}</p>
+            <p style={{ margin: 0, color: '#1F2937', fontSize: '1.25rem', fontWeight: 'bold' }}>{value}</p>
+        </div>
+    </div>
+);
 
 const StatusToggle = ({ isOnline, onToggle }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -96,6 +116,57 @@ export function DriverProfilePage() {
     const [error, setError] = useState('');
     const [editingVehicle, setEditingVehicle] = useState(false);
     const [newVehicle, setNewVehicle] = useState('');
+        const [isEditingProfile, setIsEditingProfile] = useState(false);
+    // ========================
+
+    // Dodajte i state za podatke iz forme, ako ga već nemate
+    const [profileData, setProfileData] = useState({
+        firstName: '',
+        lastName: '',
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const labelStyle = {
+    display: 'block',
+    fontWeight: '500',
+    marginBottom: '0.5rem',
+    color: '#374151'
+};
+
+const inputStyle = {
+    width: '100%',
+    padding: '0.75rem',
+    borderRadius: '8px',
+    border: '1px solid #D1D5DB',
+    backgroundColor: 'white',
+    fontSize: '1rem'
+};
+
+// --- REŠENJE JE OVDE ---
+const infoTextStyle = {
+    margin: '0.5rem 0',
+    fontSize: '1.1rem'
+};
+// -----------------------
+
+const buttonStyle = (type) => {
+    const base = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        padding: '0.6rem 1.2rem',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        border: 'none',
+        fontWeight: '600',
+        transition: 'background-color 0.2s'
+    };
+    if (type === 'primary') return { ...base, backgroundColor: '#28a745', color: 'white' };
+    if (type === 'secondary') return { ...base, backgroundColor: '#6c757d', color: 'white' };
+    if (type === 'edit') return { ...base, backgroundColor: '#8A643B', color: 'white' };
+    return base;
+};
 
     // === IZMJENA #1: Funkcija za čitanje inicijalnog statusa iz localStorage ===
     // Pretpostavljamo da ste prilikom logina spremili status u localStorage
@@ -128,40 +199,81 @@ export function DriverProfilePage() {
         localStorage.removeItem('driverStatus'); // Brišemo i status
         navigate('/login', { replace: true });
     };
-
-    const handleVehicleSave = async () => {
-    // Provera da li je izabrana vrednost ista kao stara
-    if (newVehicle === performance.vehicleType) {
-        setEditingVehicle(false); // Samo zatvori edit mod, nema potrebe za API pozivom
+const handleSaveAll = async () => {
+    // 1. VALIDACIJA (Provera lozinke)
+    if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
+        toast.error('Nove lozinke se ne poklapaju!');
         return;
     }
 
+    // 2. PROVERA ŠTA JE SVE PROMENJENO
+    const isVehicleChanged = newVehicle && newVehicle !== performance.vehicleType;
+    
+    const isProfileChanged = 
+        (profileData.firstName && profileData.firstName !== performance.firstName) ||
+        (profileData.lastName && profileData.lastName !== performance.lastName) ||
+        (profileData.newPassword);
+
+    // Ako ništa nije promenjeno, samo zatvori edit mod
+    if (!isVehicleChanged && !isProfileChanged) {
+        setIsEditingProfile(false);
+        setIsEditingVehicle(false);
+        return;
+    }
+    
+    // Prikazujemo "loading" toster dok se operacije izvršavaju
+    const promiseToast = toast.loading('Čuvanje izmena...');
+
     try {
-        // Objekat koji šaljemo mora da odgovara DTO klasi na backendu (UpdateVehicleRequest)
-        const requestBody = {
-            newVehicleType: newVehicle 
-        };
+        // 3. POZIVANJE API-JA (paralelno ako je moguće)
+        const apiCalls = [];
 
-        // Pozivamo API funkciju koju smo napravili
-        const updatedVehicleInfo = await updateDriverVehicle(requestBody);
+        // Ako je vozilo promenjeno, dodaj njegov API poziv u niz
+        if (isVehicleChanged) {
+            apiCalls.push(updateDriverVehicle({ newVehicleType: newVehicle }));
+        }
 
-        // Nakon uspešnog odgovora sa servera, ažuriramo lokalno stanje
-        // da se promena odmah prikaže korisniku bez osvežavanja stranice.
-        setPerformance(prevPerformance => ({
-            ...prevPerformance,
-            vehicleType: updatedVehicleInfo.vehicleType // Koristimo podatak koji je vratio server
-        }));
+        // Ako je profil promenjen, dodaj njegov API poziv u niz
+        if (isProfileChanged) {
+            const profileRequestBody = {
+                firstName: profileData.firstName,
+                lastName: profileData.lastName,
+                oldPassword: profileData.oldPassword,
+                newPassword: profileData.newPassword,
+            };
+            apiCalls.push(updateDriverProfile(profileRequestBody));
+        }
 
-        // Zatvaramo mod za izmenu
-        setEditingVehicle(false);
+        // Izvršavamo sve API pozive odjednom
+        const results = await Promise.all(apiCalls);
+
+        // 4. AŽURIRANJE STANJA NAKON USPEHA
+        // Ovde morate pažljivo da prođete kroz rezultate i ažurirate stanje
+        let updatedPerformance = { ...performance };
+        results.forEach(result => {
+            if (result.vehicleType) { // Ako je ovo odgovor od ažuriranja vozila
+                updatedPerformance.vehicleType = result.vehicleType;
+            }
+            if (result.id) { // Ako je ovo kompletan odgovor od ažuriranja profila
+                updatedPerformance = result; // Zameni ceo objekat
+            }
+        });
+        
+        setPerformance(updatedPerformance);
+        
+        // Zatvaramo sve edit modove
+        setIsEditingProfile(false);
+        setIsEditingVehicle(false);
+
+        // Ažuriramo toster sa porukom o uspehu
+        toast.success('Izmene su uspešno sačuvane!', { id: promiseToast });
 
     } catch (err) {
-        // U slučaju greške, obavestimo korisnika
-        console.error("Greška prilikom čuvanja vozila:", err);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        // U slučaju greške, ažuriramo toster sa porukom o grešci
+        const errorMessage = err.response?.data?.error || 'Došlo je do greške.';
+        toast.error(errorMessage, { id: promiseToast });
     }
 };
-
     const handleToggleStatus = async () => {
         try {
             const newStatus = isOnline ? "OFFLINE" : "ONLINE";
@@ -260,49 +372,124 @@ export function DriverProfilePage() {
                         </div>
                     </section>
 
-                    <section style={{ marginTop: '3rem' }}>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Account Settings</h3>
-                        <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <span style={{ color: '#6B7280', fontSize: '1rem', whiteSpace: 'nowrap' }}>Vehicle Type:</span>
-                                    {editingVehicle ? (
-                                        <select
-                                            value={newVehicle}
-                                            onChange={(e) => setNewVehicle(e.target.value)}
-                                            style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '1rem' }}
-                                        >
-                                            <option value="" disabled>Select vehicle</option>
-                                            {VEHICLE_OPTIONS.map(opt => (
-                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', color: '#333' }}>
-                                            <VehicleIcon vehicleType={performance.vehicleType} />
-                                            {performance.vehicleType ? VEHICLE_OPTIONS.find(v => v.value === performance.vehicleType).label : 'Not set'}
-                                        </div>
-                                    )}
-                                </div>
-                                <div>
-                                    {editingVehicle ? (
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button onClick={handleVehicleSave} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#28a745', color: 'white', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: 'none', fontWeight: '600' }}>
-                                                <FiSave /> Save
-                                            </button>
-                                            <button onClick={() => setEditingVehicle(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#6c757d', color: 'white', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', border: 'none', fontWeight: '600' }}>
-                                                <FiXCircle /> Cancel
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button onClick={() => setEditingVehicle(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'transparent', border: 'none', color: '#8A643B', cursor: 'pointer', fontWeight: '600', fontSize: '1rem' }}>
-                                            <FiEdit2 /> Edit
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                   <section style={{ marginTop: '3rem' }}>
+    <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Account Settings</h3>
+    <div style={{ backgroundColor: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+        
+        {isEditingProfile ? (
+            // ======================================================
+            // PRIKAZ FORME KADA JE EDITOVANJE UKLJUČENO
+            // ======================================================
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveAll(); }}>
+                {/* Glavni kontejner za dve kolone */}
+                <div style={{ display: 'flex', gap: '2rem' }}>
+
+                    {/* Leva kolona */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <h4 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>Personal & Vehicle Info</h4>
+                        
+                        {/* Polje za Ime */}
+                        <div>
+                            <label style={labelStyle}>First Name</label>
+                            <input type="text" value={profileData.firstName} onChange={(e) => setProfileData({...profileData, firstName: e.target.value})} style={inputStyle} />
                         </div>
-                    </section>
+
+                        {/* Polje za Prezime */}
+                        <div>
+                            <label style={labelStyle}>Last Name</label>
+                            <input type="text" value={profileData.lastName} onChange={(e) => setProfileData({...profileData, lastName: e.target.value})} style={inputStyle} />
+                        </div>
+                        
+                        {/* Polje za Vozilo */}
+                        <div>
+                            <label style={labelStyle}>Vehicle Type</label>
+                            <select value={newVehicle} onChange={(e) => setNewVehicle(e.target.value)} style={inputStyle}>
+                                <option value="" disabled>Select vehicle</option>
+                                {VEHICLE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Desna kolona */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderLeft: '1px solid #eee', paddingLeft: '2rem' }}>
+                        <h4 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>Change Password</h4>
+                        
+                        {/* Polje za Staru Lozinku */}
+                        <div>
+                            <label style={labelStyle}>Current Password</label>
+                            <input type="password" placeholder="Enter current password" value={profileData.oldPassword} onChange={(e) => setProfileData({...profileData, oldPassword: e.target.value})} style={inputStyle} />
+                        </div>
+
+                        {/* Polje za Novu Lozinku */}
+                        <div>
+                            <label style={labelStyle}>New Password</label>
+                            <input type="password" placeholder="Leave blank to keep current" value={profileData.newPassword} onChange={(e) => setProfileData({...profileData, newPassword: e.target.value})} style={inputStyle} />
+                        </div>
+                        
+                        {/* Polje za Potvrdu Nove Lozinke */}
+                        <div>
+                            <label style={labelStyle}>Confirm New Password</label>
+                            <input type="password" placeholder="Confirm new password" value={profileData.confirmPassword} onChange={(e) => setProfileData({...profileData, confirmPassword: e.target.value})} style={inputStyle} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dugmići za akcije */}
+                <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
+                    <button type="button" onClick={() => setIsEditingProfile(false)} style={buttonStyle('secondary')}>Cancel</button>
+                    <button type="submit" style={buttonStyle('primary')}>Save All Changes</button>
+                </div>
+            </form>
+        ) : (
+            // ======================================================
+            // PRIKAZ PODATAKA KADA JE EDITOVANJE ISKLJUČENO
+            // ======================================================
+            <div>
+            {/* Kontejner za kartice sa podacima */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                
+                {/* Kartica za Puno Ime */}
+                <ProfileInfoItem 
+                    icon={<FiUser />} 
+                    label="Full Name" 
+                    value={`${performance.firstName} ${performance.lastName}`}
+                />
+
+                {/* Kartica za Vozilo */}
+                <ProfileInfoItem 
+                    icon={<VehicleIcon vehicleType={performance.vehicleType} />}
+                    label="Vehicle Type"
+                    value={
+                        performance.vehicleType 
+                        ? VEHICLE_OPTIONS.find(v => v.value === performance.vehicleType).label 
+                        : 'Not set'
+                    }
+                />
+            </div>
+
+            {/* Edit dugme, sada pozicionirano na kraju */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
+                <button
+                    onClick={() => {
+                        setIsEditingProfile(true);
+                        setNewVehicle(performance.vehicleType || '');
+                        setProfileData({
+                            firstName: performance.firstName,
+                            lastName: performance.lastName,
+                            oldPassword: '',
+                            newPassword: '',
+                            confirmPassword: ''
+                        });
+                    }}
+                    style={buttonStyle('edit')}
+                >
+                    <FiEdit2 /> Edit Profile & Settings
+                </button>
+            </div>
+            </div>
+        )}
+    </div>
+</section>
                 </div>
             </main>
         </div>

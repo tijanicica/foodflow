@@ -66,6 +66,26 @@ public class DriverController {
         DriverResponseDTO driverInfo = driverService.getDriverInfo(driverEmail);
         return ResponseEntity.ok(driverInfo);
     }
+
+    @PutMapping("/profile")
+    @PreAuthorize("hasRole('DRIVER')")
+    // 1. PROMENA JE OVDJE: Koristimo ResponseEntity<?> kao povratni tip
+    public ResponseEntity<?> updateOwnProfile(
+            @AuthenticationPrincipal Driver driverPrincipal,
+            @RequestBody UpdateProfileRequestDTO request) {
+
+        try {
+            DriverResponseDTO updatedDriver = driverService.updateProfile(driverPrincipal.getEmail(), request);
+            // U slučaju uspeha, vraćamo DTO i status 200 OK
+            return ResponseEntity.ok(updatedDriver);
+
+        } catch (IllegalArgumentException e) {
+            // U slučaju greške, vraćamo poruku i status 400 Bad Request
+            // 2. BOLJA PRAKSA: Vratite JSON objekat umesto čistog stringa
+            Map<String, String> errorResponse = Map.of("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
     @GetMapping("/vehicle")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<VehicleInfoDTO> getOwnVehicle(@AuthenticationPrincipal Driver driverPrincipal) {

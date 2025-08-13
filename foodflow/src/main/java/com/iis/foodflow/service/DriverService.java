@@ -1,5 +1,6 @@
 package com.iis.foodflow.service;
 
+import com.iis.foodflow.dto.request.UpdateProfileRequestDTO;
 import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.enums.*;
 import com.iis.foodflow.model.order.Address;
@@ -16,8 +17,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +39,8 @@ public class DriverService {
     private final OrderAssignmentService orderAssignmentService;
     private final DriverRatingRepository driverRatingRepository;
     private final OrderOfferRepository orderOfferRepository;
+    private final PasswordEncoder passwordEncoder;
+
 
     @Autowired
     private RoutingService routingService;
@@ -99,7 +105,53 @@ public class DriverService {
         // 2. Vrati novi DTO koji sadrži samo tip vozila
         return new VehicleInfoDTO(driver.getVehicleType().name());
     }
+    @Transactional
+    public DriverResponseDTO updateProfile(String driverEmail, UpdateProfileRequestDTO request) {
+        Driver driverToUpdate = findDriverByEmail(driverEmail);
 
+        // 1. AŽURIRANJE LOZINKE (radimo prvo, jer je najrizičnije)
+        // Proveravamo samo ako je korisnik uneo i staru i novu lozinku
+        if (StringUtils.hasText(request.getOldPassword()) && StringUtils.hasText(request.getNewPassword())) {
+
+            // A. Provera da li se stara lozinka koju je korisnik uneo poklapa sa onom u bazi
+            if (!passwordEncoder.matches(request.getOldPassword(), driverToUpdate.getPassword())) {
+                // Ako se ne poklapa, bacamo izuzetak i prekidamo operaciju
+                throw new IllegalArgumentException("Incorrect old password.");
+            }
+
+            // B. Ako je sve u redu, enkodiramo i postavljamo novu lozinku
+            driverToUpdate.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        } else if (StringUtils.hasText(request.getNewPassword()) && !StringUtils.hasText(request.getOldPassword())) {
+            // Slučaj ako je korisnik uneo novu lozinku, ali ne i staru
+            throw new IllegalArgumentException("Old password is required to set a new one.");
+        }
+
+
+        // 2. AŽURIRANJE IMENA I PREZIMENA (ako su poslati)
+        if (StringUtils.hasText(request.getFirstName())) {
+            driverToUpdate.setFirstName(request.getFirstName().trim());
+        }
+        if (StringUtils.hasText(request.getLastName())) {
+            driverToUpdate.setLastName(request.getLastName().trim());
+        }
+
+        // 3. ČUVANJE I VRAĆANJE ODGOVORA
+        Driver savedDriver = driverRepository.save(driverToUpdate);
+
+        // Koristimo vaš postojeći DriverResponseDTO za mapiranje odgovora
+        return DriverResponseDTO.builder()
+                .id(savedDriver.getId())
+                .email(savedDriver.getEmail())
+                .firstName(savedDriver.getFirstName())
+                .lastName(savedDriver.getLastName())
+                .phone(savedDriver.getPhone())
+                .vehicleType(savedDriver.getVehicleType())
+                .status(savedDriver.getStatus())
+                .latitude(savedDriver.getLatitude())
+                .longitude(savedDriver.getLongitude())
+                .build();
+    }
 
     @Transactional
     public VehicleInfoDTO updateVehicle(String driverEmail, String newVehicleTypeString) {
