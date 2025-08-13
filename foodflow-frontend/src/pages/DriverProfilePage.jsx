@@ -54,17 +54,24 @@ const VehicleIcon = ({ vehicleType }) => {
 const ProfileInfoItem = ({ icon, label, value }) => (
     <div style={{
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'center', // Ovaj red poravnava "icon div" i "text div"
         gap: '1.5rem',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#ffffffff',
         padding: '1rem 1.5rem',
         borderRadius: '12px',
-        border: '1px solid #E5E7EB'
+        border: '2px solid #8A643B'
     }}>
-        <div style={{ color: '#8A643B', fontSize: '2rem' }}>
+        {/* --- IZMENA JE NA OVOJ LINIJI --- */}
+        <div style={{ 
+            color: '#8A643B', 
+            fontSize: '2rem', 
+            display: 'flex', 
+            alignItems: 'center' // Ovaj red poravnava samu ikonicu UNUTAR ovog diva
+        }}>
             {icon}
         </div>
-        <div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
             <p style={{ margin: 0, color: '#6B7280', fontSize: '0.9rem', fontWeight: '500' }}>{label}</p>
             <p style={{ margin: 0, color: '#1F2937', fontSize: '1.25rem', fontWeight: 'bold' }}>{value}</p>
         </div>
