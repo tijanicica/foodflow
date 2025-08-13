@@ -22,18 +22,6 @@ public class DriverController {
 
     private final DriverService driverService;
 
-    /** Vozač mijenja svoj status dostupnosti (ONLINE/OFFLINE). */
-// Ispravljena verzija
-    @PutMapping("/status")
-    @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<DriverResponseDTO> updateOwnStatus( // <-- 1. Promijenjen povratni tip
-                                                              @RequestBody UpdateDriverStatusRequest request,
-                                                              @AuthenticationPrincipal Driver driverPrincipal) {
-        // 2. Sada će servis vratiti DTO, a ne Driver entitet
-        DriverResponseDTO updatedDriverDTO = driverService.updateStatus(driverPrincipal.getEmail(), request.getNewStatus());
-        return ResponseEntity.ok(updatedDriverDTO);
-    }
-
     @GetMapping("/status")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverStatusResponse> getOwnStatus(
@@ -42,7 +30,23 @@ public class DriverController {
         DriverStatusResponse statusResponse = driverService.getDriverStatus(driverPrincipal.getEmail());
         return ResponseEntity.ok(statusResponse);
     }
-    /** Vozač periodično šalje svoju lokaciju. */
+
+    @PutMapping("/status")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<DriverResponseDTO> updateOwnStatus(
+                                                              @RequestBody UpdateDriverStatusRequest request,
+                                                              @AuthenticationPrincipal Driver driverPrincipal) {
+        DriverResponseDTO updatedDriverDTO = driverService.updateStatus(driverPrincipal.getEmail(), request.getNewStatus());
+        return ResponseEntity.ok(updatedDriverDTO);
+    }
+
+    @GetMapping("/{driverId}/location")
+    @PreAuthorize("hasRole('ADMINISTRATOR') or hasRole('MANAGER') or hasRole('CUSTOMER')")
+    public ResponseEntity<DriverLocationResponse> getDriverLocationById(@PathVariable Long driverId) {
+        DriverLocationResponse locationData = driverService.getDriverLocation(driverId);
+        return ResponseEntity.ok(locationData);
+    }
+
     @PutMapping("/location")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> updateOwnLocation(
@@ -55,49 +59,33 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * Endpoint za dobijanje lokacije vozača.
-     * Dostupan administratorima, menadžerima i kupcima.
-     */
-    @GetMapping("/{driverId}/location")
-    @PreAuthorize("hasRole('ADMINISTRATOR') or hasRole('MANAGER') or hasRole('CUSTOMER')")
-    public ResponseEntity<DriverLocationResponse> getDriverLocationById(@PathVariable Long driverId) {
-        DriverLocationResponse locationData = driverService.getDriverLocation(driverId);
-        return ResponseEntity.ok(locationData);
+    @GetMapping("/vehicle")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<DriverResponseDTO> getOwnVehicle(@AuthenticationPrincipal Driver driverPrincipal) {
+        String driverEmail = driverPrincipal.getEmail();
+        DriverResponseDTO driverInfo = driverService.getDriverInfo(driverEmail);
+        return ResponseEntity.ok(driverInfo);
     }
+
     @PutMapping("/vehicle")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<DriverResponseDTO> updateOwnVehicle( // <-- 1. Promijenjen povratni tip
+    public ResponseEntity<DriverResponseDTO> updateOwnVehicle(
                                                                @RequestBody UpdateVehicleRequest request,
                                                                @AuthenticationPrincipal Driver driverPrincipal) {
 
         String driverEmail = driverPrincipal.getEmail();
-        // 2. Sada će servis vratiti DTO, a ne Driver entitet
         DriverResponseDTO updatedDriverDTO = driverService.updateVehicle(driverEmail, request.getNewVehicleType());
 
         return ResponseEntity.ok(updatedDriverDTO);
-    }
-    @GetMapping("/vehicle")
-    @PreAuthorize("hasRole('DRIVER')")
-    // 1. Promeni povratni tip u tvoj postojeći DTO
-    public ResponseEntity<DriverResponseDTO> getOwnVehicle(@AuthenticationPrincipal Driver driverPrincipal) {
-        String driverEmail = driverPrincipal.getEmail();
-        // 2. Pozovi novu metodu iz servisa
-        DriverResponseDTO driverInfo = driverService.getDriverInfo(driverEmail);
-        return ResponseEntity.ok(driverInfo);
     }
     @GetMapping("/performance")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverPerformanceResponse> getMyPerformance(
             @AuthenticationPrincipal Driver driverPrincipal) {
-
-        // Uzimamo email prijavljenog vozača iz tokena
         String driverEmail = driverPrincipal.getEmail();
 
-        // Pozivamo servisnu metodu koja sve izračunava
         DriverPerformanceResponse performanceData = driverService.getDriverPerformance(driverEmail);
 
-        // Vraćamo DTO kao JSON odgovor
         return ResponseEntity.ok(performanceData);
     }
 
@@ -109,29 +97,6 @@ public class DriverController {
         DriverDashboardResponse dashboardData = driverService.getDashboardData(driverPrincipal.getEmail());
         return ResponseEntity.ok(dashboardData);
     }
-
-
-    @PostMapping("/offers/{offerId}/accept")
-    @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> acceptOrderOffer(
-            @PathVariable Long offerId,
-            @AuthenticationPrincipal Driver driverPrincipal) {
-        driverService.acceptOffer(driverPrincipal.getEmail(), offerId);
-        return ResponseEntity.ok().build();
-    }
-
-    /** POST endpoint kojim vozač odbija ponudu za dostavu. */
-    @PostMapping("/offers/{offerId}/reject")
-    @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> rejectOrderOffer(
-            @PathVariable Long offerId,
-            @RequestBody(required = false) Map<String, String> payload,
-            @AuthenticationPrincipal Driver driverPrincipal) {
-        String reason = (payload != null) ? payload.get("reason") : null;
-        driverService.rejectOffer(driverPrincipal.getEmail(), offerId, reason);
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping("/orders/{orderId}")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DashboardOrderDTO> getSingleOrderDetails(
@@ -142,7 +107,6 @@ public class DriverController {
         return ResponseEntity.ok(orderDetails);
     }
 
-    // U DriverController.java
     @PostMapping("/orders/{orderId}/start-simulation")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> startDrivingSimulation(
@@ -155,7 +119,27 @@ public class DriverController {
     }
 
 
-    /** POST endpoint kojim vozač označava da je preuzeo porudžbinu. */
+    @PostMapping("/offers/{offerId}/accept")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> acceptOrderOffer(
+            @PathVariable Long offerId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        driverService.acceptOffer(driverPrincipal.getEmail(), offerId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/offers/{offerId}/reject")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> rejectOrderOffer(
+            @PathVariable Long offerId,
+            @RequestBody(required = false) Map<String, String> payload,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+        String reason = (payload != null) ? payload.get("reason") : null;
+        driverService.rejectOffer(driverPrincipal.getEmail(), offerId, reason);
+        return ResponseEntity.ok().build();
+    }
+
+
     @PostMapping("/orders/{orderId}/pickup")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> pickUpOrder(
@@ -165,7 +149,6 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
-    /** POST endpoint kojim vozač označava da je isporučio porudžbinu. */
     @PostMapping("/orders/{orderId}/deliver")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> deliverOrder(
@@ -179,11 +162,10 @@ public class DriverController {
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> reportDeliveryDelay(
             @PathVariable Long orderId,
-            @Valid @RequestBody ReportDelayRequest request, // <-- KORISTIMO DTO I @Valid
+            @Valid @RequestBody ReportDelayRequest request, // 
             @AuthenticationPrincipal Driver driverPrincipal) {
 
-        // Nema više potrebe za 'if' provjerom!
-        // Ako validacija padne, Spring će automatski vratiti 400 Bad Request sa porukom.
+
 
         driverService.reportDelay(driverPrincipal.getEmail(), orderId, request.getDelayMinutes());
         return ResponseEntity.ok().build();
