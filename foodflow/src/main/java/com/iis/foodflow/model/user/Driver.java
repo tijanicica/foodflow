@@ -5,9 +5,7 @@ import com.iis.foodflow.enums.Role;
 import com.iis.foodflow.enums.VehicleType;
 import com.iis.foodflow.model.order.Order;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
@@ -18,7 +16,8 @@ import java.util.Set;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 public class Driver implements UserDetails {
     @Id

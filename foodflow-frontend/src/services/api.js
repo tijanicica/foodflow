@@ -297,7 +297,7 @@ export const getMyRepeatingOrders = async () => {
 
 export const getOrderDetails = async (orderId) => {
     try {
-        const response = await apiClient.get(`/orders/${orderId}`);
+        const response = await apiClient.get(`drivers/orders/${orderId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching details for order ${orderId}:`, error);
@@ -326,6 +326,16 @@ export const cancelRepeatingOrder = async (templateId) => {
     }
 };
 
+
+export const cancelDelivery = async (orderId, reason) => {
+    try {
+        const response = await apiClient.post(`/drivers/orders/${orderId}/cancel`, { reason });
+        return response.data;
+    } catch (error) {
+        console.error("Error cancelling delivery:", error);
+        throw error;
+    }
+};
 export const getTrackingInfo = async (orderId) => {
     try {
         const response = await apiClient.get(`/orders/${orderId}/track`);

@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -38,6 +39,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     List<Order> findByDriverAndStatusIn(Driver driver, List<OrderStatus> statuses);
     Long countByDriverAndStatusAndCreationDateAfter(Driver driver, OrderStatus status, LocalDateTime since);
+    @Query("SELECT o FROM Order o WHERE o.driver = :driver AND o.status IN :statuses")
+    Optional<Order> findActiveOrderByDriver(
+            @Param("driver") Driver driver,
+            @Param("statuses") List<OrderStatus> statuses);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.driver = :driver AND o.status IN :activeStatuses")
     int countActiveDeliveriesForDriver(@Param("driver") Driver driver, @Param("activeStatuses") List<OrderStatus> activeStatuses);

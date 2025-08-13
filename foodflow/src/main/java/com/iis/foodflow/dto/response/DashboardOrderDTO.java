@@ -1,21 +1,29 @@
+// FAJL: src/main/java/com/iis/foodflow/dto/response/DashboardOrderDTO.java
+
 package com.iis.foodflow.dto.response;
 
 import com.iis.foodflow.enums.OrderStatus;
 import lombok.Builder;
 import lombok.Data;
+import java.time.LocalDateTime; // <-- Dodajte import
 
 @Data
-@Builder // Koristimo Builder za lakše kreiranje objekata u servisu
+@Builder
 public class DashboardOrderDTO {
     private Long id;
     private OrderStatus status;
+    private LocalDateTime eta; // <-- Dodajemo i ETA
 
-    // === NOVA POLJA KOJA DODAJEMO ===
     private String restaurantName;
     private String restaurantAddress;
+
+    // === DODAJEMO POLJA ZA KUPCA ===
+    private String customerFirstName;
+    private String customerLastName;
     private String deliveryAddress;
-    private Double distanceDriverToRestaurant; // Udaljenost od vozača do restorana
-    private Double distanceDriverToCustomer;   // Udaljenost od vozača do kupca
+
+    private Double distanceDriverToRestaurant;
+    private Double distanceDriverToCustomer;
 
     private CoordinatesDTO restaurantCoordinates;
     private CoordinatesDTO deliveryCoordinates;

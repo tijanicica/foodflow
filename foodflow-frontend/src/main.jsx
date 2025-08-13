@@ -10,10 +10,6 @@ import 'leaflet/dist/leaflet.css';
 
 
 
-
-
-
-
 // Uvezi sve tvoje stranice
 import { LoginPage } from './pages/LoginPage.jsx';
 import { RegisterPage } from './pages/RegisterPage.jsx';
@@ -24,8 +20,8 @@ import { CheckoutPage } from './pages/CheckoutPage.jsx';
 import { MyOrdersPage } from './pages/MyOrdersPage.jsx';
 import { DriverProfilePage } from './pages/DriverProfilePage.jsx'; 
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
+import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
-
 
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
@@ -75,6 +71,10 @@ const router = createBrowserRouter([
     path: "/driver/profile",
     element: <DriverProfilePage />,
   },
+   {
+        path: "/driver/orders/:orderId",
+        element: <ViewOrderPage />,
+    },
 
   {
     path: "/track/:orderId",

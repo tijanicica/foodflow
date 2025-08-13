@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getDriverDashboard, acceptOffer, rejectOffer } from '../services/api';
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast'; // <-- 1. UVOZIMO 'toast'
 
 /**
@@ -168,10 +169,17 @@ const AssignedDeliveryCard = ({ delivery }) => {
             {/* Donji dio sa statusom i gumbom */}
             {isReadyForPickup ? (
                 <>
-                    <p style={{ marginTop: '1rem', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>{statusMessage}</p>
-                    <button style={{ width: '100%', marginTop: '1rem', padding: '0.8rem', borderRadius: '8px', border: 'none', color: 'white', backgroundColor: '#1F2937', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}>
-                        View on Map & Start
-                    </button>
+                           <p style={{ margin: '1rem 0', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>{statusMessage}</p>
+                        {/* === 2. OMOTAJTE DUGME SA <Link> === */}
+                        <Link to={`/driver/orders/${delivery.id}`} style={{ textDecoration: 'none' }}>
+                            <button style={{
+                                width: '100%', padding: '0.8rem', borderRadius: '8px',
+                                border: 'none', color: 'white', backgroundColor: '#1F2937',
+                                cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem'
+                            }}>
+                                View on Map & Start
+                            </button>
+                        </Link>
                 </>
             ) : (
                 <div style={{ marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', backgroundColor: '#F3EAD9', color: '#8A643B', textAlign: 'center', fontWeight: '600' }}>

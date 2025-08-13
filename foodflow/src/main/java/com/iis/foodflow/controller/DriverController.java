@@ -1,10 +1,7 @@
 // Datoteka: src/main/java/com/iis/foodflow/controller/DriverController.java
 package com.iis.foodflow.controller;
 
-import com.iis.foodflow.dto.request.ReportDelayRequest;
-import com.iis.foodflow.dto.request.UpdateDriverStatusRequest;
-import com.iis.foodflow.dto.request.UpdateLocationRequest;
-import com.iis.foodflow.dto.request.UpdateVehicleRequest;
+import com.iis.foodflow.dto.request.*;
 import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.DriverService;
@@ -13,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -50,7 +48,10 @@ public class DriverController {
     public ResponseEntity<Void> updateOwnLocation(
             @RequestBody UpdateLocationRequest request,
             @AuthenticationPrincipal Driver driverPrincipal) {
-        driverService.updateLocation(driverPrincipal.getEmail(), request.getLatitude(), request.getLongitude());
+
+        CoordinatesDTO newLocation = new CoordinatesDTO(request.getLatitude(), request.getLongitude());
+        driverService.updateDriverLocation(driverPrincipal.getEmail(), newLocation);
+
         return ResponseEntity.ok().build();
     }
 
@@ -122,20 +123,17 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
-    /** POST endpoint kojim vozač otkazuje porudžbinu koja mu je već dodijeljena. */
-    @PostMapping("/orders/{orderId}/cancel")
+    @GetMapping("/orders/{orderId}")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> cancelAssignedOrder(
+    public ResponseEntity<DashboardOrderDTO> getSingleOrderDetails(
             @PathVariable Long orderId,
-            @RequestBody Map<String, String> payload,
             @AuthenticationPrincipal Driver driverPrincipal) {
-        String reason = payload.get("reason");
-        if (reason == null || reason.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build(); // Razlog je obavezan
-        }
-        driverService.cancelAssignedDelivery(driverPrincipal.getEmail(), orderId, reason);
-        return ResponseEntity.ok().build();
+
+        DashboardOrderDTO orderDetails = driverService.getAssignedOrderDetails(driverPrincipal.getEmail(), orderId);
+        return ResponseEntity.ok(orderDetails);
     }
+
+
 
     /** POST endpoint kojim vozač označava da je preuzeo porudžbinu. */
     @PostMapping("/orders/{orderId}/pickup")
@@ -170,4 +168,19 @@ public class DriverController {
         driverService.reportDelay(driverPrincipal.getEmail(), orderId, request.getDelayMinutes());
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/orders/{orderId}/cancel")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> cancelAssignedDelivery(
+            @PathVariable Long orderId,
+            @Valid @RequestBody CancelDeliveryRequest request,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        System.out.println("Logged in driver: " + driverPrincipal);
+        System.out.println("Roles: " + SecurityContextHolder.getContext().getAuthentication().getAuthorities());
+
+        driverService.cancelAssignedDelivery(driverPrincipal.getEmail(), orderId, request.getReason());
+        return ResponseEntity.ok().build();
+    }
+
 }

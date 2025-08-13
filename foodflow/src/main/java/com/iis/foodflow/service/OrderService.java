@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,13 @@ public class OrderService {
     private final RepeatingOrderRepository repeatingOrderRepository; 
 
     private final OrderAssignmentService orderAssignmentService;
+
+    @Transactional(readOnly = true)
+    public Optional<Order> findActiveOrderByDriver(Driver driver) {
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
+        return orderRepository.findActiveOrderByDriver(driver, activeStatuses);
+    }
+
     private final DriverRatingRepository driverRatingRepository;
 
     @Transactional

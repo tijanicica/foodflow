@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,13 +72,30 @@ public class DriverService {
      * Ažurira geografsku lokaciju vozača.
      */
     @Transactional
-    public void updateLocation(String driverEmail, Double latitude, Double longitude) {
+    public DashboardOrderDTO updateDriverLocation(String driverEmail, CoordinatesDTO newLocation) {
         Driver driver = findDriverByEmail(driverEmail);
-        driver.setLatitude(latitude);
-        driver.setLongitude(longitude);
-        driver.setTimestamp(LocalDateTime.now());
+
+        // Update lokacije vozača
+        driver.setLatitude(newLocation.getLat());
+        driver.setLongitude(newLocation.getLng());
         driverRepository.save(driver);
+
+        // Napravi listu statusa
+        List<OrderStatus> activeStatuses = List.of(OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
+
+        // Pronađi aktivnu porudžbinu (ako postoji)
+        Optional<Order> activeOrderOpt = orderRepository.findActiveOrderByDriver(driver, activeStatuses);
+
+        if (activeOrderOpt.isEmpty()) {
+            throw new RuntimeException("No active order assigned");
+        }
+
+        Order activeOrder = activeOrderOpt.get();
+
+        // Vraćamo DTO sa aktuelnim podacima
+        return mapOrderToDto(activeOrder, driver);
     }
+
 
     /**
      * Mijenja tip vozila za prijavljenog vozača.
@@ -223,19 +241,21 @@ public class DriverService {
      * @param reason Obavezan razlog za otkazivanje
      */
     @Transactional
-    public Order cancelAssignedDelivery(String driverEmail, Long orderId, String reason) {
+    public CancelDeliveryResponse cancelAssignedDelivery(String driverEmail, Long orderId, String reason) {
         Driver driver = findDriverByEmail(driverEmail);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // KLJUČNA PROVJERA: Da li je porudžbina zaista dodijeljena ovom vozaču?
+        // Provera da li je porudžbina dodijeljena ovom vozaču
         if (order.getDriver() == null || !order.getDriver().equals(driver)) {
             throw new SecurityException("Forbidden: This order is not assigned to you.");
         }
+        if (order.getStatus() == OrderStatus.CANCELED) {
+            throw new IllegalStateException("This order can no longer be canceled. Current status: " + order.getStatus());
+        }
 
-        // KLJUČNA PROVJERA: Da li se porudžbina može otkazati? Ne može ako je već isporučena ili otkazana.
+        // Provera statusa koji se može otkazati
         List<OrderStatus> cancellableStatuses = List.of(
-                OrderStatus.CONFIRMED,
                 OrderStatus.READY_FOR_PICKUP,
                 OrderStatus.PICKED_UP
         );
@@ -247,15 +267,15 @@ public class DriverService {
         order.setStatus(OrderStatus.CANCELED);
         order.setCancellationReason(reason);
 
-        // Opcionalno, ali preporučeno: Ovdje se porudžbina "oslobađa" od vozača.
-        // Sistem bi je onda trebao ponovo dodijeliti drugom vozaču.
-        order.setDriver(null);
+        Order savedOrder = orderRepository.save(order);
 
-        // TODO: Ovdje pozvati logiku koja će pokrenuti proces ponovne dodjele porudžbine.
-
-        return orderRepository.save(order);
+        // Vraćamo DTO, a ne entitet
+        return new CancelDeliveryResponse(
+                savedOrder.getId(),
+                savedOrder.getStatus(),
+                savedOrder.getCancellationReason()
+        );
     }
-
 
 
     /**
@@ -388,18 +408,13 @@ public class DriverService {
      * računajući pritom obje ključne distance.
      */
     private DashboardOrderDTO mapOrderToDto(Order order, Driver driver) {
-        // Dohvaćamo restoran preko lanca veza
         Restaurant restaurant = order.getOrderItems().stream()
                 .findFirst()
                 .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
                 .orElse(null);
 
-        // Ako nema restorana, ne možemo ništa izračunati
-        if (restaurant == null) {
-            return null;
-        }
+        if (restaurant == null) return null;
 
-        // Računamo OBJE distance
         double distDriverToRestaurant = calculateDistance(
                 driver.getLatitude(), driver.getLongitude(),
                 restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()
@@ -413,14 +428,31 @@ public class DriverService {
         return DashboardOrderDTO.builder()
                 .id(order.getId())
                 .status(order.getStatus())
+                .eta(order.getEta()) // Dodajemo ETA
                 .restaurantName(restaurant.getName())
                 .restaurantAddress(restaurant.getAddress().toString())
                 .deliveryAddress(order.getAddress().toString())
-                .distanceDriverToRestaurant(distDriverToRestaurant) // Popunjavamo novo polje
-                .distanceDriverToCustomer(distDriverToCustomer)   // Popunjavamo novo polje
+                .customerFirstName(order.getCustomer().getFirstName()) // Dodajemo ime kupca
+                .customerLastName(order.getCustomer().getLastName())   // Dodajemo prezime kupca
+                .distanceDriverToRestaurant(distDriverToRestaurant)
+                .distanceDriverToCustomer(distDriverToCustomer)
                 .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
                 .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
                 .build();
+    }
+    @Transactional(readOnly = true)
+    public DashboardOrderDTO getAssignedOrderDetails(String driverEmail, Long orderId) {
+        Driver driver = findDriverByEmail(driverEmail);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        // Sigurnosna provjera: Da li porudžbina zaista pripada ovom vozaču?
+        if (!driver.equals(order.getDriver())) {
+            throw new SecurityException("Forbidden: This order is not assigned to you.");
+        }
+
+        // Koristimo postojeću pomoćnu metodu da mapiramo podatke
+        return mapOrderToDto(order, driver);
     }
     // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 // ZAMIJENITE POSTOJEĆU 'calculateEta' METODU SA OVOM
