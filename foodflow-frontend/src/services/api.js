@@ -315,6 +315,11 @@ export const toggleRepeatingOrderStatus = async (templateId) => {
         throw error;
     }
 };
+export const markOrderAsPickedUp = async (orderId) => {
+    // Šaljemo prazan POST zahtev na novi endpoint.
+    // Telo (body) nije potrebno.
+    await apiClient.post(`/drivers/orders/${orderId}/pickup`);
+};
 
 export const startSimulation = async (orderId) => {
     // Šaljemo prazan POST zahtev na endpoint koji smo napravili

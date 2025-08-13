@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
-import { getOrderDetails, cancelDelivery,startSimulation, getDriverInfo } from '../services/api';
+import { getOrderDetails, cancelDelivery,startSimulation,markOrderAsPickedUp , getDriverInfo } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
@@ -174,61 +174,74 @@ export function ViewOrderPage() {
     const [loading, setLoading] = useState(true);
     const [vehicleType, setVehicleType] = useState(null);
     const [error, setError] = useState('');
-    const [driverLocation, setDriverLocation] = useState({ lat: 44.8125, lng: 20.4612 });
+    const [driverLocation, setDriverLocation] = useState(null);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const navigate = useNavigate();
 
-        useEffect(() => {
-        let stompClient = null;
+useEffect(() => {
+    let stompClient = null;
 
-        const fetchPageData = async () => {
-            try {
-                setLoading(true);
-                const [orderDetails, driverInfo] = await Promise.all([
-                    getOrderDetails(orderId),
-                    getDriverInfo()
-                ]);
-                setOrder(orderDetails);
-                setVehicleType(driverInfo.vehicleType);
-                
-                // Postavljamo POČETNU lokaciju vozača
-                if (orderDetails.driverCoordinates) {
-                    setDriverLocation(orderDetails.driverCoordinates);
-                }
-                return true; // Signaliziramo uspeh
-            } catch (err) {
-                setError('Failed to load page data. The order might not be assigned to you.');
-                return false; // Signaliziramo neuspeh
-            } finally {
-                setLoading(false);
+    const fetchPageData = async () => {
+        try {
+            setLoading(true);
+            const [orderDetails, driverInfo] = await Promise.all([
+                getOrderDetails(orderId),
+                getDriverInfo()
+            ]);
+
+            setOrder(orderDetails);
+            setVehicleType(driverInfo.vehicleType);
+
+            // ✅ Postavljamo POČETNU lokaciju vozača iz driverInfo (backend DTO)
+            if (driverInfo.latitude && driverInfo.longitude) {
+                setDriverLocation({
+                    lat: driverInfo.latitude,
+                    lng: driverInfo.longitude
+                });
+            } 
+            // Fallback ako backend ne pošalje koordinate
+            else if (orderDetails.driverCoordinates) {
+                setDriverLocation(orderDetails.driverCoordinates);
             }
-        };
 
-        fetchPageData().then((isDataLoaded) => {
-            // WebSocket konekciju uspostavljamo samo ako su podaci uspešno učitani
-            if (isDataLoaded) {
-                const socket = new SockJS('http://localhost:8088/ws'); // Proveri port
-                stompClient = Stomp.over(socket);
-                stompClient.debug = null; // Isključi debug poruke
+            return true; // Signaliziramo uspeh
+        } catch (err) {
+            setError('Failed to load page data. The order might not be assigned to you.');
+            return false; // Signaliziramo neuspeh
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                stompClient.connect({}, () => {
-                    console.log('Connected to WebSocket');
-                    stompClient.subscribe('/topic/driver-location/' + orderId, (message) => {
-                        const newLocation = JSON.parse(message.body);
-                        // Ažuriramo stanje sa novom lokacijom
-                        setDriverLocation({ lat: newLocation.lat, lng: newLocation.lng });
+    fetchPageData().then((isDataLoaded) => {
+        // WebSocket konekciju uspostavljamo samo ako su podaci uspešno učitani
+        if (isDataLoaded) {
+            const socket = new SockJS('http://localhost:8088/ws'); // Proveri port
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null; // Isključi debug poruke
+
+            stompClient.connect({}, () => {
+                console.log('Connected to WebSocket');
+                stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
+                    const newLocation = JSON.parse(message.body);
+                    // Ažuriramo stanje sa novom lokacijom
+                    setDriverLocation({ 
+                        lat: newLocation.lat, 
+                        lng: newLocation.lng 
                     });
                 });
-            }
-        });
+            });
+        }
+    });
 
-        // Cleanup funkcija za prekid konekcije
-        return () => {
-            if (stompClient && stompClient.connected) {
-                stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
-            }
-        };
-    }, [orderId]);
+    // Cleanup funkcija za prekid konekcije
+    return () => {
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
+        }
+    };
+}, [orderId]);
+
 
     // --- KLJUČNA IZMENA: MEMOIZACIJA PROPS-OVA ZA MAPU ---
     // Kreiramo stabilne reference koje se menjaju samo kada se 'order' zaista promeni.
@@ -253,7 +266,26 @@ export function ViewOrderPage() {
         return [];
     }, []); // Prazan niz zavisnosti znači da će se referenca kreirati samo jednom.
 
-    const handleMarkAsPickedUp = () => alert("TODO: Implement Mark as Picked Up!");
+// U FAJLU: src/pages/ViewOrderPage.jsx
+
+// ...
+const handleMarkAsPickedUp = async () => {
+    if (!order) return;
+    try {
+        toast.loading('Marking as picked up...', { id: 'pickup-toast' });
+        await markOrderAsPickedUp(order.id);
+        toast.dismiss('pickup-toast');
+        toast.success('Order picked up!');
+        
+        // --- KLJUČNA IZMENA: NAVIGACIJA NA NOVU STRANICU ---
+        navigate(`/delivery/${order.id}`);
+
+    } catch (error) {
+        toast.dismiss('pickup-toast');
+        toast.error(error.response?.data?.message || "Failed to mark as picked up.");
+    }
+};
+// ...
 
     const handleReportDelay = () => {
         if (order.status !== 'PICKED_UP') {
@@ -369,9 +401,6 @@ export function ViewOrderPage() {
                             </p>
                             <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>{order.restaurantName}</p>
                             <p style={{ color: '#6B7280', margin: 0 }}>{order.restaurantAddress}</p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>
-                                Distance from you: {order.distanceDriverToRestaurant.toFixed(1)} km
-                            </p>
                         </div>
 
                         <div style={{ marginTop: '1.5rem' ,opacity: isPickedUp ? 1 : 0.6, transition: 'opacity 0.3s ease'}}>
@@ -420,7 +449,7 @@ export function ViewOrderPage() {
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#78552f'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
                                 >
-                                    <FiNavigation /> Start Driving Simulation
+                                    <FiNavigation /> Start Driving to Restaurant
                                 </button>
                             )}
 

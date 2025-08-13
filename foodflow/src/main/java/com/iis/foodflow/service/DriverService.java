@@ -285,27 +285,64 @@ public class DriverService {
         return driverRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Driver not found with email: " + email));
     }
+    // U fajlu DriverService.java
+
     @Transactional
     public Order markOrderAsPickedUp(String driverEmail, Long orderId) {
         Driver driver = findDriverByEmail(driverEmail);
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: ".concat(String.valueOf(orderId))));
 
-        // Sigurnosne provjere
+        // Sigurnosne provjere (tvoje postojeće)
         if (order.getDriver() == null || !order.getDriver().equals(driver)) {
             throw new SecurityException("Forbidden: This order is not assigned to you.");
         }
         if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            throw new IllegalStateException("Cannot pick up order. It is not ready yet.");
+            throw new IllegalStateException("Cannot pick up order. It is not ready yet or already picked up.");
         }
 
-        LocalDateTime eta = calculateEta(order, driver);
+        // --- NOVA LOGIKA: PROVERA BLIZINE ---
+
+        // Definišemo maksimalnu dozvoljenu udaljenost u KILOMETRIMA
+        // 0.15 km = 150 metara. Možeš podesiti ovu vrednost.
+        final double MAX_ALLOWED_DISTANCE_KM = 0.15;
+
+        // --- ISPRAVLJENO DOBAVLJANJE RESTORANA ---
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElseThrow(() -> new IllegalStateException("Restaurant information is missing for this order."));
+        // ------------------------------------------
+
+        if (restaurant.getAddress() == null) {
+            throw new IllegalStateException("Restaurant location is not available for this order.");
+        }
+
+        // Računamo vazdušnu udaljenost između vozača i restorana
+        // Pretpostavka je da se metoda sada zove 'calculateAirDistance' da se ne bi mešala
+        double distanceInKm = calculateDistance(
+                driver.getLatitude(),
+                driver.getLongitude(),
+                restaurant.getAddress().getLatitude(),
+                restaurant.getAddress().getLongitude()
+        );
+
+        // Proveravamo da li je vozač unutar dozvoljenog radijusa
+        if (distanceInKm > MAX_ALLOWED_DISTANCE_KM) {
+            // Ako vozač NIJE dovoljno blizu, bacamo izuzetak
+            throw new IllegalStateException(
+                    String.format("You are too far from the restaurant to pick up the order. Required distance: %.0f m, your distance: %.0f m.",
+                            MAX_ALLOWED_DISTANCE_KM * 1000,
+                            distanceInKm * 1000
+                    )
+            );
+        }
+        // --- KRAJ NOVE LOGIKE ---
+
+        // Ako je provera prošla, nastavljamo sa postojećom logikom
+        LocalDateTime eta = calculateEta(order, driver); // Pretpostavka da imaš ovu metodu
         order.setEta(eta);
-
-
         order.setStatus(OrderStatus.PICKED_UP);
-
-        // TODO: Ovdje dodati logiku za slanje notifikacije kupcu ("Vaša porudžbina je na putu!").
 
         return orderRepository.save(order);
     }
@@ -718,16 +755,18 @@ public class DriverService {
         Driver driver = driverRepository.findByEmail(driverEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Driver not found with email: " + driverEmail));
 
-        // Mapiraj Entitet u DTO. Pretpostavljam da koristiš Builder pattern zbog @Builder anotacije
         return DriverResponseDTO.builder()
                 .id(driver.getId())
                 .email(driver.getEmail())
                 .firstName(driver.getFirstName())
                 .lastName(driver.getLastName())
                 .phone(driver.getPhone())
-                .vehicleType(driver.getVehicleType()) // <-- Ključno polje!
+                .vehicleType(driver.getVehicleType())
                 .status(driver.getStatus())
+                .latitude(driver.getLatitude())   // ✅ bind koordinate
+                .longitude(driver.getLongitude()) // ✅ bind koordinate
                 .build();
     }
+
 
 }

@@ -11,6 +11,7 @@ import 'leaflet/dist/leaflet.css';
 
 
 
+
 // Uvezi sve tvoje stranice
 import { LoginPage } from './pages/LoginPage.jsx';
 import { RegisterPage } from './pages/RegisterPage.jsx';
@@ -23,7 +24,7 @@ import { DriverProfilePage } from './pages/DriverProfilePage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
-
+import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
@@ -62,6 +63,13 @@ const router = createBrowserRouter([
     path: "/order/:orderId", // Dinamička ruta sa ID-jem porudžbine
     element: <OrderDetailPage />,
   },
+
+    {
+    // Ovo je stranica NAKON preuzimanja porudžbine
+    path: "/delivery/:orderId", 
+    element: <PickedUpOrderPage />,
+  },
+
 
   {
   path: "/driver",

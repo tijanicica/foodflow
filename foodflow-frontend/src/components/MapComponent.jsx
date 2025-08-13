@@ -1,3 +1,5 @@
+// FAJL: src/components/MapComponent.jsx
+
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -39,8 +41,15 @@ const FitBoundsToMarkers = ({ bounds }) => {
 };
 
 
-// --- GLAVNA MAP KOMPONENTA ---
-export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffers = [], activeRouteId = null, vehicleType = null }) => {
+// --- GLAVNA MAP KOMPONENTA SA NOVIM 'routeTarget' PROPOM ---
+export const MapComponent = ({ 
+    driverLocation, 
+    assignedDeliveries = [], 
+    newOffers = [], 
+    activeRouteId = null, 
+    vehicleType = null,
+    routeTarget = 'ALL' // Podrazumevana vrednost je 'ALL'
+}) => {
     
     const DriverIconComponent = getDriverIconComponent(vehicleType);
     const driverIcon = createStyledIcon(DriverIconComponent, '#FFB300', true);
@@ -59,40 +68,28 @@ export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffer
         return points;
     }, [driverLocation, assignedDeliveries, newOffers]);
 
-    // --- useMemo SA DIJAGNOSTIKOM ---
+    // --- useMemo AŽURIRAN DA KORISTI 'routeTarget' ---
     const routeWaypoints = useMemo(() => {
-        console.log("--- Izračunavam Waypoints ---");
-        console.log("Active Route ID:", activeRouteId);
-        
         const points = [];
         if (activeRouteId && driverLocation?.lat) {
             const activeDelivery = assignedDeliveries.find(d => d.id === activeRouteId);
             
-            console.log("Pronađena dostava:", activeDelivery);
-
             if (activeDelivery) {
-                // Tačka 1: Vozač
-                points.push([driverLocation.lat, driverLocation.lng]);
+                points.push([driverLocation.lat, driverLocation.lng]); // Uvek dodaj vozača
                 
-                // Tačka 2: Restoran (ako postoji)
-                if (activeDelivery.restaurantCoordinates && activeDelivery.restaurantCoordinates.lat) {
+                // Ako je cilj restoran (ili sve), dodaj restoran
+                if ((routeTarget === 'RESTAURANT' || routeTarget === 'ALL') && activeDelivery.restaurantCoordinates?.lat) {
                     points.push([activeDelivery.restaurantCoordinates.lat, activeDelivery.restaurantCoordinates.lng]);
-                } else {
-                    console.error("GREŠKA: Koordinate restorana nedostaju u objektu 'activeDelivery'!");
                 }
-
-                // Tačka 3: Kupac (ako postoji)
-                if (activeDelivery.deliveryCoordinates && activeDelivery.deliveryCoordinates.lat) {
+                
+                // Ako je cilj kupac (ili sve), dodaj kupca
+                if ((routeTarget === 'CUSTOMER' || routeTarget === 'ALL') && activeDelivery.deliveryCoordinates?.lat) {
                     points.push([activeDelivery.deliveryCoordinates.lat, activeDelivery.deliveryCoordinates.lng]);
-                } else {
-                    console.error("GREŠKA: Koordinate kupca nedostaju u objektu 'activeDelivery'!");
                 }
             }
         }
-        
-        console.log("Finalni Waypoints niz za rutu:", points);
         return points;
-    }, [activeRouteId, driverLocation, assignedDeliveries]);
+    }, [activeRouteId, driverLocation, assignedDeliveries, routeTarget]); // Dodata zavisnost
 
     const center = allPoints.length > 0 ? allPoints[0] : [44.7866, 20.4489];
     
@@ -108,10 +105,9 @@ export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
             
-            {/* --- KONAČNA IZMENA ZA ISCRTAVANJE --- */}
             {routeWaypoints.length > 1 && (
                 <RoutingMachine
-                    key={JSON.stringify(routeWaypoints)} // Ključ koji forsira ponovno kreiranje
+                    key={JSON.stringify(routeWaypoints)}
                     waypoints={routeWaypoints}
                 />
             )}
@@ -131,8 +127,8 @@ export const MapComponent = ({ driverLocation, assignedDeliveries = [], newOffer
                     {offer.order.deliveryCoordinates?.lat && <Marker position={[offer.order.deliveryCoordinates.lat, offer.order.deliveryCoordinates.lng]} icon={offerHomeIcon}><Popup><b>New Offer - Drop-off:</b> {offer.order.deliveryAddress}</Popup></Marker>}
                 </React.Fragment>
             ))}
-                        {/* --- LEGENDA SA USLOVOM --- */}
-            {/* Prikazujemo legendu samo ako se ruta NE iscrtava (tj. routeWaypoints.length < 2) */}
+            
+            {/* Legenda se prikazuje samo ako ruta nije aktivna */}
             {routeWaypoints.length < 2 && (
                 <div style={legendStyle}>
                     <div style={itemStyle}><div style={colorBox('#FFB300')}></div> You (Your Location)</div>
