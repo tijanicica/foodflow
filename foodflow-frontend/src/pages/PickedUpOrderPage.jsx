@@ -13,6 +13,158 @@ import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
 
+
+const predefinedReasons = [
+    { id: 1, text: "Vehicle breakdown", icon: <FiAlertTriangle /> },
+    { id: 2, text: "Traffic jam" },
+ { id: 3, text: "Spilled order", icon: <FiXCircle /> },
+    { id: 4, text: "Personal reasons", icon: <FiUser /> }
+];
+
+const CancelOrderModal = ({ onConfirm, onCancel }) => {
+    const [selectedReasons, setSelectedReasons] = useState([]);
+    const [customReason, setCustomReason] = useState("");
+
+    const toggleReason = (id) => {
+        setSelectedReasons((prev) =>
+            prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
+        );
+    };
+
+    const handleConfirm = () => {
+        // Uzimamo tekstove iz predefinisanih razloga
+        const selectedTexts = predefinedReasons
+            .filter(r => selectedReasons.includes(r.id))
+            .map(r => r.text);
+
+        // Ako postoji custom reason, dodaj ga
+        if (customReason.trim()) {
+            selectedTexts.push(customReason.trim());
+        }
+
+        // Ako nema ničega izabrano, obavesti korisnika
+        if (selectedTexts.length === 0) {
+            alert("Please select or enter at least one reason before confirming.");
+            return;
+        }
+
+        // SPOJIMO niz u jedan string, odvojen zarezima
+        const finalReason = selectedTexts.join(", ");
+
+        // Pošaljemo samo jedan string backendu
+        onConfirm(finalReason);
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            style={{
+                backgroundColor: '#FFFBEB',
+                borderRadius: '20px',
+                padding: '2.5rem',
+                width: '550px',
+                boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
+                border: '1px solid #F3EAD9'
+            }}
+        >
+            <h3 style={{ margin: '0 0 2rem 0', textAlign: 'center', fontSize: '1.8rem', color: '#B91C1C' }}>
+                Cancel Order
+            </h3>
+
+            <p style={{ color: '#6B7280', marginBottom: '1rem' }}>
+                Please select one or more reasons for cancellation (optional), or write your own.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {predefinedReasons.map((reason) => (
+                    <div
+                        key={reason.id}
+                        onClick={() => toggleReason(reason.id)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            padding: '0.8rem 1rem',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            border: selectedReasons.includes(reason.id) ? '2px solid #B91C1C' : '1.5px solid #E5E7EB',
+                            backgroundColor: selectedReasons.includes(reason.id) ? '#FEE2E2' : 'white',
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <span style={{ fontSize: '1.2rem', color: selectedReasons.includes(reason.id) ? '#B91C1C' : '#6B7280' }}>
+                            {reason.icon}
+                        </span>
+                        <span style={{ fontWeight: '500', color: selectedReasons.includes(reason.id) ? '#B91C1C' : '#374151' }}>
+                            {reason.text}
+                        </span>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ marginTop: '1.5rem' }}>
+                <label htmlFor="cancel-reason" style={{ fontWeight: '500', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FiEdit3 /> Custom reason:
+                </label>
+                <textarea
+                    id="cancel-reason"
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    placeholder="e.g., Emergency situation"
+                    style={{
+                        width: '100%',
+                        minHeight: '90px',
+                        border: '1.5px solid #ccc',
+                        borderRadius: '8px',
+                        padding: '0.75rem',
+                        marginTop: '0.5rem',
+                        boxSizing: 'border-box',
+                        resize: 'vertical'
+                    }}
+                />
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button
+                    onClick={onCancel}
+                    style={{
+                        flex: 1,
+                        padding: '1rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #D1D5DB',
+                        backgroundColor: 'white',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleConfirm}
+                    style={{
+                        flex: 1,
+                        padding: '1rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        backgroundColor: '#B91C1C',
+                        color: 'white',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Confirm Cancellation
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
+
+
+
+
 export function PickedUpOrderPage() {
     const { orderId } = useParams();
     const navigate = useNavigate();
@@ -105,10 +257,19 @@ export function PickedUpOrderPage() {
         }
     };
 
+        const handleCancelDelivery = async (reason) => {
+        try {
+            await cancelDelivery(orderId, reason);
+            toast.success("Order successfully canceled!");
+            navigate('/driver');
+        } catch (error) {
+            toast.error("Error cancelling delivery: " + (error.response?.data?.message || error.message));
+        }
+    };
+
     // TODO: Handleri za ostale akcije
     const handleMarkAsDelivered = () => alert("TODO: Implement Mark as Delivered!");
     const handleReportDelay = () => alert("TODO: Implement Report Delay!");
-    const handleCancelDelivery = () => setIsCancelModalOpen(true);
 
     // Memoizacija props-ova za mapu
     const assignedDeliveriesForMap = useMemo(() => order ? [order] : [], [order]);
@@ -124,6 +285,22 @@ export function PickedUpOrderPage() {
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <Toaster position="top-center" />
+                        {/* OVERLAY I MODAL */}
+            {isCancelModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9998,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    backdropFilter: 'blur(5px)'
+                }}>
+                    <CancelOrderModal
+                        onCancel={() => setIsCancelModalOpen(false)}
+                        onConfirm={handleCancelDelivery}
+                    />
+                </div>
+            )}
+
+
             <NavbarDriver />
             <main style={{  maxWidth: '1500px', margin: '20px 90px' }}>
                 <div style={{ backgroundColor: '#FDFDF5', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
@@ -203,9 +380,14 @@ export function PickedUpOrderPage() {
                                 <button onClick={handleReportDelay} style={secondaryButtonStyle}>
                                     <FiAlertTriangle size={14} /> Report Delay
                                 </button>
-                                <button onClick={handleCancelDelivery} style={secondaryButtonStyle}>
-                                    <FiXCircle size={14} /> Cancel Delivery
-                                </button>
+                                 <button
+                                                                    onClick={() => setIsCancelModalOpen(true)}
+                                                                    style={secondaryButtonStyle}
+                                                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#EF4444'; }}
+                                                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#4A4A4A'; }}
+                                                                >
+                                                                    <FiXCircle size={14} /> Cancel Delivery
+                                                                </button>
                             </div>
                         </div>
                     </div>
