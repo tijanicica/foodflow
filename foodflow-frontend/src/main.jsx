@@ -4,6 +4,10 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"; // Uvezi
 import './index.css';
 import { CartProvider } from './context/CartContext'; // Importuj
 import { Toaster } from 'react-hot-toast'; // Importuj
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; // <-- DODAJTE OVU LINIJU
+import 'leaflet/dist/leaflet.css';
+
+
 
 
 // Uvezi sve tvoje stranice
@@ -17,6 +21,8 @@ import { MyOrdersPage } from './pages/MyOrdersPage.jsx';
 import { DriverProfilePage } from './pages/DriverProfilePage.jsx'; 
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
+import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
+
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
@@ -69,6 +75,11 @@ const router = createBrowserRouter([
         path: "/driver/orders/:orderId",
         element: <ViewOrderPage />,
     },
+
+  {
+    path: "/track/:orderId",
+    element: <TrackOrderPage />,
+  },
 
   // Ovde ćeš kasnije dodavati i druge rute
   // {

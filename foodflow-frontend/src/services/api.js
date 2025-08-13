@@ -336,3 +336,12 @@ export const cancelDelivery = async (orderId, reason) => {
         throw error;
     }
 };
+export const getTrackingInfo = async (orderId) => {
+    try {
+        const response = await apiClient.get(`/orders/${orderId}/track`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching tracking info:", error);
+        throw error;
+    }
+};

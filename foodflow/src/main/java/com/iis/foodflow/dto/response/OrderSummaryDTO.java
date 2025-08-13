@@ -15,5 +15,5 @@ public class OrderSummaryDTO {
     private LocalDateTime scheduledFor; // Dodajemo i ovo za scheduled tab
     private BigDecimal totalPrice;
     private OrderStatus status;
-    private boolean rated;
+    private boolean isRated;
 }

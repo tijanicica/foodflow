@@ -42,12 +42,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // 1. Prvo primeni CORS konfiguraciju
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))                // 2. Isključi CSRF
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // 2. Isključi CSRF
                 .csrf(AbstractHttpConfigurer::disable)
                 // 3. Definiši pravila za autorizaciju
                 .authorizeHttpRequests(req ->
                         req.requestMatchers("/api/auth/**").permitAll() // Dozvoli login/register
-                                .anyRequest().authenticated() // Sve ostalo zahteva autentifikaciju
+                                // --- PREMJEŠTENO NA KRAJ ---
+                                .anyRequest().authenticated()             // Sve ostalo zahteva autentifikaciju
                 )
                 // 4. Podesi sesiju da bude stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -57,7 +59,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

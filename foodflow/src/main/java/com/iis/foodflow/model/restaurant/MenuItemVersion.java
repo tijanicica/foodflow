@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,8 +17,8 @@ public class MenuItemVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private BigDecimal price;
-    private LocalDateTime dateFrom;
-    private LocalDateTime dateTo;
+    private LocalTime timeFrom; // Bilo je dateFrom (LocalDateTime)
+    private LocalTime timeTo;   // Bilo je dateTo (LocalDateTime)
     private boolean available;
     private boolean popular;
 
