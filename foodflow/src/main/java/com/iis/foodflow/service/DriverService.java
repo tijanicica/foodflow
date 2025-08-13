@@ -14,6 +14,7 @@ import com.iis.foodflow.repository.OrderOfferRepository;
 import com.iis.foodflow.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,8 @@ public class DriverService {
     private final DriverRatingRepository driverRatingRepository; // <-- ISPRAVKA: Dodana zavisnost
     private final OrderOfferRepository orderOfferRepository;   // <-- ISPRAVKA: Dodana zavisnost
 
+    @Autowired
+    private RoutingService routingService;
     /**
      * Mijenja status dostupnosti vozača (ONLINE/OFFLINE).
      */
@@ -408,6 +411,8 @@ public class DriverService {
      * Pomoćna metoda koja mapira jedan Order entitet u DashboardOrderDTO,
      * računajući pritom obje ključne distance.
      */
+    // ... (unutar tvoje DriverService klase)
+
     private DashboardOrderDTO mapOrderToDto(Order order, Driver driver) {
         Restaurant restaurant = order.getOrderItems().stream()
                 .findFirst()
@@ -416,31 +421,36 @@ public class DriverService {
 
         if (restaurant == null) return null;
 
-        double distDriverToRestaurant = calculateDistance(
+        // --- KLJUČNA IZMENA: POZIVAMO NOVU METODU ---
+        // Umesto 'calculateDistance', sada pozivamo 'getRealRoadDistance'
+        double distDriverToRestaurant = getRealRoadDistance(
                 driver.getLatitude(), driver.getLongitude(),
                 restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()
         );
 
-        double distDriverToCustomer = calculateDistance(
+        double distDriverToCustomer = getRealRoadDistance(
                 driver.getLatitude(), driver.getLongitude(),
                 order.getAddress().getLatitude(), order.getAddress().getLongitude()
         );
+        // --- KRAJ IZMENE ---
 
         return DashboardOrderDTO.builder()
                 .id(order.getId())
                 .status(order.getStatus())
-                .eta(order.getEta()) // Dodajemo ETA
+                .eta(order.getEta())
                 .restaurantName(restaurant.getName())
                 .restaurantAddress(restaurant.getAddress().toString())
                 .deliveryAddress(order.getAddress().toString())
-                .customerFirstName(order.getCustomer().getFirstName()) // Dodajemo ime kupca
-                .customerLastName(order.getCustomer().getLastName())   // Dodajemo prezime kupca
+                .customerFirstName(order.getCustomer().getFirstName())
+                .customerLastName(order.getCustomer().getLastName())
                 .distanceDriverToRestaurant(distDriverToRestaurant)
                 .distanceDriverToCustomer(distDriverToCustomer)
                 .restaurantCoordinates(new CoordinatesDTO(restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude()))
                 .deliveryCoordinates(new CoordinatesDTO(order.getAddress().getLatitude(), order.getAddress().getLongitude()))
                 .build();
     }
+
+    // ... (tvoja nova getRealRoadDistance metoda je takođe ovde) ...
     @Transactional(readOnly = true)
     public DashboardOrderDTO getAssignedOrderDetails(String driverEmail, Long orderId) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -473,7 +483,7 @@ public class DriverService {
                 .orElseThrow(() -> new IllegalStateException("Cannot calculate ETA: Order has no items or restaurant link."));
 
         // --- KORAK 2: OSNOVNO VRIJEME PUTOVANJA NA OSNOVU DISTANCE I VOZILA ---
-        double deliveryDistance = calculateDistance(
+        double deliveryDistance = getRealRoadDistance(
                 restaurant.getAddress().getLatitude(),
                 restaurant.getAddress().getLongitude(),
                 order.getAddress().getLatitude(),
@@ -552,6 +562,30 @@ public class DriverService {
      * Koristi Haversine formulu i dodaje faktor korekcije za gradsku vožnju.
      * @return Procijenjena udaljenost putem u kilometrima (km).
      */
+    public double getRealRoadDistance(Double lat1, Double lon1, Double lat2, Double lon2) {
+        // Sigurnosna provera
+        if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) {
+            return -1.0; // Vraćamo -1 kao indikator greške
+        }
+        if (lat1.equals(lat2) && lon1.equals(lon2)) {
+            return 0.0;
+        }
+
+        // Pozivamo naš RoutingService
+        RoutingService.RouteDetailsDTO routeDetails = routingService.getRouteDetails(lat1, lon1, lat2, lon2);
+
+        // Proveravamo da li je došlo do greške u komunikaciji sa OSRM-om
+        if (routeDetails.getDistanceInMeters() < 0) {
+            return -1.0; // Propagiramo grešku
+        }
+
+        // Pretvaramo metre u kilometre
+        double distanceInKm = routeDetails.getDistanceInMeters() / 1000.0;
+
+        return distanceInKm;
+    }
+
+
     private double calculateDistance(Double lat1, Double lon1, Double lat2, Double lon2) {
         // Sigurnosna provjera
         if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) {
@@ -561,7 +595,7 @@ public class DriverService {
             return 0.0;
         }
 
-        final int R = 6371; // Radijus Zemlje
+        final int R = 6371; // Radijus Zemlje u kilometrima
 
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
@@ -575,12 +609,8 @@ public class DriverService {
         // Prvo izračunamo zračnu udaljenost
         double airDistance = R * c;
 
-        // === KLJUČNA ISPRAVKA: DODAJEMO FAKTOR KOREKCIJE ===
-        // Množimo zračnu udaljenost sa 1.3 da bismo simulirali da je
-        // stvarni put u prosjeku 30% duži zbog ulica.
-        // Možete se igrati sa ovim brojem (npr. 1.25, 1.4).
+        // Ključni deo: Množenje zračne udaljenosti sa 1.35 da bi se simulirao put
         double estimatedRoadDistance = airDistance * 1.35;
-        // =======================================================
 
         return estimatedRoadDistance;
     }
