@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Dodan useState
 import { useNavigate, Link } from 'react-router-dom';
-import { getDriverPerformance, updateDriverVehicle, updateDriverStatus } from '@/services/api';
+import { getDriverPerformance, updateDriverVehicle, updateDriverStatus,updateDriverProfile } from '@/services/api';
 // Ikonice
 import { FiUser,FiEdit2, FiSave, FiXCircle, FiTruck, FiClock, FiThumbsDown, FiStar } from 'react-icons/fi';
 import { BsBicycle } from 'react-icons/bs';
@@ -130,9 +130,6 @@ export function DriverProfilePage() {
     const [profileData, setProfileData] = useState({
         firstName: '',
         lastName: '',
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: ''
     });
     const labelStyle = {
     display: 'block',
@@ -200,87 +197,75 @@ const buttonStyle = (type) => {
     }
     fetchData();
 }, []);
+    
 
+const handleSaveAll = async () => {
+    // 1. PROVERA ŠTA JE ZAISTA PROMENJENO
+    const isVehicleChanged = newVehicle && newVehicle !== performance.vehicleType;
+    
+    const isFirstNameChanged = profileData.firstName && profileData.firstName !== performance.firstName;
+    const isLastNameChanged = profileData.lastName && profileData.lastName !== performance.lastName;
+    const isProfileChanged = isFirstNameChanged || isLastNameChanged;
+
+    // Ako korisnik nije napravio apsolutno nikakvu promenu, samo zatvori formu.
+    if (!isVehicleChanged && !isProfileChanged) {
+        setIsEditingProfile(false);
+        return;
+    }
+    
+    const promiseToast = toast.loading('Saving changes...');
+
+    try {
+        // Niz u koji ćemo staviti API pozive koje treba izvršiti
+        const apiCalls = [];
+
+        // ===== KLJUČNA ISPRAVKA JE OVDE =====
+        // Kreiramo zahtev za profil samo ako ima promena
+        if (isProfileChanged) {
+            // Kreiramo POTPUNO PRAZAN objekat
+            const profileRequestBody = {};
+            
+            // Dodajemo polje u objekat SAMO AKO je promenjeno
+            if (isFirstNameChanged) {
+                profileRequestBody.firstName = profileData.firstName;
+            }
+            if (isLastNameChanged) {
+                profileRequestBody.lastName = profileData.lastName;
+            }
+            
+            // Sada je profileRequestBody ili {firstName: '...'}, ili {lastName: '...'}, ili oba.
+            // Ponaša se identično kao Postman.
+            apiCalls.push(updateDriverProfile(profileRequestBody));
+        }
+
+        // Priprema API poziva za vozilo (ostaje isto)
+        if (isVehicleChanged) {
+            apiCalls.push(updateDriverVehicle({ newVehicleType: newVehicle }));
+        }
+        // ===================================
+
+        // Izvrši sve pripremljene API pozive paralelno
+        await Promise.all(apiCalls);
+
+        // Najsigurniji način da UI bude 100% tačan je da ponovo dohvatimo sve podatke sa servera.
+        const freshData = await getDriverPerformance();
+        setPerformance(freshData);
+        
+        setIsEditingProfile(false);
+        toast.success('Changes saved successfully!', { id: promiseToast });
+
+    } catch (err) {
+        // Prikazivanje greške ostaje isto
+        const errorMessage = err.response?.data?.error || "An error occurred. Please try again.";
+        toast.error(errorMessage, { id: promiseToast });
+    }
+};
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
         localStorage.removeItem('driverStatus'); // Brišemo i status
         navigate('/login', { replace: true });
     };
-const handleSaveAll = async () => {
-    // 1. VALIDACIJA (Provera lozinke)
-    if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
-        toast.error('Nove lozinke se ne poklapaju!');
-        return;
-    }
 
-    // 2. PROVERA ŠTA JE SVE PROMENJENO
-    const isVehicleChanged = newVehicle && newVehicle !== performance.vehicleType;
-    
-    const isProfileChanged = 
-        (profileData.firstName && profileData.firstName !== performance.firstName) ||
-        (profileData.lastName && profileData.lastName !== performance.lastName) ||
-        (profileData.newPassword);
-
-    // Ako ništa nije promenjeno, samo zatvori edit mod
-    if (!isVehicleChanged && !isProfileChanged) {
-        setIsEditingProfile(false);
-        setIsEditingVehicle(false);
-        return;
-    }
-    
-    // Prikazujemo "loading" toster dok se operacije izvršavaju
-    const promiseToast = toast.loading('Čuvanje izmena...');
-
-    try {
-        // 3. POZIVANJE API-JA (paralelno ako je moguće)
-        const apiCalls = [];
-
-        // Ako je vozilo promenjeno, dodaj njegov API poziv u niz
-        if (isVehicleChanged) {
-            apiCalls.push(updateDriverVehicle({ newVehicleType: newVehicle }));
-        }
-
-        // Ako je profil promenjen, dodaj njegov API poziv u niz
-        if (isProfileChanged) {
-            const profileRequestBody = {
-                firstName: profileData.firstName,
-                lastName: profileData.lastName,
-                oldPassword: profileData.oldPassword,
-                newPassword: profileData.newPassword,
-            };
-            apiCalls.push(updateDriverProfile(profileRequestBody));
-        }
-
-        // Izvršavamo sve API pozive odjednom
-        const results = await Promise.all(apiCalls);
-
-        // 4. AŽURIRANJE STANJA NAKON USPEHA
-        // Ovde morate pažljivo da prođete kroz rezultate i ažurirate stanje
-        let updatedPerformance = { ...performance };
-        results.forEach(result => {
-            if (result.vehicleType) { // Ako je ovo odgovor od ažuriranja vozila
-                updatedPerformance.vehicleType = result.vehicleType;
-            }
-            if (result.id) { // Ako je ovo kompletan odgovor od ažuriranja profila
-                updatedPerformance = result; // Zameni ceo objekat
-            }
-        });
-        
-        setPerformance(updatedPerformance);
-        
-        // Zatvaramo sve edit modove
-        setIsEditingProfile(false);
-        setIsEditingVehicle(false);
-
-        // Ažuriramo toster sa porukom o uspehu
-        toast.success('Izmene su uspešno sačuvane!', { id: promiseToast });
-
-    } catch (err) {
-        // U slučaju greške, ažuriramo toster sa porukom o grešci
-        const errorMessage = err.response?.data?.error || 'Došlo je do greške.';
-        toast.error(errorMessage, { id: promiseToast });
-    }
-};
     const handleToggleStatus = async () => {
         try {
             const newStatus = isOnline ? "OFFLINE" : "ONLINE";
@@ -417,28 +402,7 @@ const handleSaveAll = async () => {
                         </div>
                     </div>
 
-                    {/* Desna kolona */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderLeft: '1px solid #eee', paddingLeft: '2rem' }}>
-                        <h4 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>Change Password</h4>
-                        
-                        {/* Polje za Staru Lozinku */}
-                        <div>
-                            <label style={labelStyle}>Current Password</label>
-                            <input type="password" placeholder="Enter current password" value={profileData.oldPassword} onChange={(e) => setProfileData({...profileData, oldPassword: e.target.value})} style={inputStyle} />
-                        </div>
-
-                        {/* Polje za Novu Lozinku */}
-                        <div>
-                            <label style={labelStyle}>New Password</label>
-                            <input type="password" placeholder="Leave blank to keep current" value={profileData.newPassword} onChange={(e) => setProfileData({...profileData, newPassword: e.target.value})} style={inputStyle} />
-                        </div>
-                        
-                        {/* Polje za Potvrdu Nove Lozinke */}
-                        <div>
-                            <label style={labelStyle}>Confirm New Password</label>
-                            <input type="password" placeholder="Confirm new password" value={profileData.confirmPassword} onChange={(e) => setProfileData({...profileData, confirmPassword: e.target.value})} style={inputStyle} />
-                        </div>
-                    </div>
+                
                 </div>
 
                 {/* Dugmići za akcije */}
@@ -483,9 +447,6 @@ const handleSaveAll = async () => {
                         setProfileData({
                             firstName: performance.firstName,
                             lastName: performance.lastName,
-                            oldPassword: '',
-                            newPassword: '',
-                            confirmPassword: ''
                         });
                     }}
                     style={buttonStyle('edit')}

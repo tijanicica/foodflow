@@ -106,29 +106,21 @@ public class DriverService {
         return new VehicleInfoDTO(driver.getVehicleType().name());
     }
     @Transactional
-    public DriverResponseDTO updateProfile(String driverEmail, UpdateProfileRequestDTO request) {
+    // 1. Promenjen povratni tip metode u novi DTO
+    public ProfileUpdateResponseDTO updateProfile(String driverEmail, UpdateProfileRequestDTO request) {
         Driver driverToUpdate = findDriverByEmail(driverEmail);
 
-        // 1. AŽURIRANJE LOZINKE (radimo prvo, jer je najrizičnije)
-        // Proveravamo samo ako je korisnik uneo i staru i novu lozinku
+        // Logika za lozinku ostaje ista, jer nju ne vraćamo u odgovoru
         if (StringUtils.hasText(request.getOldPassword()) && StringUtils.hasText(request.getNewPassword())) {
-
-            // A. Provera da li se stara lozinka koju je korisnik uneo poklapa sa onom u bazi
             if (!passwordEncoder.matches(request.getOldPassword(), driverToUpdate.getPassword())) {
-                // Ako se ne poklapa, bacamo izuzetak i prekidamo operaciju
                 throw new IllegalArgumentException("Incorrect old password.");
             }
-
-            // B. Ako je sve u redu, enkodiramo i postavljamo novu lozinku
             driverToUpdate.setPassword(passwordEncoder.encode(request.getNewPassword()));
-
         } else if (StringUtils.hasText(request.getNewPassword()) && !StringUtils.hasText(request.getOldPassword())) {
-            // Slučaj ako je korisnik uneo novu lozinku, ali ne i staru
             throw new IllegalArgumentException("Old password is required to set a new one.");
         }
 
-
-        // 2. AŽURIRANJE IMENA I PREZIMENA (ako su poslati)
+        // Ažuriranje imena i prezimena
         if (StringUtils.hasText(request.getFirstName())) {
             driverToUpdate.setFirstName(request.getFirstName().trim());
         }
@@ -136,23 +128,15 @@ public class DriverService {
             driverToUpdate.setLastName(request.getLastName().trim());
         }
 
-        // 3. ČUVANJE I VRAĆANJE ODGOVORA
+        // Čuvanje izmena
         Driver savedDriver = driverRepository.save(driverToUpdate);
 
-        // Koristimo vaš postojeći DriverResponseDTO za mapiranje odgovora
-        return DriverResponseDTO.builder()
-                .id(savedDriver.getId())
-                .email(savedDriver.getEmail())
-                .firstName(savedDriver.getFirstName())
-                .lastName(savedDriver.getLastName())
-                .phone(savedDriver.getPhone())
-                .vehicleType(savedDriver.getVehicleType())
-                .status(savedDriver.getStatus())
-                .latitude(savedDriver.getLatitude())
-                .longitude(savedDriver.getLongitude())
+        // 2. MAPIRANJE NA NOVI, SPECIFIČNI DTO ZA ODGOVOR
+        return ProfileUpdateResponseDTO.builder()
+                .firstName(savedDriver.getFirstName()) // Vraćamo ažurirano ime
+                .lastName(savedDriver.getLastName())   // Vraćamo ažurirano prezime
                 .build();
     }
-
     @Transactional
     public VehicleInfoDTO updateVehicle(String driverEmail, String newVehicleTypeString) {
         // 1. Pronađi vozača

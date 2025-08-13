@@ -346,6 +346,18 @@ export const getDriverInfo = async () => {
         throw error; // Prosledi grešku dalje da bi se obradila
     }
 };
+export const updateDriverProfile = async (profileData) => {
+    try {
+        const response = await apiClient.put('/drivers/profile', profileData);
+        
+        return response.data;
+
+    } catch (error) {
+
+        console.error("Error updating driver profile:", error.response?.data || error.message);
+        throw error; // Prosleđujemo grešku dalje
+    }
+};
 
 
 export const cancelDelivery = async (orderId, reason) => {
