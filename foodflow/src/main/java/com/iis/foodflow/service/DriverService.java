@@ -69,6 +69,7 @@ public class DriverService {
         Driver driver = findDriverByEmail(driverEmail);
         return new DriverStatusResponse(driver.getStatus());
     }
+
     @Transactional
     public DriverResponseDTO updateStatus(String driverEmail, DriverStatus newStatus) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -90,25 +91,33 @@ public class DriverService {
                 .build();
     }
 
-
-    @Transactional
-    public DriverResponseDTO updateVehicle(String driverEmail, VehicleType newVehicleType) { // 1. Promijenjen povratni tip
+    @Transactional(readOnly = true)
+    public VehicleInfoDTO getDriverVehicle(String driverEmail) {
+        // 1. Pronađi vozača u bazi
         Driver driver = findDriverByEmail(driverEmail);
-        driver.setVehicleType(newVehicleType);
-        Driver savedDriver = driverRepository.save(driver);
 
-        return DriverResponseDTO.builder()
-                .id(savedDriver.getId())
-                .email(savedDriver.getEmail())
-                .firstName(savedDriver.getFirstName())
-                .lastName(savedDriver.getLastName())
-                .phone(savedDriver.getPhone())
-                .vehicleType(savedDriver.getVehicleType())
-                .status(savedDriver.getStatus())
-                .build();
+        // 2. Vrati novi DTO koji sadrži samo tip vozila
+        return new VehicleInfoDTO(driver.getVehicleType().name());
     }
 
 
+    @Transactional
+    public VehicleInfoDTO updateVehicle(String driverEmail, String newVehicleTypeString) {
+        // 1. Pronađi vozača
+        Driver driver = findDriverByEmail(driverEmail);
+
+        // 2. Pretvori String u Enum
+        VehicleType newVehicleType = VehicleType.valueOf(newVehicleTypeString.toUpperCase());
+
+        // 3. Postavi novu vrednost
+        driver.setVehicleType(newVehicleType);
+
+        // 4. Sačuvaj izmene (JPA će ovo uraditi na kraju transakcije, ali save() je eksplicitno)
+        Driver savedDriver = driverRepository.save(driver);
+
+        // 5. Kreiraj i vrati NOVI, manji DTO koji sadrži samo tip vozila
+        return new VehicleInfoDTO(savedDriver.getVehicleType().name());
+    }
     @Transactional(readOnly = true)
     public DriverLocationResponse getDriverLocation(Long driverId) {
         Driver driver = driverRepository.findById(driverId)

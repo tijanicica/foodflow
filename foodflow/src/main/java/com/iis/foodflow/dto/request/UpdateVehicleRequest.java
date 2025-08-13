@@ -6,5 +6,5 @@ import lombok.Data;
 
 @Data
 public class UpdateVehicleRequest {
-    private VehicleType newVehicleType;
+    private String  newVehicleType;
 }

@@ -129,7 +129,38 @@ export function DriverProfilePage() {
         navigate('/login', { replace: true });
     };
 
-    const handleVehicleSave = async () => { /* ... ostaje isto ... */ };
+    const handleVehicleSave = async () => {
+    // Provera da li je izabrana vrednost ista kao stara
+    if (newVehicle === performance.vehicleType) {
+        setEditingVehicle(false); // Samo zatvori edit mod, nema potrebe za API pozivom
+        return;
+    }
+
+    try {
+        // Objekat koji šaljemo mora da odgovara DTO klasi na backendu (UpdateVehicleRequest)
+        const requestBody = {
+            newVehicleType: newVehicle 
+        };
+
+        // Pozivamo API funkciju koju smo napravili
+        const updatedVehicleInfo = await updateDriverVehicle(requestBody);
+
+        // Nakon uspešnog odgovora sa servera, ažuriramo lokalno stanje
+        // da se promena odmah prikaže korisniku bez osvežavanja stranice.
+        setPerformance(prevPerformance => ({
+            ...prevPerformance,
+            vehicleType: updatedVehicleInfo.vehicleType // Koristimo podatak koji je vratio server
+        }));
+
+        // Zatvaramo mod za izmenu
+        setEditingVehicle(false);
+
+    } catch (err) {
+        // U slučaju greške, obavestimo korisnika
+        console.error("Greška prilikom čuvanja vozila:", err);
+        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+    }
+};
 
     const handleToggleStatus = async () => {
         try {

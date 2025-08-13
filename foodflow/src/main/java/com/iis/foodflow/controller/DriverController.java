@@ -59,24 +59,37 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/vehicle")
+    @GetMapping("/info")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<DriverResponseDTO> getOwnVehicle(@AuthenticationPrincipal Driver driverPrincipal) {
+    public ResponseEntity<DriverResponseDTO> getInfo(@AuthenticationPrincipal Driver driverPrincipal) {
         String driverEmail = driverPrincipal.getEmail();
         DriverResponseDTO driverInfo = driverService.getDriverInfo(driverEmail);
         return ResponseEntity.ok(driverInfo);
     }
+    @GetMapping("/vehicle")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<VehicleInfoDTO> getOwnVehicle(@AuthenticationPrincipal Driver driverPrincipal) {
+        String driverEmail = driverPrincipal.getEmail();
+
+        VehicleInfoDTO vehicleInfo = driverService.getDriverVehicle(driverEmail);
+
+        return ResponseEntity.ok(vehicleInfo);
+    }
 
     @PutMapping("/vehicle")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<DriverResponseDTO> updateOwnVehicle(
-                                                               @RequestBody UpdateVehicleRequest request,
-                                                               @AuthenticationPrincipal Driver driverPrincipal) {
+    // 1. Promenjen povratni tip u ResponseEntity<VehicleInfoDTO>
+    public ResponseEntity<VehicleInfoDTO> updateOwnVehicle(
+            @RequestBody UpdateVehicleRequest request,
+            @AuthenticationPrincipal Driver driverPrincipal) {
 
         String driverEmail = driverPrincipal.getEmail();
-        DriverResponseDTO updatedDriverDTO = driverService.updateVehicle(driverEmail, request.getNewVehicleType());
 
-        return ResponseEntity.ok(updatedDriverDTO);
+        // 2. Servis sada vraća VehicleInfoDTO, pa ga smeštamo u odgovarajuću promenljivu
+        VehicleInfoDTO updatedVehicle = driverService.updateVehicle(driverEmail, request.getNewVehicleType());
+
+        // 3. Vraćamo uspešan odgovor sa novim, manjim DTO-om
+        return ResponseEntity.ok(updatedVehicle);
     }
     @GetMapping("/performance")
     @PreAuthorize("hasRole('DRIVER')")
