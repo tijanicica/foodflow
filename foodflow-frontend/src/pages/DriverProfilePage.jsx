@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Dodan useState
 import { useNavigate, Link } from 'react-router-dom';
-import { getDriverPerformance, updateDriverVehicle, updateDriverStatus,updateDriverProfile } from '@/services/api';
+import { getDriverPerformance, updateDriverVehicle,getDriverStatus, updateDriverStatus,updateDriverProfile } from '@/services/api';
 // Ikonice
 import { FiUser,FiEdit2, FiSave, FiXCircle, FiTruck, FiClock, FiThumbsDown, FiStar } from 'react-icons/fi';
 import { BsBicycle } from 'react-icons/bs';
@@ -205,31 +205,50 @@ const infoTextStyle = {
 
     // === IZMJENA #1: Funkcija za čitanje inicijalnog statusa iz localStorage ===
     // Pretpostavljamo da ste prilikom logina spremili status u localStorage
-    const getInitialStatus = () => {
-        const storedStatus = localStorage.getItem('driverStatus');
-        return storedStatus === 'ONLINE';
-    };
+const getInitialStatus = () => localStorage.getItem('driverStatus') === 'ONLINE';
+const [isOnline, setIsOnline] = useState(getInitialStatus());
 
-    // === IZMJENA #2: Inicijaliziramo stanje sa vrijednošću iz localStorage ===
-    const [isOnline, setIsOnline] = useState(getInitialStatus());
-
-    useEffect(() => {
+useEffect(() => {
     async function fetchData() {
         try {
-            const data = await getDriverPerformance();
-            setPerformance(data);
-            setNewVehicle(data.vehicleType || '');
-            // VIŠE NE DIRAMO 'isOnline' STANJE OVDJE!
-        } catch (err) { // <-- ISPRAVKA JE OVDJE, UKLONJENO '=>'
-            setError('Could not load performance data. Please try again later.');
+            // Prikazujemo "loading" stanje
+            setLoading(true);
+
+            // Pripremamo oba API poziva da se izvrše paralelno
+            const performancePromise = getDriverPerformance();
+            const statusPromise = getDriverStatus(); // Pozivamo novu funkciju
+
+            // Čekamo da se OBA poziva završe
+            const [performanceData, statusData] = await Promise.all([
+                performancePromise,
+                statusPromise
+            ]);
+
+            // Kada su podaci stigli, ažuriramo SVA stanja
+            
+            // Ažuriramo stanje za performanse i vozilo
+            setPerformance(performanceData);
+            setNewVehicle(performanceData.vehicleType || '');
+
+            // AŽURIRAMO STANJE ZA STATUS na osnovu svežih podataka sa servera
+            const serverStatusIsOnline = statusData.status === 'ONLINE';
+            setIsOnline(serverStatusIsOnline);
+
+            // Takođe, osvežavamo i vrednost u localStorage da bude tačna
+            localStorage.setItem('driverStatus', statusData.status);
+
+        } catch (err) {
+            console.error("Failed to fetch driver data:", err);
+            setError('Could not load profile data. Please try again later.');
         } finally {
+            // Sakrivamo "loading" stanje
             setLoading(false);
         }
     }
+
     fetchData();
 }, []);
-const [isSaveHovered, setIsSaveHovered] = useState(false);
-const [isCancelHovered, setIsCancelHovered] = useState(false);
+
     
 
 const handleSaveAll = async () => {

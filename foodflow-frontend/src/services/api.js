@@ -358,6 +358,17 @@ export const updateDriverProfile = async (profileData) => {
         throw error; // Prosleđujemo grešku dalje
     }
 };
+export const getDriverStatus = async () => {
+    try {
+        const response = await apiClient.get('/drivers/status');
+        
+        return response.data;
+
+    } catch (error) {
+        console.error("Error fetching driver status:", error.response?.data || error.message);
+        throw error;
+    }
+};
 
 
 export const cancelDelivery = async (orderId, reason) => {
