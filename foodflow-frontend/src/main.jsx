@@ -27,7 +27,11 @@ import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
 import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 import { MyProfilePage } from './pages/MyProfilePage';
-
+import { AboutUsPage } from './pages/AboutUsPage.jsx';
+import { FaqPage } from './pages/FaqPage.jsx';
+import { ContactPage } from './pages/ContactPage.jsx';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage.jsx';
+import { TermsOfServicePage } from './pages/TermsOfServicePage.jsx';
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
@@ -99,6 +103,26 @@ const router = createBrowserRouter([
     {
     path: "/profile",
     element: <MyProfilePage />,
+  },
+   {
+    path: "/about",
+    element: <AboutUsPage />,
+  },
+  {
+    path: "/faq",
+    element: <FaqPage />,
+  },
+  {
+    path: "/contact",
+    element: <ContactPage />,
+  },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/terms-of-service",
+    element: <TermsOfServicePage />,
   },
   // Ovde ćeš kasnije dodavati i druge rute
   // {
