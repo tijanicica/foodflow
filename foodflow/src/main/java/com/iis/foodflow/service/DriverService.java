@@ -502,8 +502,8 @@ public class DriverService {
         // ETA = (čisto vreme vožnje) + (sva moguća kašnjenja)
         long weatherDelaySeconds = 0;
         WeatherCondition weather = systemSettingsService.getCurrentWeather();
-        if (weather == WeatherCondition.RAINY) weatherDelaySeconds = 10 * 60;
-        else if (weather == WeatherCondition.SNOWY || weather == WeatherCondition.STORMY) weatherDelaySeconds = 20 * 60;
+        if (weather == WeatherCondition.RAINY) weatherDelaySeconds = 3 * 60;
+        else if (weather == WeatherCondition.SNOWY || weather == WeatherCondition.STORMY) weatherDelaySeconds = 7 * 60;
 
         long driverReportedDelaySeconds = (order.getDriverReportedDelay() != null) ? order.getDriverReportedDelay() * 60 : 0;
 
