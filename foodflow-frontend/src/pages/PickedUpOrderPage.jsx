@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
+import { EtaCountdown } from '../components/EtaCountdown';
 
 // WebSocket i API
 import Stomp from 'stompjs';
@@ -178,6 +179,14 @@ export function PickedUpOrderPage() {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [timeLeft, setTimeLeft] = useState(null);
     const [predictedTimeLeft, setPredictedTimeLeft] = useState(null);
+      const refreshOrderDetails = async () => {
+        try {
+            const updatedOrder = await getOrderDetails(orderId);
+            setOrder(updatedOrder);
+        } catch (err) {
+            toast.error("Could not refresh order details.");
+        }
+    };
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
        useEffect(() => {
@@ -259,6 +268,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
             await startSimulation(order.id);
             toast.dismiss('sim-start');
             toast.success("Simulation to customer started!");
+            await refreshOrderDetails();
         } catch (error) {
             toast.dismiss('sim-start');
             toast.error("Could not start simulation.");
@@ -368,7 +378,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
                                 START TIME
                             </p>
                             <p style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0.25rem 0', color: '#333' }}>
-                                {order.startTime ? new Date(order.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                {order.startDeliveryTime ? new Date(order.startDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </p>
 
                             <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', marginTop: '1rem' }}>
@@ -377,13 +387,11 @@ if (newLocation.predictedTimeLeft !== undefined) {
                             <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
                                 {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </p>
-
-<p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                                {predictedTimeLeft !== null 
-                                    ? `Predicted time: ~${Math.ceil(predictedTimeLeft / 60)} min` 
-                                    : (order.eta ? '' : 'Start the simulation to get a prediction.')
-                                }
-                            </p>
+                            
+                            {order.eta 
+                                ? <EtaCountdown eta={order.eta} /> 
+                                : <p style={{color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>Click "Start Driving" to get a prediction.</p>
+                            }
                         </div>
 
 

@@ -45,8 +45,12 @@ public class Order {
     private LocalDateTime eta; // Procijenjeno vrijeme isporuke
 
 
+
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+
+    @Column(name = "start_delivery_time")
+    private LocalDateTime startDeliveryTime;
 
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
