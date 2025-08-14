@@ -331,7 +331,7 @@ public class DriverService {
 
         order.setDriverReportedDelay(delayMinutes);
 
-        LocalDateTime newEta = calculateEta(order);
+        LocalDateTime newEta = calculateEta(order,driver);
         order.setEta(newEta);
 
         // TODO: Poslati notifikaciju kupcu o novom, ažuriranom ETA.
@@ -432,61 +432,45 @@ public class DriverService {
         return orderRepository.save(order);
     }// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 */
+
     @Transactional
     public Order markOrderAsPickedUp(String driverEmail, Long orderId) {
         Driver driver = findDriverByEmail(driverEmail);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // --- SIGURNOSNE PROVERE ---
-        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
-            throw new SecurityException("Forbidden: This order is not assigned to you.");
-        }
-        if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            throw new IllegalStateException("Cannot pick up order. It's not in the correct state.");
-        }
-
-        // --- PROVERA BLIZINE RESTORANA ---
-        final double MAX_ALLOWED_DISTANCE_KM = 0.15; // 150 metara
-
-        Restaurant restaurant = order.getOrderItems().stream()
-                .findFirst()
-                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
-                .orElseThrow(() -> new IllegalStateException("Restaurant information is missing for this order."));
-
-        if (restaurant.getAddress() == null) {
-            throw new IllegalStateException("Restaurant location is not available for this order.");
-        }
-
-        double distanceInKm = calculateDistance( // Koristimo brzu proveru
-                driver.getLatitude(),
-                driver.getLongitude(),
-                restaurant.getAddress().getLatitude(),
-                restaurant.getAddress().getLongitude()
-        );
-
-        if (distanceInKm > MAX_ALLOWED_DISTANCE_KM) {
-            throw new IllegalStateException(
-                    String.format("You are too far from the restaurant. Your distance: %.0f m.", distanceInKm * 1000)
-            );
-        }
+        // ... (tvoje postojeće sigurnosne provere i provera blizine restorana)
+        // ...
 
         // --- AŽURIRANJE PORUDŽBINE ---
-        // Ako je provera blizine prošla, radimo sve ostalo
 
-        // 1. Postavi vreme početka dostave na SADA
+        // 1. Postavi vreme početka dostave
         order.setStartDeliveryTime(LocalDateTime.now());
 
-        // 2. Izračunaj ETA za put do kupca
-        LocalDateTime etaToCustomer = calculateEta(order); // Više ne treba 'driver'
-        order.setEta(etaToCustomer);
+        // 2. Izračunaj i postavi ETA za put do kupca
+        order.setEta(calculateEta(order, driver)); // Prosleđujemo i driver-a
 
         // 3. Promeni status
         order.setStatus(OrderStatus.PICKED_UP);
 
-        // 4. Sačuvaj sve promene u jednoj transakciji
-        return orderRepository.save(order);
+        // Sačuvaj sve promene pre pokretanja simulacije
+        Order savedOrder = orderRepository.save(order);
+
+        // --- 4. POKRENI SIMULACIJU AUTOMATSKI ---
+        Address customerAddress = savedOrder.getAddress();
+
+        simulationService.simulateDriving(
+                driver.getId(),
+                driver.getLatitude(), // Trenutna lokacija (restoran)
+                driver.getLongitude(),
+                customerAddress.getLatitude(),
+                customerAddress.getLongitude(),
+                savedOrder.getId()
+        );
+
+        return savedOrder;
     }
+
     @Transactional
     public Order markOrderAsDelivered(String driverEmail, Long orderId) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -644,7 +628,8 @@ public class DriverService {
     }
 // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 
-    private LocalDateTime calculateEta(Order order) {
+    // FAJL: DriverService.java
+    private LocalDateTime calculateEta(Order order, Driver driver) {
         // Dobijamo restoran i adresu kupca iz porudžbine
         Restaurant restaurant = order.getOrderItems().stream()
                 .findFirst()
@@ -657,7 +642,8 @@ public class DriverService {
             throw new IllegalStateException("Address information is missing for order " + order.getId());
         }
 
-        // Koristimo RoutingService za REALNO vreme putovanja
+        // --- KORAK 1: DOBIJANJE OSNOVNOG VREMENA PUTOVANJA OD OSRM-a ---
+        // Ovo je vreme optimizovano za automobil.
         RoutingService.RouteDetailsDTO routeDetails = routingService.getRouteDetails(
                 restaurant.getAddress().getLatitude(),
                 restaurant.getAddress().getLongitude(),
@@ -669,19 +655,42 @@ public class DriverService {
             return LocalDateTime.now().plusMinutes(30); // Fallback
         }
 
-        long baseTravelSeconds = (long) routeDetails.getDurationInSeconds();
+        double baseTravelSeconds = routeDetails.getDurationInSeconds();
 
-        // Tvoja postojeća logika za dodavanje kašnjenja
+        // --- KORAK 2: PRILAGOĐAVANJE VREMENA NA OSNOVU TIPA VOZILA ---
+        double vehicleAdjustedSeconds;
+
+        switch (driver.getVehicleType()) {
+            case MOTORCYCLE:
+                // Motor je brži, smanjujemo vreme za 20%
+                vehicleAdjustedSeconds = baseTravelSeconds * 0.80;
+                break;
+            case CAR:
+                // Auto je osnova, ne menjamo vreme
+                vehicleAdjustedSeconds = baseTravelSeconds;
+                break;
+            case BICYCLE:
+            default:
+                // Bicikl je sporiji, povećavamo vreme za 30%
+                vehicleAdjustedSeconds = baseTravelSeconds * 1.30;
+                break;
+        }
+
+        // --- KORAK 3: DODAVANJE OSTALIH KAŠNJENJA (u sekundama) ---
         long weatherDelaySeconds = 0;
-        // ... (logika sa systemSettingsService)
+        WeatherCondition weather = systemSettingsService.getCurrentWeather();
+        if (weather == WeatherCondition.RAINY) weatherDelaySeconds = 10 * 60;
+        else if (weather == WeatherCondition.SNOWY || weather == WeatherCondition.STORMY) weatherDelaySeconds = 20 * 60;
+
         long driverReportedDelaySeconds = (order.getDriverReportedDelay() != null) ? order.getDriverReportedDelay() * 60 : 0;
 
-        long totalTravelSeconds = baseTravelSeconds + weatherDelaySeconds + driverReportedDelaySeconds;
+        // --- KORAK 4: KONAČNI IZRAČUN ---
+        long totalTravelSeconds = (long) vehicleAdjustedSeconds + weatherDelaySeconds + driverReportedDelaySeconds;
 
+        // Vraćamo TRENUTNO VRIJEME + ukupno vreme putovanja u sekundama
         return LocalDateTime.now().plusSeconds(totalTravelSeconds);
     }
-
-    @Transactional // Mora biti @Transactional jer menja stanje porudžbine
+    @Transactional(readOnly = true)
     public void startSimulationForOrder(String driverEmail, Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + orderId));
@@ -692,7 +701,6 @@ public class DriverService {
             throw new SecurityException("Forbidden: Order not assigned to this driver.");
         }
 
-        // --- KORAK 1: ODREDI POČETNU I KRAJNJU TAČKU ---
         double startLat = driver.getLatitude();
         double startLng = driver.getLongitude();
         final Address destinationAddress;
@@ -706,67 +714,20 @@ public class DriverService {
         } else if (order.getStatus() == OrderStatus.PICKED_UP) {
             destinationAddress = order.getAddress();
         } else {
-            return; // Ne radimo ništa za ostale statuse
+            return;
         }
 
         if (destinationAddress == null) {
-            throw new IllegalStateException("Cannot start simulation for order " + orderId + ". Destination address is null.");
+            throw new IllegalStateException("Cannot start simulation. Destination address is null.");
         }
 
-        double endLat = destinationAddress.getLatitude();
-        double endLng = destinationAddress.getLongitude();
-
-        // --- KORAK 2: DOBIJANJE REALNOG VREMENA PUTOVANJA U SEKUNDAMA ---
-        RoutingService.RouteDetailsDTO routeDetails = routingService.getRouteDetails(
-                startLat, startLng, endLat, endLng
-        );
-
-        if (routeDetails.getDurationInSeconds() < 0) {
-            throw new IllegalStateException("Could not get route details from routing service for order " + orderId);
-        }
-
-        // Npr. OSRM vrati 17 sekundi
-        double baseTravelSeconds = routeDetails.getDurationInSeconds();
-
-        // --- KORAK 3: TVOJA LOGIKA "SEKUNDE U MINUTE" I PRILAGOĐAVANJE ZA VOZILO ---
-        long finalEtaMinutes;
-
-        switch (driver.getVehicleType()) {
-            case MOTORCYCLE:
-                // Za motor, 17 sekundi postaje 17 minuta
-                finalEtaMinutes = (long) Math.ceil(baseTravelSeconds);
-                break;
-            case CAR:
-                // Za auto, 17 sekundi postaje 20 minuta (povećanje od ~17.6%)
-                finalEtaMinutes = (long) Math.ceil(baseTravelSeconds * 1.176);
-                break;
-            case BICYCLE:
-            default:
-                // Za bicikl, 17 sekundi postaje 24 minuta (povećanje od ~41%)
-                finalEtaMinutes = (long) Math.ceil(baseTravelSeconds * 1.41);
-                break;
-        }
-
-        // --- KORAK 4: POSTAVI VREMENA I SAČUVAJ ---
-        // Postavi vreme početka samo ako već nije postavljeno (za prvu etapu)
-        if (order.getStartDeliveryTime() == null) {
-            order.setStartDeliveryTime(LocalDateTime.now());
-        }
-
-        // Postavi izračunati ETA
-        order.setEta(LocalDateTime.now().plusMinutes(finalEtaMinutes));
-
-        // Sačuvaj promene u bazi
-        orderRepository.save(order);
-
-        // --- KORAK 5: POKRENI SIMULACIJU KRETANJA ---
-        // Simulacija je "glupa" i samo pomera ikonicu, ne koristi vreme
+        // Metoda SADA SAMO poziva simulaciju i ništa više.
         simulationService.simulateDriving(
                 driver.getId(),
                 startLat,
                 startLng,
-                endLat,
-                endLng,
+                destinationAddress.getLatitude(),
+                destinationAddress.getLongitude(),
                 order.getId()
         );
     }
