@@ -70,6 +70,9 @@ const slideVariants = {
  * UVIJEK PRIKAZUJE OBJE DISTANCE.
  */
 const OfferCard = ({ offer, onAccept, onReject }) => {
+        if (!offer || !offer.order) {
+        return null; // Ili neki fallback prikaz
+    }
     // Definiramo stilove kao objekte da bi kod bio čitljiviji
     const baseButtonStyle = {
         flex: 1,
