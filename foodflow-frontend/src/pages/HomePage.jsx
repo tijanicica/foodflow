@@ -7,6 +7,8 @@ import { Link, useNavigate, createSearchParams } from 'react-router-dom';
 import { getFilteredRestaurants, getAllergens, getDietTypes } from '@/services/api';
 import { SlidersHorizontal } from 'lucide-react'; 
 import { Navbar } from '@/components/Navbar'; // Prilagodi putanju ako je potrebno
+import { Footer } from '@/components/Footer'; // <-- 1. UVOZ FUTERA
+
 
 
 
@@ -42,7 +44,7 @@ const RestaurantCard = ({ restaurant, filters }) => {
     // Link sada koristi ispravno generisan string bez uglastih zagrada
     <Link to={`/restaurant/${restaurant.id}?${searchParamsString}`} className="block">
       <div className="bg-white rounded-xl shadow-md border border-brand-accent/20 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-          <img src={imageUrl} alt={restaurant.name} className="w-full h-48 object-cover"  />         <div className="p-4">
+          <img src={imageUrl} alt={restaurant.name} className="w-full h-48 object-cover" />         <div className="p-4">
           <h3 className="text-xl font-bold text-brand-primary">{restaurant.name}</h3>
           <div className="flex items-center mt-2 text-brand-primary/80">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="gold" stroke="gold" strokeWidth="1"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -249,6 +251,8 @@ export function HomePage() {
         onApply={handleApplyFilters}
         initialFilters={filters}
       />
+            <Footer /> {/* <-- 2. DODAVANJE FUTERA NA DNO STRANICE */}
+
     </div>
   );
 }
