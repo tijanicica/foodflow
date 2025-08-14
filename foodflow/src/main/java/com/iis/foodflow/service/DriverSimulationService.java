@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class DriverSimulationService {
@@ -42,70 +43,70 @@ public class DriverSimulationService {
      * @param endLng Krajnja longituda
      * @param orderId ID porudžbine, koristi se kao WebSocket kanal za praćenje
      */
+
     @Async
-    public void simulateDriving(Long driverId, double startLat, double startLng, double endLat, double endLng, Long orderId) {
-        // Formiramo URL za OSRM API
+    public CompletableFuture<Long> simulateDriving(Long driverId, double startLat, double startLng, double endLat, double endLng, Long orderId) {
+
+        long startTime = System.currentTimeMillis(); // Zabeleži početno vreme
+
         String url = String.format(OSRM_ROUTE_GEOMETRY_URL, startLng, startLat, endLng, endLat);
         log.info("Dobavljanje rute za simulaciju sa URL-a: {}", url);
 
         OsrmGeometryResponse response;
         try {
-            // Pokušavamo da dobavimo podatke sa OSRM servera
             response = restTemplate.getForObject(url, OsrmGeometryResponse.class);
         } catch (HttpClientErrorException e) {
             log.error("Greška prilikom poziva OSRM API-ja. Status: {}, Odgovor: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            return; // Prekini izvršavanje ako je došlo do greške
+            // U slučaju greške, završi "obećanje" sa izuzetkom
+            return CompletableFuture.failedFuture(e);
         }
 
-        // Proveravamo da li je odgovor validan
-        if (response == null || response.getRoutes() == null || response.getRoutes().isEmpty()) {
-            log.error("Nije moguće dobiti rutu za simulaciju za vozača: {}. OSRM odgovor je prazan.", driverId);
-            return;
+        if (response == null || response.getRoutes() == null || response.getRoutes().isEmpty() || response.getRoutes().get(0).getGeometry().getCoordinates().isEmpty()) {
+            log.error("Nije moguće dobiti rutu za simulaciju za vozača: {}. OSRM odgovor je prazan ili ne sadrži koordinate.", driverId);
+            return CompletableFuture.failedFuture(new RuntimeException("Could not fetch a valid route from OSRM."));
         }
 
-        // Izvlačimo listu tačaka [longituda, latituda] sa rute
         List<List<Double>> routePoints = response.getRoutes().get(0).getGeometry().getCoordinates();
         log.info("Početak simulacije za vozača ID: {}. Broj tačaka na ruti: {}", driverId, routePoints.size());
 
-        // Prolazimo kroz svaku tačku na ruti
         for (int i = 0; i < routePoints.size(); i++) {
+            // Provera da li je thread prekinut pre svake iteracije
+            if (Thread.currentThread().isInterrupted()) {
+                log.warn("Simulacija za vozača ID: {} je prekinuta.", driverId);
+                return CompletableFuture.failedFuture(new InterruptedException("Simulation was interrupted."));
+            }
+
             List<Double> point = routePoints.get(i);
             double longitude = point.get(0);
             double latitude = point.get(1);
 
-            // 1. Ažuriramo lokaciju vozača u bazi podataka
             driverRepository.updateDriverLocation(driverId, latitude, longitude);
 
-            // 2. Kreiramo mapu sa podacima za slanje preko WebSocket-a
             Map<String, Object> locationUpdate = Map.of(
                     "lat", latitude,
                     "lng", longitude,
-                    "isLastPoint", i == routePoints.size() - 1 // Dodajemo flag da li je ovo poslednja tačka
+                    "isLastPoint", i == routePoints.size() - 1
             );
 
-            // 3. Šaljemo novu lokaciju na specifičan WebSocket kanal
-            // Klijenti koji slušaju na "/topic/driver-location/{orderId}" će primiti ovu poruku
             messagingTemplate.convertAndSend("/topic/driver-location/" + orderId, locationUpdate);
 
-            // Logujemo napredak
-            log.info("Vozač ID: {} | Tačka {}/{} | Lokacija: {}, {}", driverId, i + 1, routePoints.size(), latitude, longitude);
-
-            // 4. Pravimo pauzu da bi simulacija izgledala realno
             try {
-                Thread.sleep(2000); // Pauza od 2 sekunde između svake tačke
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Dobra praksa za rukovanje prekidom
-                log.warn("Simulacija za vozača ID: {} je prekinuta.", driverId);
-                break; // Prekini petlju
+                Thread.currentThread().interrupt();
+                log.warn("Simulacija za vozača ID: {} je prekinuta tokom pauze.", driverId);
+                return CompletableFuture.failedFuture(e); // Završi sa izuzetkom
             }
         }
-        log.info("Kraj simulacije za vozača ID: {}", driverId);
+
+        long endTime = System.currentTimeMillis();
+        long durationInSeconds = (endTime - startTime) / 1000;
+
+        log.info("Kraj simulacije za vozača ID: {}. Trajanje: {} sekundi.", driverId, durationInSeconds);
+
+        // Vrati uspešno završeno "obećanje" sa izračunatim trajanjem
+        return CompletableFuture.completedFuture(durationInSeconds);
     }
-
-    // Unutrašnje DTO klase za mapiranje JSON odgovora od OSRM-a.
-    // @Data anotacija iz Lomboka automatski generiše getere, setere, toString, itd.
-    // @JsonIgnoreProperties(ignoreUnknown = true) sprečava greške ako OSRM doda nova polja koja mi ne koristimo.
-
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class OsrmGeometryResponse {

@@ -172,14 +172,16 @@ public class DriverController {
         driverService.rejectOffer(driverPrincipal.getEmail(), offerId, reason);
         return ResponseEntity.ok().build();
     }
-
-
     @PostMapping("/orders/{orderId}/pickup")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<Void> pickUpOrder(
             @PathVariable Long orderId,
             @AuthenticationPrincipal Driver driverPrincipal) {
+
+        // On radi tačno ono što treba: prosleđuje email vozača i ID porudžbine servisu.
         driverService.markOrderAsPickedUp(driverPrincipal.getEmail(), orderId);
+
+        // I vraća uspešan odgovor.
         return ResponseEntity.ok().build();
     }
 

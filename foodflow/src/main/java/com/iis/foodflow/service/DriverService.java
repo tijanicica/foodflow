@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -428,22 +429,55 @@ public class DriverService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        if (order.getDriver() == null || !order.getDriver().equals(driver)) {
+        // Sigurnosna provera 1: Da li je porudžbina dodeljena ovom vozaču
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
             throw new SecurityException("Forbidden: This order is not assigned to you.");
         }
+
+        // Sigurnosna provera 2: Da li je status porudžbine 'PICKED_UP'
         if (order.getStatus() != OrderStatus.PICKED_UP) {
             throw new IllegalStateException("Cannot deliver order. It has not been picked up yet.");
         }
 
+        // --- NOVA LOGIKA: PROVERA BLIZINE KUPCA ---
+
+        // Definišemo maksimalnu dozvoljenu udaljenost u KILOMETRIMA (0.20 km = 200 metara)
+        final double MAX_ALLOWED_DISTANCE_KM = 0.20;
+
+        Address customerAddress = order.getAddress();
+        if (customerAddress == null) {
+            throw new IllegalStateException("Customer location is not available for this order.");
+        }
+
+        // Računamo vazdušnu udaljenost između vozača i adrese za dostavu
+        double distanceInKm = calculateDistance(
+                driver.getLatitude(),
+                driver.getLongitude(),
+                customerAddress.getLatitude(),
+                customerAddress.getLongitude()
+        );
+
+        // Proveravamo da li je vozač unutar dozvoljenog radijusa
+        if (distanceInKm > MAX_ALLOWED_DISTANCE_KM) {
+            throw new IllegalStateException(
+                    String.format("You are too far from the delivery address. Your distance: %.0f m.", distanceInKm * 1000)
+            );
+        }
+        // --- KRAJ NOVE LOGIKE ---
+
+
+        // Ako su sve provere prošle, menjamo status porudžbine
         order.setStatus(OrderStatus.DELIVERED);
         order.setDeliveredAt(LocalDateTime.now());
 
-        // TODO: Ovdje pokrenuti logiku koja omogućava kupcu i menadžeru da ocijene vozača.
+        // Kada je porudžbina dostavljena, vozač je ponovo slobodan
+        driver.setStatus(DriverStatus.ONLINE);
+        driverRepository.save(driver);
+
+        // TODO: Logika za ocenjivanje
 
         return orderRepository.save(order);
     }
-
-
 
 
     private DashboardOrderDTO mapOrderToDto(Order order, Driver driver) {
@@ -600,22 +634,29 @@ public class DriverService {
 
         Driver driver = driverRepository.findByEmail(driverEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Driver not found"));
+
         if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
             throw new SecurityException("Forbidden: Order not assigned to this driver.");
         }
 
+        double startLat = driver.getLatitude();
+        double startLng = driver.getLongitude();
         double endLat;
         double endLng;
+        String destinationType; // Za lepši ispis
+
         if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
             Restaurant restaurant = order.getOrderItems().stream()
                     .findFirst()
                     .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
                     .orElseThrow(() -> new EntityNotFoundException("Restaurant not found for order: " + orderId));
 
+            destinationType = "restaurant";
             endLat = restaurant.getAddress().getLatitude();
             endLng = restaurant.getAddress().getLongitude();
 
         } else if (order.getStatus() == OrderStatus.PICKED_UP) {
+            destinationType = "customer";
             Address customerAddress = order.getAddress();
             endLat = customerAddress.getLatitude();
             endLng = customerAddress.getLongitude();
@@ -623,14 +664,39 @@ public class DriverService {
         } else {
             return;
         }
-        simulationService.simulateDriving(
+
+        // --- KLJUČNA IZMENA POČINJE OVDE ---
+
+        // 1. Pozovi simulaciju i sačuvaj "obećanje" (Future) koje ona vraća
+        CompletableFuture<Long> simulationFuture = simulationService.simulateDriving(
                 driver.getId(),
-                driver.getLatitude(),
-                driver.getLongitude(),
+                startLat,
+                startLng,
                 endLat,
                 endLng,
                 order.getId()
         );
+
+        // 2. Definiši šta da se uradi KADA simulacija uspešno završi
+        simulationFuture.thenAccept(durationInSeconds -> {
+            // Ovaj blok koda će se izvršiti u budućnosti
+
+            System.out.println("=========================================================");
+            System.out.printf("SIMULACIJA ZAVRŠENA: Vozač %s je stigao do %s za porudžbinu %d.%n",
+                    driver.getFirstName(), destinationType, orderId);
+            System.out.printf("Ukupno vreme putovanja: %d sekundi.%n", durationInSeconds);
+            System.out.println("=========================================================");
+
+            // Ovde možeš dodati dalju logiku, npr.
+            // notifikacijaService.notifyCustomerDriverIsClose(orderId);
+        });
+
+        // 3. Definiši šta da se uradi AKO simulacija ne uspe
+        simulationFuture.exceptionally(ex -> {
+            System.err.printf("GREŠKA U SIMULACIJI za porudžbinu %d: %s%n", orderId, ex.getMessage());
+            return null; // Obavezan return za `exceptionally`
+        });
+
     }
 
 

@@ -370,6 +370,11 @@ export const getDriverStatus = async () => {
     }
 };
 
+export const markOrderAsDelivered = async (orderId) => {
+    // Šaljemo prazan POST zahtev na novi endpoint.
+    await apiClient.post(`/drivers/orders/${orderId}/deliver`);
+};
+
 
 export const cancelDelivery = async (orderId, reason) => {
     try {

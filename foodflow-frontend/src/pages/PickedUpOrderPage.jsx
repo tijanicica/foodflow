@@ -7,7 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 // WebSocket i API
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
-import { getOrderDetails, cancelDelivery,getDriverInfo, startSimulation  } from '../services/api'; 
+import { getOrderDetails, cancelDelivery,getDriverInfo, startSimulation,markOrderAsDelivered   } from '../services/api'; 
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
@@ -176,73 +176,81 @@ export function PickedUpOrderPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(null);
+    const [predictedTimeLeft, setPredictedTimeLeft] = useState(null);
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
-        useEffect(() => {
-        let stompClient = null;
+       useEffect(() => {
+    let stompClient = null;
+    let timerInterval = null;
 
-        const fetchPageData = async () => {
-            try {
-                setLoading(true);
-                const [orderDetails, driverInfo] = await Promise.all([
-                    getOrderDetails(orderId),
-                    getDriverInfo()
-                ]);
+    const fetchPageData = async () => {
+        try {
+            setLoading(true);
+            const [orderDetails, driverInfo] = await Promise.all([
+                getOrderDetails(orderId),
+                getDriverInfo()
+            ]);
 
-                setOrder(orderDetails);
-                setVehicleType(driverInfo.vehicleType);
+            setOrder(orderDetails);
+            setVehicleType(driverInfo.vehicleType);
 
-                // --- KLJUČNA IZMENA ---
-                // Prvo pokušavamo da uzmemo lokaciju iz driverInfo DTO-a,
-                // jer on uvek sadrži najsvežije podatke o vozaču.
-                if (driverInfo.latitude && driverInfo.longitude) {
-                    setDriverLocation({
-                        lat: driverInfo.latitude,
-                        lng: driverInfo.longitude
-                    });
-                } 
-                // Ako iz nekog razloga to ne uspe, koristimo fallback iz orderDetails
-                else if (orderDetails.driverCoordinates) {
-                    setDriverLocation(orderDetails.driverCoordinates);
-                }
-                // --------------------
-
-                return true; // Signaliziramo uspeh da bi se pokrenuo WebSocket
-            } catch (err) {
-                setError('Failed to load page data. The order might not be assigned to you.');
-                return false; // Signaliziramo neuspeh
-            } finally {
-                setLoading(false);
+            // --- KLJUČNA IZMENA: postavi početnu lokaciju vozača ---
+            if (driverInfo.latitude && driverInfo.longitude) {
+                setDriverLocation({ lat: driverInfo.latitude, lng: driverInfo.longitude });
+            } else if (orderDetails.driverCoordinates) {
+                setDriverLocation(orderDetails.driverCoordinates);
             }
-        };
 
-        fetchPageData().then((isDataLoaded) => {
-            if (isDataLoaded) {
-                const socket = new SockJS('http://localhost:8088/ws');
-                stompClient = Stomp.over(socket);
-                stompClient.debug = null;
-
-                stompClient.connect({}, () => {
-                    console.log('Connected to WebSocket');
-                    stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
-                        const newLocation = JSON.parse(message.body);
-                        setDriverLocation({ 
-                            lat: newLocation.lat, 
-                            lng: newLocation.lng 
-                        });
-                    });
-                });
+            // --- Inicijalni countdown za ETA ---
+            if (orderDetails.eta) {
+                const updateTimeLeft = () => {
+                    setTimeLeft(Math.max(0, Math.ceil((new Date(orderDetails.eta) - new Date()) / 60000)));
+                };
+                updateTimeLeft();
+                timerInterval = setInterval(updateTimeLeft, 60000); // ažuriraj svake minute
             }
-        });
 
-        // Cleanup funkcija
-        return () => {
-            if (stompClient && stompClient.connected) {
-                stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
-            }
-        };
-    }, [orderId]);
+            return true; // podaci uspešno učitani
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load page data. The order might not be assigned to you.');
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    fetchPageData().then((isDataLoaded) => {
+        if (isDataLoaded) {
+            const socket = new SockJS('http://localhost:8088/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+
+            stompClient.connect({}, () => {
+                console.log('Connected to WebSocket');
+                stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
+    const newLocation = JSON.parse(message.body);
+    setDriverLocation({ lat: newLocation.lat, lng: newLocation.lng });
+
+if (newLocation.predictedTimeLeft !== undefined) {
+                            setPredictedTimeLeft(newLocation.predictedTimeLeft);
+                        }
+});
+            });
+        }
+    });
+
+    // Cleanup funkcija
+    return () => {
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
+        }
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+    };
+}, [orderId]);
     // Handler za pokretanje simulacije
     const handleStartDriving = async () => {
         if (!order) return;
@@ -268,7 +276,42 @@ export function PickedUpOrderPage() {
     };
 
     // TODO: Handleri za ostale akcije
-    const handleMarkAsDelivered = () => alert("TODO: Implement Mark as Delivered!");
+     const handleMarkAsDelivered = async () => {
+        if (!order) return;
+
+        // Kreiramo jedinstveni ID za toast notifikaciju da bismo je mogli kontrolisati
+        const toastId = 'deliver-toast';
+
+        try {
+            // 1. Pokaži korisniku da se nešto dešava
+            toast.loading('Confirming delivery...', { id: toastId });
+
+            // 2. Pozovi API. `await` će sačekati da se završi.
+            await markOrderAsDelivered(order.id);
+
+            // 3. Ako je API poziv uspeo (nije bacio grešku), prikaži poruku o uspehu
+            toast.dismiss(toastId);
+            toast.success('Order successfully delivered! Well done!');
+
+            // 4. Nakon kratke pauze, preusmeri vozača na dashboard
+            setTimeout(() => {
+                navigate('/driver');
+            }, 1500); // Pauza od 1.5 sekunde da vozač vidi poruku
+
+        } catch (error) {
+            // 5. Ako je API poziv bio neuspešan, uhvati grešku
+            toast.dismiss(toastId);
+            
+            // Pročitaj poruku o grešci sa servera.
+            // Ovo će prikazati "You are too far from the delivery address." ako je to uzrok.
+            const errorMessage = error.response?.data?.message || "Failed to mark as delivered. Please try again.";
+            
+            // Prikaži grešku u crvenoj toast notifikaciji
+            toast.error(errorMessage);
+            
+            console.error("Delivery failed:", error);
+        }
+    };
     const handleReportDelay = () => alert("TODO: Implement Report Delay!");
 
     // Memoizacija props-ova za mapu
@@ -320,12 +363,30 @@ export function PickedUpOrderPage() {
 
                     {/* DESNA KOLONA - INFORMACIJE */}
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
-                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>ESTIMATED ARRIVAL (ETA)</p>
+                                                <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
+                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>
+                                START TIME
+                            </p>
+                            <p style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0.25rem 0', color: '#333' }}>
+                                {order.startTime ? new Date(order.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </p>
+
+                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', marginTop: '1rem' }}>
+                                ESTIMATED ARRIVAL (ETA)
+                            </p>
                             <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
                                 {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </p>
+
+<p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                                {predictedTimeLeft !== null 
+                                    ? `Predicted time: ~${Math.ceil(predictedTimeLeft / 60)} min` 
+                                    : (order.eta ? '' : 'Start the simulation to get a prediction.')
+                                }
+                            </p>
                         </div>
+
+
 
                         {/* --- STEP 1: PICKUP (Neaktivan/Precrtan) --- */}
                         <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA', opacity: 1 }}>
