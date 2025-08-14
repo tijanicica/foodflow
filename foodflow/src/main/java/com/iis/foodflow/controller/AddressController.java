@@ -1,5 +1,6 @@
 package com.iis.foodflow.controller;
 
+import com.iis.foodflow.dto.request.AddressRequest;
 import com.iis.foodflow.dto.request.AddressRequestDTO;
 import com.iis.foodflow.dto.request.UpdateAddressRequestDTO;
 import com.iis.foodflow.dto.response.AddressDTO;
@@ -33,7 +34,7 @@ public class AddressController {
     @PostMapping
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<AddressDTO> addNewAddress(
-            @RequestBody AddressRequestDTO addressRequest,
+            @RequestBody AddressRequest addressRequest,
             @AuthenticationPrincipal Customer customer
     ) {
         AddressDTO newAddress = addressService.addNewAddress(addressRequest, customer);

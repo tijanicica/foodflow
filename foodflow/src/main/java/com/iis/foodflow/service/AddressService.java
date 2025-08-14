@@ -1,6 +1,7 @@
 package com.iis.foodflow.service;
 
 
+import com.iis.foodflow.dto.request.AddressRequest;
 import com.iis.foodflow.dto.request.AddressRequestDTO;
 import com.iis.foodflow.dto.response.AddressDTO;
 import com.iis.foodflow.model.order.Address;
@@ -27,7 +28,7 @@ public class AddressService {
     }
 
     @Transactional
-    public AddressDTO addNewAddress(AddressRequestDTO request, Customer customer) {
+    public AddressDTO addNewAddress(AddressRequest request, Customer customer) {
         Address newAddress = new Address();
         newAddress.setStreet(request.getStreet());
         newAddress.setStreetNumber(request.getStreetNumber());
@@ -35,7 +36,12 @@ public class AddressService {
         newAddress.setCountry(request.getCountry());
         newAddress.setNickname(request.getNickname());
         newAddress.setPostalCode(request.getPostalCode());
-        newAddress.setCustomer(customer); // Poveži sa ulogovanim korisnikom
+
+        // --- KORISTIMO NOVE PODATKE KOJI STIŽU SA FRONTENDA ---
+        newAddress.setLatitude(request.getLatitude());
+        newAddress.setLongitude(request.getLongitude());
+
+        newAddress.setCustomer(customer);
 
         Address savedAddress = addressRepository.save(newAddress);
         return AddressDTO.fromEntity(savedAddress);

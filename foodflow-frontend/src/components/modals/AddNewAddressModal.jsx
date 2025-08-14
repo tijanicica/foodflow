@@ -6,63 +6,56 @@ import { useState } from "react";
 import { addNewAddress } from "@/services/api";
 import toast from "react-hot-toast";
 
+import { geocodeAddress } from '@/services/geocoding'; // 1. Uvozimo geokoder
+
 export const AddNewAddressModal = ({ isOpen, onClose, onAddressAdded }) => {
-    // Stanje za čuvanje vrednosti iz input polja
     const initialState = {
-        country: '',
+        country: 'Serbia', // Postavimo podrazumevanu vrednost
         city: '',
         postalCode: '',
         street: '',
         streetNumber: '',
-        nickname: '' // Opciono polje za nadimak
+        nickname: ''
     };
     const [address, setAddress] = useState(initialState);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Funkcija koja ažurira stanje pri promeni u input polju
     const handleChange = (e) => {
         setAddress(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    // Funkcija koja se poziva pri čuvanju adrese
     const handleSave = async () => {
-        // Jednostavna validacija - proverava da li su obavezna polja (sva osim nickname) popunjena
         for (const key in address) {
-            if (key !== 'nickname' && !address[key].trim()) {
-                toast.error(`Please fill out the ${key.replace('streetNumber', 'Street Number')} field.`);
-                return;
+            if (key !== 'nickname' && !address[key]?.trim()) {
+                return toast.error(`Please fill out the ${key} field.`);
             }
         }
 
         setIsLoading(true);
         try {
-            // Pozivamo API funkciju sa podacima iz stanja
-            const newAddress = await addNewAddress(address); 
+            // 2. Geokodiranje pre slanja
+            const coordinates = await geocodeAddress(address);
+            
+            // 3. Spajanje adrese sa koordinatama
+            const finalAddressData = { ...address, ...coordinates };
+
+            const newAddress = await addNewAddress(finalAddressData); 
             toast.success("Address added successfully!");
-            
-            // Pozivamo callback funkciju prosleđenu od roditeljske komponente
-            // i šaljemo joj ceo objekat nove adrese
             onAddressAdded(newAddress);
-            
-            // Zatvaramo modal
             onClose();
 
-            // Resetujemo formu za sledeći put
-            setAddress(initialState);
-
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to add address.");
+            // Prikazujemo grešku iz geokodera (npr. "Address not found") ili sa servera
+            toast.error(error.message || "Failed to add address.");
         } finally {
             setIsLoading(false);
         }
     };
     
-    // Funkcija za zatvaranje modala
     const handleClose = () => {
-        setAddress(initialState); // Resetuj formu i pri zatvaranju
+        setAddress(initialState);
         onClose();
     };
-
 
     return (
         // Dialog komponenta kontroliše vidljivost modala
