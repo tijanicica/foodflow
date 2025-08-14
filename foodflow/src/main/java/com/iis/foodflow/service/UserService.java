@@ -128,6 +128,10 @@ public class UserService {
         address.setCountry(addressData.getCountry());
         address.setPostalCode(addressData.getPostalCode());
         address.setNickname(addressData.getNickname());
+        address.setLatitude(addressData.getLatitude());
+        address.setLongitude(addressData.getLongitude());
+
+
 
         Address savedAddress = addressRepository.save(address);
         return mapToAddressDTO(savedAddress);

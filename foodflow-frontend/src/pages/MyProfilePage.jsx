@@ -40,7 +40,6 @@ const AddressCard = ({ address, onEdit }) => (
         <div>
             <p className="font-semibold text-gray-800">{address.nickname || 'Address'}</p>
             <p className="text-sm text-gray-600">{address.fullAddress}</p>
-            <p className="text-sm text-gray-500">Contact: {address.contactPhone}</p>
         </div>
         <Button variant="ghost" size="icon" className="text-gray-500 h-8 w-8 flex-shrink-0" onClick={onEdit}>
             <Edit size={16} />
@@ -253,7 +252,9 @@ export function MyProfilePage() {
             </div>
             
             {/* Modali */}
-            <AddNewAddressModal isOpen={modalOpen === 'address'} onClose={() => setModalOpen(null)} onAddressSaved={handleAddressChange} />
+            <AddNewAddressModal isOpen={modalOpen === 'address'} onClose={() => setModalOpen(null)} onAddressAdded={handleAddressChange} />
+
+            
             <AddNewCardModal isOpen={modalOpen === 'card'} onClose={() => setModalOpen(null)} onCardAdded={(newCard) => setProfile(prev => ({...prev, paymentMethods: [...prev.paymentMethods, newCard]}))} />
             <ChangePasswordModal isOpen={modalOpen === 'password'} onClose={() => setModalOpen(null)} />
             {editingAddress && (<EditAddressModal isOpen={modalOpen === 'editAddress'} onClose={() => { setModalOpen(null); setEditingAddress(null); }} onAddressUpdated={handleAddressChange} addressData={editingAddress}/>)}

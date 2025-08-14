@@ -9,4 +9,6 @@ public class UpdateAddressRequestDTO {
     private String country;
     private String postalCode;
     private String nickname;
+    private Double latitude;
+    private Double longitude;
 }
