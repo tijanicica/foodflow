@@ -1,3 +1,4 @@
+window.global = window;
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from "react-router-dom"; // Uvezi ruter
@@ -6,6 +7,7 @@ import { CartProvider } from './context/CartContext'; // Importuj
 import { Toaster } from 'react-hot-toast'; // Importuj
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; // <-- DODAJTE OVU LINIJU
 import 'leaflet/dist/leaflet.css';
+
 
 
 
@@ -22,9 +24,9 @@ import { DriverProfilePage } from './pages/DriverProfilePage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
+import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
 import { MyProfilePage } from './pages/MyProfilePage.jsx'; 
-
 
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
@@ -64,6 +66,13 @@ const router = createBrowserRouter([
     path: "/order/:orderId", // Dinamička ruta sa ID-jem porudžbine
     element: <OrderDetailPage />,
   },
+
+    {
+    // Ovo je stranica NAKON preuzimanja porudžbine
+    path: "/delivery/:orderId", 
+    element: <PickedUpOrderPage />,
+  },
+
 
   {
   path: "/driver",

@@ -20,4 +20,6 @@ public class DriverResponseDTO {
     private String phone;
     private VehicleType vehicleType;
     private DriverStatus status;
+    private Double latitude;   // ✅ dodato
+    private Double longitude;  // ✅ dodato
 }

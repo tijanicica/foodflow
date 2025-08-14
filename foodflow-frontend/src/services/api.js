@@ -326,6 +326,17 @@ export const toggleRepeatingOrderStatus = async (templateId) => {
         throw error;
     }
 };
+export const markOrderAsPickedUp = async (orderId) => {
+    // Šaljemo prazan POST zahtev na novi endpoint.
+    // Telo (body) nije potrebno.
+    await apiClient.post(`/drivers/orders/${orderId}/pickup`);
+};
+
+export const startSimulation = async (orderId) => {
+    // Šaljemo prazan POST zahtev na endpoint koji smo napravili
+    await apiClient.post(`/drivers/orders/${orderId}/start-simulation`);
+};
+
 
 export const cancelRepeatingOrder = async (templateId) => {
     try {
@@ -335,6 +346,44 @@ export const cancelRepeatingOrder = async (templateId) => {
         console.error("Error canceling repeating order:", error);
         throw error;
     }
+};
+
+export const getDriverInfo = async () => {
+    try {
+        const response = await apiClient.get('/drivers/info');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching driver info:", error);
+        throw error; // Prosledi grešku dalje da bi se obradila
+    }
+};
+export const updateDriverProfile = async (profileData) => {
+    try {
+        const response = await apiClient.put('/drivers/profile', profileData);
+        
+        return response.data;
+
+    } catch (error) {
+
+        console.error("Error updating driver profile:", error.response?.data || error.message);
+        throw error; // Prosleđujemo grešku dalje
+    }
+};
+export const getDriverStatus = async () => {
+    try {
+        const response = await apiClient.get('/drivers/status');
+        
+        return response.data;
+
+    } catch (error) {
+        console.error("Error fetching driver status:", error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const markOrderAsDelivered = async (orderId) => {
+    // Šaljemo prazan POST zahtev na novi endpoint.
+    await apiClient.post(`/drivers/orders/${orderId}/deliver`);
 };
 
 
@@ -367,18 +416,6 @@ export const getMyAnalytics = async () => {
     }
 };
 
-// U fajlu: src/services/api.js
-
-// ... (vaš apiClient i ostale postojeće funkcije: getMyOrders, createOrder, itd.)
-
-// ===============================================
-// === NOVE FUNKCIJE ZA USER PROFILE STRANICU ===
-// ===============================================
-
-/**
- * Dohvata podatke o profilu ulogovanog korisnika.
- * @returns {Promise<Object>} Objekat sa podacima o profilu.
- */
 export const getMyProfile = async () => {
     try {
         const response = await apiClient.get('/user/profile');
@@ -448,3 +485,4 @@ export const setActiveCard = async (cardId) => {
         throw error;
     }
 };
+
