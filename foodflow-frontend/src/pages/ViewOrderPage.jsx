@@ -1,11 +1,14 @@
 // FAJL: src/pages/ViewOrderPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
-import { getOrderDetails, cancelDelivery } from '../services/api';
+import { getOrderDetails, cancelDelivery,startSimulation,markOrderAsPickedUp , getDriverInfo } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
+import { EtaCountdown } from '../components/EtaCountdown';
+import Stomp from 'stompjs';
+import SockJS from 'sockjs-client';
 import {
   FiMapPin,
   FiUser,
@@ -170,53 +173,153 @@ export function ViewOrderPage() {
     const { orderId } = useParams();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [vehicleType, setVehicleType] = useState(null);
     const [error, setError] = useState('');
-    const [driverLocation, setDriverLocation] = useState({ lat: 44.8125, lng: 20.4612 });
+    const [driverLocation, setDriverLocation] = useState(null);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchOrder = async () => {
-            try {
-                setLoading(true);
-                const data = await getOrderDetails(orderId);
-                setOrder(data);
-            } catch (err) {
-                setError('Failed to load order details. The order might not be assigned to you.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchOrder();
-    }, [orderId]);
-
-    const handleMarkAsPickedUp = () => alert("TODO: Implement Mark as Picked Up!");
-const handleReportDelay = () => {
-        // Provjeravamo da li je status porudžbine 'PICKED_UP'
-        if (order.status !== 'PICKED_UP') {
-            // Ako NIJE, prikazujemo poruku o grešci
-            toast.error("You can't report a delay for an order that hasn't been picked up yet.");
-            return; // I prekidamo izvršavanje funkcije
+        const refreshOrderDetails = async () => {
+        try {
+            const updatedOrderDetails = await getOrderDetails(orderId);
+            setOrder(updatedOrderDetails);
+        } catch (error) {
+            console.error("Failed to refresh order details:", error);
+            toast.error("Could not refresh order details.");
         }
+    };
 
-        // Ako JESTE, onda otvaramo prozor za unos kašnjenja
+
+useEffect(() => {
+    let stompClient = null;
+
+    const fetchPageData = async () => {
+        try {
+            setLoading(true);
+            const [orderDetails, driverInfo] = await Promise.all([
+                getOrderDetails(orderId),
+                getDriverInfo()
+            ]);
+
+            setOrder(orderDetails);
+            setVehicleType(driverInfo.vehicleType);
+
+            // ✅ Postavljamo POČETNU lokaciju vozača iz driverInfo (backend DTO)
+            if (driverInfo.latitude && driverInfo.longitude) {
+                setDriverLocation({
+                    lat: driverInfo.latitude,
+                    lng: driverInfo.longitude
+                });
+            } 
+            // Fallback ako backend ne pošalje koordinate
+            else if (orderDetails.driverCoordinates) {
+                setDriverLocation(orderDetails.driverCoordinates);
+            }
+
+            return true; // Signaliziramo uspeh
+        } catch (err) {
+            setError('Failed to load page data. The order might not be assigned to you.');
+            return false; // Signaliziramo neuspeh
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    fetchPageData().then((isDataLoaded) => {
+        // WebSocket konekciju uspostavljamo samo ako su podaci uspešno učitani
+        if (isDataLoaded) {
+            const socket = new SockJS('http://localhost:8088/ws'); // Proveri port
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null; // Isključi debug poruke
+
+            stompClient.connect({}, () => {
+                console.log('Connected to WebSocket');
+                stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
+                    const newLocation = JSON.parse(message.body);
+                    // Ažuriramo stanje sa novom lokacijom
+                    setDriverLocation({ 
+                        lat: newLocation.lat, 
+                        lng: newLocation.lng 
+                    });
+                });
+            });
+        }
+    });
+
+    // Cleanup funkcija za prekid konekcije
+    return () => {
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
+        }
+    };
+}, [orderId]);
+
+
+    // --- KLJUČNA IZMENA: MEMOIZACIJA PROPS-OVA ZA MAPU ---
+    // Kreiramo stabilne reference koje se menjaju samo kada se 'order' zaista promeni.
+    const assignedDeliveriesForMap = useMemo(() => {
+        return order ? [order] : [];
+    }, [order]);
+        // DODAJ OVU CELU FUNKCIJU
+    const handleStartDriving = async () => {
+        if (!order) return;
+        try {
+            toast.loading('Starting simulation...', { id: 'sim-start' });
+            await startSimulation(order.id);
+            toast.dismiss('sim-start');
+            toast.success("Simulation started!");
+            await refreshOrderDetails();
+        } catch (error) {
+            toast.dismiss('sim-start');
+            toast.error("Could not start simulation.");
+        }
+    };
+
+    const newOffersForMap = useMemo(() => {
+        return [];
+    }, []); // Prazan niz zavisnosti znači da će se referenca kreirati samo jednom.
+
+// U FAJLU: src/pages/ViewOrderPage.jsx
+
+// ...
+const handleMarkAsPickedUp = async () => {
+    if (!order) return;
+    try {
+        toast.loading('Marking as picked up...', { id: 'pickup-toast' });
+        await markOrderAsPickedUp(order.id);
+        toast.dismiss('pickup-toast');
+        toast.success('Order picked up!');
+        
+        // --- KLJUČNA IZMENA: NAVIGACIJA NA NOVU STRANICU ---
+        navigate(`/delivery/${order.id}`);
+
+    } catch (error) {
+        toast.dismiss('pickup-toast');
+        toast.error(error.response?.data?.message || "Failed to mark as picked up.");
+    }
+};
+// ...
+
+    const handleReportDelay = () => {
+        if (order.status !== 'PICKED_UP') {
+            toast.error("You can't report a delay for an order that hasn't been picked up yet.");
+            return;
+        }
         alert("TODO: Implement Report Delay Modal!");
     };
+
     const handleCancelDelivery = async (reason) => {
-  try {
-    // Poziv backend api da otkažeš delivery
-    await cancelDelivery(orderId, reason);  // orderId i reason se šalju
+        try {
+            await cancelDelivery(orderId, reason);
+            toast.success("Order successfully canceled!");
+            navigate('/driver');
+        } catch (error) {
+            toast.error("Error cancelling delivery: " + (error.response?.data?.message || error.message));
+        }
+    };
 
-    toast.success("Order successfully canceled!");
-    // Ovde ide preusmeravanje na dashboard, na primer:
-    navigate('/driver'); // ako koristiš react-router-dom useNavigate()
-  } catch (error) {
-    toast.error("Error cancelling delivery: " + (error.response?.data?.message || error.message));
-  }
-};
-
-
-    // Stilovi za gumbe
+    // Stilovi za gumbe (nepromenjeni)
     const primaryButtonStyle = {
         padding: '1rem', borderRadius: '8px', border: 'none',
         color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer',
@@ -231,13 +334,24 @@ const handleReportDelay = () => {
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
     };
 
-    if (loading || !order) {
-        // Prikazujemo loading/error/not found stanja sa Navbarom
+    // Loading/Error prikaz (nepromenjen)
+    if (loading) {
         return (
             <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh' }}>
                 <NavbarDriver />
                 <div style={{ padding: '2rem', textAlign: 'center' }}>
-                    {loading ? 'Loading order details...' : error ? <span style={{color: 'red'}}>{error}</span> : 'Order not found.'}
+                    Loading order details...
+                </div>
+            </div>
+        );
+    }
+    
+    if (error || !order) {
+        return (
+            <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh' }}>
+                <NavbarDriver />
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    {error ? <span style={{color: 'red'}}>{error}</span> : 'Order not found.'}
                 </div>
             </div>
         );
@@ -245,6 +359,7 @@ const handleReportDelay = () => {
     
     const isPickedUp = order.status === 'PICKED_UP';
     
+    // Glavni return blok sa izmenjenim pozivom MapComponent
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
              <Toaster position="top-center" />
@@ -266,18 +381,23 @@ const handleReportDelay = () => {
             <NavbarDriver />
             <main style={{ maxWidth: '1500px', margin: '20px 90px' }}>
                 <div style={{
-                    backgroundColor: '#FDFDF5', // <-- VRAĆENA BOJA
+                    backgroundColor: '#FDFDF5',
                     padding: '2rem', borderRadius: '24px',
                     border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)',
                     display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start'
                 }}>
                     
-                    <div style={{ height: '75vh', borderRadius: '16px', overflow: 'hidden' }}>
-                        <MapComponent
-                            driverLocation={driverLocation}
-                            assignedDeliveries={[order]}
-                            newOffers={[]}
-                        />
+                    <div style={{ height: '85vh', borderRadius: '16px', overflow: 'hidden' }}>
+                        {/* Prikazujemo mapu samo kada imamo lokaciju vozača */}
+                        {driverLocation && (
+                            <MapComponent
+                                driverLocation={driverLocation}
+                                assignedDeliveries={assignedDeliveriesForMap}
+                                newOffers={newOffersForMap}
+                                vehicleType={vehicleType} 
+                                activeRouteId={order.id} 
+                            />
+                        )}
                     </div>
 
                     {/* VRAĆEN STARI DIZAJN DESNE KOLONE SA IKONICAMA */}
@@ -287,6 +407,7 @@ const handleReportDelay = () => {
                             <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
                                 {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </p>
+                            {order.eta && <EtaCountdown eta={order.eta} />}
                         </div>
                         
                         <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' , opacity: 1.6,}}>
@@ -295,12 +416,9 @@ const handleReportDelay = () => {
                             </p>
                             <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>{order.restaurantName}</p>
                             <p style={{ color: '#6B7280', margin: 0 }}>{order.restaurantAddress}</p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>
-                                Distance from you: {order.distanceDriverToRestaurant.toFixed(1)} km
-                            </p>
                         </div>
 
-                        <div style={{ marginTop: '1.5rem' ,opacity: 0.6, transition: 'opacity 0.3s ease'}}>
+                        <div style={{ marginTop: '1.5rem' ,opacity: isPickedUp ? 1 : 0.6, transition: 'opacity 0.3s ease'}}>
                             <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
                                 <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
                             </p>
@@ -310,54 +428,75 @@ const handleReportDelay = () => {
                             <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
+    
+                            {/* --- GLAVNO DUGME --- */}
+                            
+                            {/* Ako je status 'PICKED_UP', prikazujemo "Mark as Delivered" */}
                             {isPickedUp ? (
                                 <button
                                     style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#256627'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2E7D32'}
+                                    // onClick={handleMarkAsDelivered} // TODO
                                 >
                                     <FiCheckCircle /> Mark as Delivered
                                 </button>
                             ) : (
+                                // Ako status NIJE 'PICKED_UP', prikazujemo "Mark as Picked Up"
                                 <button
                                     onClick={handleMarkAsPickedUp}
                                     style={{ ...primaryButtonStyle, backgroundColor: '#1F2937' }}
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#111827'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1F2937'}
                                 >
-                                    <FiNavigation /> Mark as Picked Up
+                                    <FiCheckCircle /> Mark as Picked Up
                                 </button>
                             )}
+
+                            {/* --- DUGME ZA SIMULACIJU --- */}
+                            
+                            {/* Prikazujemo dugme za pokretanje simulacije samo u relevantnim statusima */}
+                            {(order.status === 'READY_FOR_PICKUP' || order.status === 'PICKED_UP') && (
+                                <button
+                                    onClick={handleStartDriving}
+                                    style={{ ...primaryButtonStyle, backgroundColor: '#8A643B' }} // Neutralna boja
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#78552f'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
+                                >
+                                    <FiNavigation /> Start Driving to Restaurant
+                                </button>
+                            )}
+
+                            {/* --- SEKUNDARNA DUGMAD --- */}
+                            
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                             <button
-    onClick={handleReportDelay}
-    // Provjeravamo da li je status 'PICKED_UP'. Ako nije, primjenjujemo stilove za blokiran izgled.
-    style={{
-        ...secondaryButtonStyle, // Počinjemo sa osnovnim stilom
-        backgroundColor: order.status !== 'PICKED_UP' ? '#F3F4F6' : 'white', // Siva pozadina ako je blokirano
-        color: order.status !== 'PICKED_UP' ? '#9CA3AF' : '#4A4A4A', // Siva boja teksta ako je blokirano
-        borderColor: order.status !== 'PICKED_UP' ? '#E5E7EB' : '#D1D5DB', // Svjetlija siva ivica ako je blokirano
-        cursor: order.status !== 'PICKED_UP' ? 'not-allowed' : 'pointer' // Mijenjamo kursor
-    }}
-    // Onemogućavamo hover efekt ako gumb treba izgledati blokirano
-    onMouseEnter={e => {
-        if (order.status === 'PICKED_UP') {
-            e.currentTarget.style.borderColor = '#bc9124';
-            e.currentTarget.style.backgroundColor = '#FFFBEB';
-            e.currentTarget.style.color = '#bc9124';
-        }
-    }}
-    onMouseLeave={e => {
-        if (order.status === 'PICKED_UP') {
-            e.currentTarget.style.borderColor = '#D1D5DB';
-            e.currentTarget.style.backgroundColor = 'white';
-            e.currentTarget.style.color = '#4A4A4A';
-        }
-    }}
->
-    <FiAlertTriangle size={14} /> Report Delay
-</button>
+                                <button
+                                    onClick={handleReportDelay}
+                                    style={{
+                                        ...secondaryButtonStyle,
+                                        backgroundColor: order.status !== 'PICKED_UP' ? '#F3F4F6' : 'white',
+                                        color: order.status !== 'PICKED_UP' ? '#9CA3AF' : '#4A4A4A',
+                                        borderColor: order.status !== 'PICKED_UP' ? '#E5E7EB' : '#D1D5DB',
+                                        cursor: order.status !== 'PICKED_UP' ? 'not-allowed' : 'pointer'
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (order.status === 'PICKED_UP') {
+                                            e.currentTarget.style.borderColor = '#bc9124';
+                                            e.currentTarget.style.backgroundColor = '#FFFBEB';
+                                            e.currentTarget.style.color = '#bc9124';
+                                        }
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (order.status === 'PICKED_UP') {
+                                            e.currentTarget.style.borderColor = '#D1D5DB';
+                                            e.currentTarget.style.backgroundColor = 'white';
+                                            e.currentTarget.style.color = '#4A4A4A';
+                                        }
+                                    }}
+                                >
+                                    <FiAlertTriangle size={14} /> Report Delay
+                                </button>
                                 <button
                                     onClick={() => setIsCancelModalOpen(true)}
                                     style={secondaryButtonStyle}

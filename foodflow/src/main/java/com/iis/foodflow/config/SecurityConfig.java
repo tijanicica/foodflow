@@ -47,10 +47,11 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 // 3. Definiši pravila za autorizaciju
                 .authorizeHttpRequests(req ->
-                        req.requestMatchers("/api/auth/**").permitAll() // Dozvoli login/register
+                        req.requestMatchers("/api/auth/**").permitAll().requestMatchers("/ws/**").permitAll() // Dozvoli login/register
                                 // --- PREMJEŠTENO NA KRAJ ---
                                 .anyRequest().authenticated()             // Sve ostalo zahteva autentifikaciju
                 )
+
                 // 4. Podesi sesiju da bude stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 5. Podesi authentication provider i filter
