@@ -359,7 +359,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
                 <div style={{ backgroundColor: '#FDFDF5', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
                     
                     {/* LEVA KOLONA - MAPA */}
-                    <div style={{ height: '85vh', borderRadius: '16px', overflow: 'hidden' }}>
+                    <div style={{ height: '95vh', borderRadius: '16px', overflow: 'hidden' }}>
                         {driverLocation && (
                             <MapComponent
                                 driverLocation={driverLocation}
