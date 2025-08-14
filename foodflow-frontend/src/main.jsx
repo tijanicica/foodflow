@@ -24,9 +24,9 @@ import { DriverProfilePage } from './pages/DriverProfilePage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
-import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
-import { MyProfilePage } from './pages/MyProfilePage.jsx'; 
+import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
+import { MyProfilePage } from './pages/MyProfilePage';
 
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
@@ -68,7 +68,6 @@ const router = createBrowserRouter([
   },
 
     {
-    // Ovo je stranica NAKON preuzimanja porudžbine
     path: "/delivery/:orderId", 
     element: <PickedUpOrderPage />,
   },
@@ -92,16 +91,15 @@ const router = createBrowserRouter([
     path: "/track/:orderId",
     element: <TrackOrderPage />,
   },
+
   {
     path: "/analytics",
     element: <AnalyticsPage />,
   },
-  {
+    {
     path: "/profile",
     element: <MyProfilePage />,
   },
-  
-
   // Ovde ćeš kasnije dodavati i druge rute
   // {
   //   path: "/dashboard",
