@@ -6,7 +6,6 @@ import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
 import { getOrderDetails, cancelDelivery,startSimulation,markOrderAsPickedUp , getDriverInfo } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { EtaCountdown } from '../components/EtaCountdown';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import {
@@ -179,15 +178,6 @@ export function ViewOrderPage() {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const navigate = useNavigate();
 
-        const refreshOrderDetails = async () => {
-        try {
-            const updatedOrderDetails = await getOrderDetails(orderId);
-            setOrder(updatedOrderDetails);
-        } catch (error) {
-            console.error("Failed to refresh order details:", error);
-            toast.error("Could not refresh order details.");
-        }
-    };
 
 
 useEffect(() => {
@@ -405,9 +395,8 @@ const handleMarkAsPickedUp = async () => {
                         <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
                             <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0, letterSpacing: '0.5px' }}>Estimated Arrival (ETA)</p>
                             <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
-                                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                {'N/A'}
                             </p>
-                            {order.eta && <EtaCountdown eta={order.eta} />}
                         </div>
                         
                         <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' , opacity: 1.6,}}>
