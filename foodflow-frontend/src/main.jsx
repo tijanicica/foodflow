@@ -23,6 +23,7 @@ import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
+import { MyProfilePage } from './pages/MyProfilePage.jsx'; 
 
 
 
@@ -86,6 +87,11 @@ const router = createBrowserRouter([
     path: "/analytics",
     element: <AnalyticsPage />,
   },
+  {
+    path: "/profile",
+    element: <MyProfilePage />,
+  },
+  
 
   // Ovde ćeš kasnije dodavati i druge rute
   // {

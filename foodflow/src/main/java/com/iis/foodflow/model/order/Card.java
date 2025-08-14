@@ -14,10 +14,10 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String cardNumber;
-    private String accountNumber;
     private String cvv;
     private String expiryDate;
-
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean active = false;
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
