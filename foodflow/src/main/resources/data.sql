@@ -6,6 +6,12 @@
 -- Customer
 INSERT INTO customer (id, email, password, first_name, last_name, phone, role) VALUES
     (1, 'stojicic.nikola02@gmail.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
+
+INSERT INTO card (id, card_number, cvv, expiry_date, active, customer_id) VALUES
+    -- Kartica 1: Aktivna
+    (1, '4111111111111111', '123', '12/28', true, 1),
+    -- Kartica 2: Neaktivna
+    (2, '5100100010001000', '456', '06/29', false, 1);
 -- Vozaci
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
     (2, 'driver1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'CAR', 'OFFLINE', 0, 44.8125, 20.4612, NOW(), 0.0);
@@ -814,3 +820,4 @@ ALTER SEQUENCE diet_type_id_seq RESTART WITH 100;
 ALTER SEQUENCE driver_rating_id_seq RESTART WITH 100;
 ALTER SEQUENCE order_offer_id_seq RESTART WITH 100;
 ALTER SEQUENCE repeating_order_id_seq RESTART WITH 100;
+ALTER SEQUENCE card_id_seq RESTART WITH 100;

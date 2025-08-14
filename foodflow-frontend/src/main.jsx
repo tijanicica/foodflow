@@ -26,6 +26,7 @@ import { ViewOrderPage } from './pages/ViewOrderPage';
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
 import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
+import { MyProfilePage } from './pages/MyProfilePage.jsx'; 
 
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
@@ -95,6 +96,11 @@ const router = createBrowserRouter([
     path: "/analytics",
     element: <AnalyticsPage />,
   },
+  {
+    path: "/profile",
+    element: <MyProfilePage />,
+  },
+  
 
   // Ovde ćeš kasnije dodavati i druge rute
   // {

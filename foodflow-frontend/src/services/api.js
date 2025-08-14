@@ -415,3 +415,74 @@ export const getMyAnalytics = async () => {
         throw error;
     }
 };
+
+export const getMyProfile = async () => {
+    try {
+        const response = await apiClient.get('/user/profile');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        throw error;
+    }
+};
+
+
+export const addNewCard = async (cardData) => {
+    try {
+        const response = await apiClient.post('/user/cards', cardData);
+        return response.data;
+    } catch (error) {
+        console.error("Error adding new card:", error);
+        throw error;
+    }
+};
+
+
+export const deleteCard = async (cardId) => {
+    try {
+        await apiClient.delete(`/user/cards/${cardId}`);
+    } catch (error) {
+        console.error(`Error deleting card with ID ${cardId}:`, error);
+        throw error;
+    }
+};
+
+export const updatePhoneNumber = async (phone) => { 
+    try {
+        const response = await apiClient.patch('/user/profile/phone', { phone });
+        return response.data;
+    } catch (error) {
+        console.error("Error updating phone number:", error);
+        throw error;
+    }
+};
+
+export const changePassword = async (passwordData) => { 
+    try {
+        const response = await apiClient.post('/user/profile/change-password', passwordData);
+        return response.data;
+    } catch (error) {
+        console.error("Error changing password:", error);
+        throw error;
+    }
+};
+
+export const updateAddress = async (addressId, addressData) => {
+    try {
+        const response = await apiClient.put(`/addresses/${addressId}`, addressData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating address ${addressId}:`, error);
+        throw error;
+    }
+};
+
+export const setActiveCard = async (cardId) => {
+    try {
+        await apiClient.patch(`/user/cards/${cardId}/set-active`);
+    } catch (error) {
+        console.error("Error setting active card:", error);
+        throw error;
+    }
+};
+
