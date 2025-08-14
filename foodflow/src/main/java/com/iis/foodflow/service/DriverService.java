@@ -433,39 +433,105 @@ public class DriverService {
     }// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
 */
 
+// FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+
+    // FAJL: src/main/java/com/iis/foodflow/service/DriverService.java
+
+    /**
+     * Centralna metoda koja se poziva kada vozač preuzme porudžbinu.
+     * Radi sve: proverava blizinu, računa predikciju (ETA), postavlja vremena,
+     * menja status i pokreće odvojenu, realističnu simulaciju kretanja.
+     */
     @Transactional
     public Order markOrderAsPickedUp(String driverEmail, Long orderId) {
         Driver driver = findDriverByEmail(driverEmail);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // ... (tvoje postojeće sigurnosne provere i provera blizine restorana)
-        // ...
+        // --- 1. SIGURNOSNE PROVERE ---
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new SecurityException("Forbidden: This order is not assigned to you.");
+        }
+        if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            throw new IllegalStateException("Cannot pick up order. It's not in the correct state.");
+        }
 
-        // --- AŽURIRANJE PORUDŽBINE ---
+        // --- 2. PROVERA BLIZINE RESTORANA ---
+        final double MAX_ALLOWED_DISTANCE_KM = 0.15; // 150 metara
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElseThrow(() -> new IllegalStateException("Restaurant information is missing for this order."));
 
-        // 1. Postavi vreme početka dostave
+        if (restaurant.getAddress() == null) {
+            throw new IllegalStateException("Restaurant location is not available for this order.");
+        }
+
+        double distanceInKm = calculateDistance(
+                driver.getLatitude(),
+                driver.getLongitude(),
+                restaurant.getAddress().getLatitude(),
+                restaurant.getAddress().getLongitude()
+        );
+        if (distanceInKm > MAX_ALLOWED_DISTANCE_KM) {
+            throw new IllegalStateException(String.format("You are too far from the restaurant. Your distance: %.0f m.", distanceInKm * 1000));
+        }
+
+        // --- 3. CENTRALIZOVANA KALKULACIJA VREMENA ---
+
+        // Prvo dobijamo osnovno, realno vreme putovanja od restorana do kupca
+        Address customerAddress = order.getAddress();
+        RoutingService.RouteDetailsDTO routeDetails = routingService.getRouteDetails(
+                restaurant.getAddress().getLatitude(), restaurant.getAddress().getLongitude(),
+                customerAddress.getLatitude(), customerAddress.getLongitude()
+        );
+        if (routeDetails.getDurationInSeconds() < 0) {
+            throw new IllegalStateException("Could not get route details from routing service for order " + orderId);
+        }
+        double baseTravelSeconds = routeDetails.getDurationInSeconds();
+
+        // Proračun ČISTOG VREMENA VOŽNJE (prilagođeno za vozilo)
+        double vehicleAdjustedSeconds;
+        switch (driver.getVehicleType()) {
+            case MOTORCYCLE: vehicleAdjustedSeconds = baseTravelSeconds * 0.80; break;
+            case CAR: vehicleAdjustedSeconds = baseTravelSeconds; break;
+            default: vehicleAdjustedSeconds = baseTravelSeconds * 1.30; break;
+        }
+
+        // --- 4. PRORAČUN ZVANIČNOG ETA (PREDIKCIJA) ---
+        // ETA = (čisto vreme vožnje) + (sva moguća kašnjenja)
+        long weatherDelaySeconds = 0;
+        WeatherCondition weather = systemSettingsService.getCurrentWeather();
+        if (weather == WeatherCondition.RAINY) weatherDelaySeconds = 10 * 60;
+        else if (weather == WeatherCondition.SNOWY || weather == WeatherCondition.STORMY) weatherDelaySeconds = 20 * 60;
+
+        long driverReportedDelaySeconds = (order.getDriverReportedDelay() != null) ? order.getDriverReportedDelay() * 60 : 0;
+
+        long trafficBufferSeconds = 30;
+        long totalEtaSeconds = (long) vehicleAdjustedSeconds + weatherDelaySeconds + driverReportedDelaySeconds+ trafficBufferSeconds;
+
+        // --- 5. PRORAČUN TRAJANJA SIMULACIJE (STVARNOST) ---
+        // Stvarno trajanje simulacije je ČISTO VREME VOŽNJE +/- faktor slučajnosti
+        // Random broj između 0.9 (10% brže) i 1.1 (10% sporije)
+        double randomnessFactor = 0.9 + (Math.random() * 0.2);
+        double simulationDurationSeconds = vehicleAdjustedSeconds * randomnessFactor;
+
+        // --- 6. AŽURIRANJE I ČUVANJE PORUDŽBINE ---
         order.setStartDeliveryTime(LocalDateTime.now());
-
-        // 2. Izračunaj i postavi ETA za put do kupca
-        order.setEta(calculateEta(order, driver)); // Prosleđujemo i driver-a
-
-        // 3. Promeni status
+        order.setEta(LocalDateTime.now().plusSeconds(totalEtaSeconds)); // Postavljamo PREDIKCIJU
         order.setStatus(OrderStatus.PICKED_UP);
-
-        // Sačuvaj sve promene pre pokretanja simulacije
         Order savedOrder = orderRepository.save(order);
 
-        // --- 4. POKRENI SIMULACIJU AUTOMATSKI ---
-        Address customerAddress = savedOrder.getAddress();
-
+        // --- 7. POKRETANJE SIMULACIJE ---
+        // Prosleđujemo joj STVARNO (slučajno) trajanje
         simulationService.simulateDriving(
                 driver.getId(),
-                driver.getLatitude(), // Trenutna lokacija (restoran)
-                driver.getLongitude(),
+                restaurant.getAddress().getLatitude(), // Simulacija uvek kreće OD RESTORANA
+                restaurant.getAddress().getLongitude(),
                 customerAddress.getLatitude(),
                 customerAddress.getLongitude(),
-                savedOrder.getId()
+                savedOrder.getId(),
+                simulationDurationSeconds
         );
 
         return savedOrder;
@@ -693,7 +759,7 @@ public class DriverService {
     @Transactional(readOnly = true)
     public void startSimulationForOrder(String driverEmail, Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: ".concat(String.valueOf(orderId))));
         Driver driver = driverRepository.findByEmail(driverEmail)
                 .orElseThrow(() -> new EntityNotFoundException("Driver not found"));
 
@@ -701,6 +767,7 @@ public class DriverService {
             throw new SecurityException("Forbidden: Order not assigned to this driver.");
         }
 
+        // --- 1. ODREDI POČETNU I KRAJNJU TAČKU ---
         double startLat = driver.getLatitude();
         double startLng = driver.getLongitude();
         final Address destinationAddress;
@@ -720,15 +787,28 @@ public class DriverService {
         if (destinationAddress == null) {
             throw new IllegalStateException("Cannot start simulation. Destination address is null.");
         }
+        double endLat = destinationAddress.getLatitude();
+        double endLng = destinationAddress.getLongitude();
 
-        // Metoda SADA SAMO poziva simulaciju i ništa više.
+        // --- 2. DOBIJANJE REALNOG VREMENA PUTOVANJA SAMO ZA SIMULACIJU ---
+        RoutingService.RouteDetailsDTO routeDetails = routingService.getRouteDetails(
+                startLat, startLng, endLat, endLng
+        );
+
+        // Ako OSRM ne uspe, koristi fallback trajanje od npr. 5 minuta za simulaciju
+        double simulationDurationSeconds = (routeDetails.getDurationInSeconds() > 0)
+                ? routeDetails.getDurationInSeconds()
+                : 300.0;
+
+        // --- 3. POZIV ISPRAVNE METODE SA 7 PARAMETARA ---
         simulationService.simulateDriving(
                 driver.getId(),
                 startLat,
                 startLng,
-                destinationAddress.getLatitude(),
-                destinationAddress.getLongitude(),
-                order.getId()
+                endLat,
+                endLng,
+                order.getId(),
+                simulationDurationSeconds // <-- Sedmi parametar je sada tu
         );
     }
 }

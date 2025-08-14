@@ -177,16 +177,8 @@ export function PickedUpOrderPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(null);
+     const [timeLeft, setTimeLeft] = useState(null);
     const [predictedTimeLeft, setPredictedTimeLeft] = useState(null);
-      const refreshOrderDetails = async () => {
-        try {
-            const updatedOrder = await getOrderDetails(orderId);
-            setOrder(updatedOrder);
-        } catch (err) {
-            toast.error("Could not refresh order details.");
-        }
-    };
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
        useEffect(() => {
@@ -261,19 +253,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
     };
 }, [orderId]);
     // Handler za pokretanje simulacije
-    const handleStartDriving = async () => {
-        if (!order) return;
-        try {
-            toast.loading('Starting simulation...', { id: 'sim-start' });
-            await startSimulation(order.id);
-            toast.dismiss('sim-start');
-            toast.success("Simulation to customer started!");
-            await refreshOrderDetails();
-        } catch (error) {
-            toast.dismiss('sim-start');
-            toast.error("Could not start simulation.");
-        }
-    };
+
 
         const handleCancelDelivery = async (reason) => {
         try {
@@ -373,26 +353,27 @@ if (newLocation.predictedTimeLeft !== undefined) {
 
                     {/* DESNA KOLONA - INFORMACIJE */}
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                                <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
-                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>
-                                START TIME
-                            </p>
-                            <p style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0.25rem 0', color: '#333' }}>
-                                {order.startDeliveryTime ? new Date(order.startDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                            </p>
+                                               <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
+    <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>
+        START TIME
+    </p>
+    <p style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0.25rem 0', color: '#333' }}>
+        {order.startDeliveryTime ? new Date(order.startDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+    </p>
 
-                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', marginTop: '1rem' }}>
-                                ESTIMATED ARRIVAL (ETA)
-                            </p>
-                            <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
-                                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                            </p>
-                            
-                            {order.eta 
-                                ? <EtaCountdown eta={order.eta} /> 
-                                : <p style={{color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>Click "Start Driving" to get a prediction.</p>
-                            }
-                        </div>
+    <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', marginTop: '1rem' }}>
+        ESTIMATED ARRIVAL (ETA)
+    </p>
+    <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
+        {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+    </p>
+    
+    {/* --- OVDE JE SVA LOGIKA --- */}
+    {order.eta 
+        ? <EtaCountdown eta={order.eta} /> 
+        : <p style={{color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>ETA is calculated upon pickup.</p>
+    }
+</div>
 
 
 
@@ -439,12 +420,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
                             >
                                 <FiCheckCircle /> Mark as Delivered
                             </button>
-                                                        <button
-                                onClick={handleStartDriving}
-                                style={{ ...primaryButtonStyle, backgroundColor: '#8A643B' }}
-                            >
-                                <FiNavigation /> Start Driving to Customer
-                            </button>
+                                                    
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
                                 <button onClick={handleReportDelay} style={secondaryButtonStyle}>
                                     <FiAlertTriangle size={14} /> Report Delay
