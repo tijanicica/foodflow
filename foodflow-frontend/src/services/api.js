@@ -305,6 +305,17 @@ export const getOrderDetails = async (orderId) => {
     }
 };
 
+
+export const getOrderDetailsCustomer = async (orderId) => {
+    try {
+        const response = await apiClient.get(`orders/${orderId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching details for order ${orderId}:`, error);
+        throw error;
+    }
+};
+
 export const toggleRepeatingOrderStatus = async (templateId) => {
     try {
         // PATCH zahtev vraća ažurirani objekat
@@ -395,3 +406,12 @@ export const getTrackingInfo = async (orderId) => {
     }
 };
 
+export const getMyAnalytics = async () => {
+    try {
+        const response = await apiClient.get('/analytics/my-analytics');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching analytics:", error);
+        throw error;
+    }
+};
