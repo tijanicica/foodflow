@@ -14,12 +14,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 public class DriverSimulationService {
 
-    // Dodajemo Logger za bolje praćenje grešaka i informacija
     private static final Logger log = LoggerFactory.getLogger(DriverSimulationService.class);
 
     @Autowired
@@ -31,24 +29,14 @@ public class DriverSimulationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    // URL OSRM servera za dobavljanje kompletne geometrije rute
     private final String OSRM_ROUTE_GEOMETRY_URL = "http://router.project-osrm.org/route/v1/driving/%s,%s;%s,%s?overview=full&geometries=geojson";
 
     /**
      * Asinhrona metoda koja simulira kretanje vozača duž rute.
-     * @param driverId ID vozača koji se simulira
-     * @param startLat Početna latituda
-     * @param startLng Početna longituda
-     * @param endLat Krajnja latituda
-     * @param endLng Krajnja longituda
-     * @param orderId ID porudžbine, koristi se kao WebSocket kanal za praćenje
+     * Brzina simulacije (pauza između tačaka) zavisi od prosleđenog 'totalDurationInSeconds'.
      */
-
     @Async
-    public CompletableFuture<Long> simulateDriving(Long driverId, double startLat, double startLng, double endLat, double endLng, Long orderId) {
-
-        long startTime = System.currentTimeMillis(); // Zabeleži početno vreme
-
+    public void simulateDriving(Long driverId, double startLat, double startLng, double endLat, double endLng, Long orderId, double totalDurationInSeconds) {
         String url = String.format(OSRM_ROUTE_GEOMETRY_URL, startLng, startLat, endLng, endLat);
         log.info("Dobavljanje rute za simulaciju sa URL-a: {}", url);
 
@@ -57,23 +45,27 @@ public class DriverSimulationService {
             response = restTemplate.getForObject(url, OsrmGeometryResponse.class);
         } catch (HttpClientErrorException e) {
             log.error("Greška prilikom poziva OSRM API-ja. Status: {}, Odgovor: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            // U slučaju greške, završi "obećanje" sa izuzetkom
-            return CompletableFuture.failedFuture(e);
+            return;
         }
 
         if (response == null || response.getRoutes() == null || response.getRoutes().isEmpty() || response.getRoutes().get(0).getGeometry().getCoordinates().isEmpty()) {
-            log.error("Nije moguće dobiti rutu za simulaciju za vozača: {}. OSRM odgovor je prazan ili ne sadrži koordinate.", driverId);
-            return CompletableFuture.failedFuture(new RuntimeException("Could not fetch a valid route from OSRM."));
+            log.error("Nije moguće dobiti rutu za simulaciju za vozača: {}. OSRM odgovor je prazan.", driverId);
+            return;
         }
 
         List<List<Double>> routePoints = response.getRoutes().get(0).getGeometry().getCoordinates();
-        log.info("Početak simulacije za vozača ID: {}. Broj tačaka na ruti: {}", driverId, routePoints.size());
+        log.info("Početak simulacije za vozača ID: {}. Broj tačaka: {}. Predviđeno trajanje: {:.2f}s", driverId, routePoints.size(), totalDurationInSeconds);
+
+        long sleepIntervalMs = (totalDurationInSeconds > 0 && !routePoints.isEmpty())
+                ? (long) ((totalDurationInSeconds * 1000) / routePoints.size())
+                : 1000;
+
+        log.info("Pauza između tačaka simulacije: {} ms", sleepIntervalMs);
 
         for (int i = 0; i < routePoints.size(); i++) {
-            // Provera da li je thread prekinut pre svake iteracije
             if (Thread.currentThread().isInterrupted()) {
                 log.warn("Simulacija za vozača ID: {} je prekinuta.", driverId);
-                return CompletableFuture.failedFuture(new InterruptedException("Simulation was interrupted."));
+                break;
             }
 
             List<Double> point = routePoints.get(i);
@@ -91,22 +83,17 @@ public class DriverSimulationService {
             messagingTemplate.convertAndSend("/topic/driver-location/" + orderId, locationUpdate);
 
             try {
-                Thread.sleep(2000);
+                Thread.sleep(sleepIntervalMs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("Simulacija za vozača ID: {} je prekinuta tokom pauze.", driverId);
-                return CompletableFuture.failedFuture(e); // Završi sa izuzetkom
+                break;
             }
         }
-
-        long endTime = System.currentTimeMillis();
-        long durationInSeconds = (endTime - startTime) / 1000;
-
-        log.info("Kraj simulacije za vozača ID: {}. Trajanje: {} sekundi.", driverId, durationInSeconds);
-
-        // Vrati uspešno završeno "obećanje" sa izračunatim trajanjem
-        return CompletableFuture.completedFuture(durationInSeconds);
+        log.info("Kraj simulacije kretanja za vozača ID: {}", driverId);
     }
+
+    // --- ISPRAVKA: VRAĆENA @Data ANOTACIJA ---
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class OsrmGeometryResponse {

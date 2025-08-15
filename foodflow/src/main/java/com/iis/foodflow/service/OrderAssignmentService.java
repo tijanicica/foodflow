@@ -1,6 +1,8 @@
 // FAJL: src/main/java/com/iis/foodflow/service/OrderAssignmentService.java
 
 package com.iis.foodflow.service;
+import com.iis.foodflow.model.restaurant.Restaurant;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OfferStatus;
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +33,8 @@ public class OrderAssignmentService {
     private final OrderRepository orderRepository;
     private final OrderOfferRepository orderOfferRepository;
     private final SystemSettingsService systemSettingsService;
+    @Autowired
+    private RoutingService routingService;
 
     /**
      * Glavna metoda koja pronalazi najboljeg vozača za porudžbinu i šalje mu ponudu.
@@ -37,28 +42,40 @@ public class OrderAssignmentService {
      */
     @Transactional
     public void findAndAssignBestDriver(Order order) {
-        // 1. Dohvati ID-jeve svih vozača koji su već dobili ponudu za ovu porudžbinu
-        List<Long> driversWithOffer = orderOfferRepository.findByOrder(order).stream()
-                .map(offer -> offer.getDriver().getId())
-                .collect(Collectors.toList());
 
-        // 2. Pronađi sve ONLINE vozače, ali izbaci one koji su već dobili ponudu
-        List<Driver> candidates = driverRepository.findByStatus(DriverStatus.ONLINE).stream()
-                .filter(driver -> !driversWithOffer.contains(driver.getId()))
-                .collect(Collectors.toList());
+        // --- 1. DOBIJANJE SVIH ONLINE VOZAČA ---
+        List<Driver> onlineDrivers = driverRepository.findByStatus(DriverStatus.ONLINE);
 
-        if (candidates.isEmpty()) {
-            System.out.println("Nema više dostupnih vozača za porudžbinu: " + order.getId());
-            // TODO: Logika za slučaj kada nema vozača (npr. status AWAITING_DRIVER)
+        if (onlineDrivers.isEmpty()) {
+            System.out.println("Nema online vozača za porudžbinu " + order.getId());
+            // TODO: Postaviti status porudžbine na AWAITING_DRIVER ili slično
             return;
         }
 
-        // 3. Pronađi najboljeg kandidata koristeći algoritam za bodovanje
-        Optional<Driver> bestDriver = candidates.stream()
+        // --- 2. DOBIJANJE VOZAČA KOJIMA JE VEĆ POSLATA PONUDA ---
+        Set<Long> driversWithExistingOffer = orderOfferRepository.findDriverIdsByOrder(order);
+
+        // --- 3. FILTRIRANJE KANDIDATA ---
+        // Iz liste online vozača, izbacujemo one koji već imaju ponudu
+        List<Driver> candidateDrivers = onlineDrivers.stream()
+                .filter(driver -> !driversWithExistingOffer.contains(driver.getId()))
+                .collect(Collectors.toList());
+
+        if (candidateDrivers.isEmpty()) {
+            System.out.println("Nema VIŠE dostupnih vozača za porudžbinu " + order.getId() + ". Svi su već dobili ponudu.");
+            return;
+        }
+
+        // --- 4. PRONALAŽENJE NAJBOLJEG VOZAČA MEĐU KANDIDATIMA ---
+        // Koristimo Java Stream API da nađemo vozača sa maksimalnim skorom
+        Optional<Driver> bestDriverOptional = candidateDrivers.stream()
                 .max(Comparator.comparingDouble(driver -> calculateDriverScore(driver, order)));
 
-        // 4. Ako je najbolji vozač pronađen, kreiraj i pošalji mu ponudu
-        bestDriver.ifPresent(driver -> createOffer(order, driver));
+        // --- 5. KREIRANJE I SLANJE PONUDE NAJBOLJEM ---
+        bestDriverOptional.ifPresent(bestDriver -> {
+            System.out.printf("Najbolji vozač za porudžbinu %d je %s. Kreiranje ponude...%n", order.getId(), bestDriver.getFirstName());
+            createOffer(order, bestDriver);
+        });
     }
 
     /**
@@ -76,6 +93,8 @@ public class OrderAssignmentService {
         final double W_DAILY_DELIVERIES = 10;
         final double W_RATING = 10;
         final double W_REJECTIONS = 15; // <-- Novi kriterij, prilično je važan
+
+
 
         // --- KRITERIJ #1: Vremenski uslovi i Vozilo ---
         // (Ovaj dio ostaje isti kao u prethodnom odgovoru)
@@ -101,10 +120,32 @@ public class OrderAssignmentService {
                 break;
         }
 
-        // --- KRITERIJ #2: Lokacija (što bliži) ---
-        double distance = calculateDistance(driver.getLatitude(), driver.getLongitude(), 44.8125, 20.4612); // TODO: Prave koordinate restorana
-        score += (1.0 - Math.min(distance / 20.0, 1.0)) * W_DISTANCE;
+        // --- KRITERIJ #2: Lokacija (što bliži restoranu) ---
+// Prvo, dobijamo restoran iz porudžbine na ispravan način
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElse(null); // Vraćamo null ako restoran ne može da se pronađe
 
+// Proveravamo da li smo uspeli da nađemo restoran i njegovu adresu
+        if (restaurant != null && restaurant.getAddress() != null) {
+            // Ako jesmo, računamo STVARNU distancu puta koristeći RoutingService
+            RoutingService.RouteDetailsDTO routeDetails = routingService.getRouteDetails(
+                    driver.getLatitude(),
+                    driver.getLongitude(),
+                    restaurant.getAddress().getLatitude(),
+                    restaurant.getAddress().getLongitude()
+            );
+
+            if (routeDetails.getDistanceInMeters() >= 0) {
+                double distanceInKm = routeDetails.getDistanceInMeters() / 1000.0;
+                // Normalizujemo distancu: što je distanca veća, skor je manji.
+                // Pretpostavljamo da je sve preko 20km "previše daleko" i dobija 0 poena.
+                score += (1.0 - Math.min(distanceInKm / 20.0, 1.0)) * W_DISTANCE;
+            }
+            // Ako ne možemo da dobijemo rutu, ne dodajemo poene za ovaj kriterijum
+        }
+// Ako nismo našli restoran, takođe se ne dodaju poeni
         // --- KRITERIJ #3: Zauzetost (što manje aktivnih porudžbina) ---
         List<OrderStatus> activeStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
         int activeDeliveries = orderRepository.countActiveDeliveriesForDriver(driver, activeStatuses);
