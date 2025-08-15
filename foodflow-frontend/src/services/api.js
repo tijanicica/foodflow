@@ -568,3 +568,13 @@ export const addMenuItem = async (menuVersionId, itemData) => {
     const response = await apiClient.post(`/manager/menus/${menuVersionId}/items`, itemData);
     return response.data;
 };
+
+export const sendChatMessage = async (message) => {
+  try {
+    const response = await apiClient.post('/ai/chat', { message });
+    return response.data;
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
+};
