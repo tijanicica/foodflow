@@ -128,7 +128,8 @@ const router = createBrowserRouter([
   {
     path: "/manager/menu/:menuVersionId",
     element: <ManagerEditMenuPage />,
-
+ },
+  {
     path: "/about",
     element: <AboutUsPage />,
   },
