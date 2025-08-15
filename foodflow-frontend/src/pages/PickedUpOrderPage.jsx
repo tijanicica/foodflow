@@ -9,11 +9,11 @@ import { motion } from 'framer-motion';
 // WebSocket i API
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
-import { getOrderDetails, cancelDelivery,getDriverInfo, startSimulation,markOrderAsDelivered   } from '../services/api'; 
+import { getOrderDetails, cancelDelivery,getDriverInfo,reportDelay , startSimulation,markOrderAsDelivered   } from '../services/api'; 
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
-import { FiEdit3,FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
+import { FiEdit3,FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle,FiClock, FiMinus, FiPlus } from 'react-icons/fi';
 
 
 const predefinedReasons = [
@@ -22,6 +22,8 @@ const predefinedReasons = [
  { id: 3, text: "Spilled order", icon: <FiXCircle /> },
     { id: 4, text: "Personal reasons", icon: <FiUser /> }
 ];
+
+
 
 const CancelOrderModal = ({ onConfirm, onCancel }) => {
     const [selectedReasons, setSelectedReasons] = useState([]);
@@ -162,6 +164,96 @@ const CancelOrderModal = ({ onConfirm, onCancel }) => {
         </motion.div>
     );
 };
+export const ReportDelayModal = ({ onConfirm, onCancel }) => {
+    const [minutes, setMinutes] = useState(3); // Početna vrednost
+    const MAX_DELAY = 7; // Maksimalno kašnjenje
+
+    const changeMinutes = (amount) => {
+        setMinutes(prev => {
+            const newValue = prev + amount;
+            // Ograničavamo vrednost između 1 i MAX_DELAY
+            return Math.max(1, Math.min(newValue, MAX_DELAY));
+        });
+    };
+
+    const handleConfirm = () => {
+        onConfirm(minutes);
+    };
+    
+    // Stilovi za + i - dugmad radi preglednosti
+    const stepperButtonStyle = {
+        width: '40px',
+        height: '40px',
+        border: '1.5px solid #D1D5DB',
+        borderRadius: '50%',
+        backgroundColor: 'white',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        color: '#4A4A4A',
+        transition: 'all 0.2s ease',
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ 
+                backgroundColor: 'white', 
+                padding: '2.5rem', // Više prostora
+                borderRadius: '16px', // Zaobljenije
+                width: '400px', 
+                textAlign: 'center', 
+                boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                border: '1px solid #F3EAD9'
+            }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <FiClock size={32} color="#8A643B" />
+                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Report a Delay</h3>
+            </div>
+
+            <p style={{ color: '#6B7280', marginBottom: '2rem' }}>
+                Please specify how many minutes you will be late.
+            </p>
+
+            {/* Redizajniran unos sa + i - dugmadima */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
+                <button 
+                    onClick={() => changeMinutes(-1)} 
+                    style={stepperButtonStyle}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                >
+                    <FiMinus />
+                </button>
+                <span style={{ fontSize: '3rem', fontWeight: 'bold', minWidth: '80px' }}>{minutes}</span>
+                <button 
+                    onClick={() => changeMinutes(1)} 
+                    style={stepperButtonStyle}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                >
+                    <FiPlus />
+                </button>
+            </div>
+            
+            <p style={{ fontSize: '1rem', color: '#6B7280', marginTop: '0.5rem' }}>minutes</p>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem' }}>
+                <button onClick={onCancel} style={{ flex: 1, padding: '1rem', border: '1.5px solid #D1D5DB', borderRadius: '10px', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+                <button onClick={handleConfirm} style={{ flex: 1, padding: '1rem', border: 'none', backgroundColor: '#8A643B', color: 'white', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', transition: 'background-color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#71502f'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
+                >
+                    Confirm Delay
+                </button>
+            </div>
+        </motion.div>
+    );
+};
 
 
 
@@ -177,9 +269,18 @@ export function PickedUpOrderPage() {
     const [driverLocation, setDriverLocation] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+     const [isReportDelayModalOpen, setIsReportDelayModalOpen] = useState(false);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
      const [timeLeft, setTimeLeft] = useState(null);
     const [predictedTimeLeft, setPredictedTimeLeft] = useState(null);
+        const refreshOrderDetails = async () => {
+        try {
+            const updatedOrder = await getOrderDetails(orderId);
+            setOrder(updatedOrder);
+        } catch (err) {
+            toast.error("Could not refresh order details.");
+        }
+    };
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
        useEffect(() => {
@@ -303,7 +404,20 @@ if (newLocation.predictedTimeLeft !== undefined) {
             console.error("Delivery failed:", error);
         }
     };
-    const handleReportDelay = () => alert("TODO: Implement Report Delay!");
+     const handleReportDelay = async (delayMinutes) => {
+        if (!order || !delayMinutes) return;
+        try {
+            toast.loading('Reporting delay...', { id: 'delay-toast' });
+            await reportDelay(order.id, delayMinutes);
+            toast.dismiss('delay-toast');
+            toast.success('Delay reported! ETA has been updated.');
+            await refreshOrderDetails();
+            setIsReportDelayModalOpen(false);
+        } catch (error) {
+            toast.dismiss('delay-toast');
+            toast.error(error.response?.data?.message || "Failed to report delay.");
+        }
+    };
 
     // Memoizacija props-ova za mapu
     const assignedDeliveriesForMap = useMemo(() => order ? [order] : [], [order]);
@@ -330,6 +444,14 @@ if (newLocation.predictedTimeLeft !== undefined) {
                     <CancelOrderModal
                         onCancel={() => setIsCancelModalOpen(false)}
                         onConfirm={handleCancelDelivery}
+                    />
+                </div>
+            )}
+              {isReportDelayModalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9998, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <ReportDelayModal
+                        onCancel={() => setIsReportDelayModalOpen(false)}
+                        onConfirm={handleReportDelay}
                     />
                 </div>
             )}
@@ -423,17 +545,21 @@ if (newLocation.predictedTimeLeft !== undefined) {
                             </button>
                                                     
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <button onClick={handleReportDelay} style={secondaryButtonStyle}>
+                                <button
+                                    onClick={() => setIsReportDelayModalOpen(true)} // Klik sada otvara modal
+                                    style={secondaryButtonStyle}
+                                >
                                     <FiAlertTriangle size={14} /> Report Delay
                                 </button>
-                                 <button
-                                                                    onClick={() => setIsCancelModalOpen(true)}
-                                                                    style={secondaryButtonStyle}
-                                                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#EF4444'; }}
-                                                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#4A4A4A'; }}
-                                                                >
-                                                                    <FiXCircle size={14} /> Cancel Delivery
-                                                                </button>
+                                
+                                <button
+                                    onClick={() => setIsCancelModalOpen(true)}
+                                    style={secondaryButtonStyle}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#EF4444'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#4A4A4A'; }}
+                                >
+                                    <FiXCircle size={14} /> Cancel Delivery
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -1,15 +1,18 @@
-// FAJL: src/main/java/com/iis/foodflow/dto/request/ReportDelayRequest.java
-
+// FAJL: ReportDelayRequest.java
 package com.iis.foodflow.dto.request;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class ReportDelayRequest {
 
-    @NotNull(message = "Delay minutes must be provided.")
-    @Min(value = 0, message = "Delay minutes cannot be negative.")
+    @NotNull(message = "Delay in minutes is required.")
+    @Min(value = 1, message = "Delay must be at least 1 minute.")
+    // Možeš dodati i gornju granicu ako želiš, npr. 60 minuta
     private Integer delayMinutes;
 }

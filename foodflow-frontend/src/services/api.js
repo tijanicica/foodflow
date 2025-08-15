@@ -386,7 +386,6 @@ export const markOrderAsDelivered = async (orderId) => {
     await apiClient.post(`/drivers/orders/${orderId}/deliver`);
 };
 
-
 export const cancelDelivery = async (orderId, reason) => {
     try {
         const response = await apiClient.post(`/drivers/orders/${orderId}/cancel`, { reason });
@@ -396,6 +395,7 @@ export const cancelDelivery = async (orderId, reason) => {
         throw error;
     }
 };
+
 export const getTrackingInfo = async (orderId) => {
     try {
         const response = await apiClient.get(`/orders/${orderId}/track`);
@@ -414,4 +414,8 @@ export const getMyAnalytics = async () => {
         console.error("Error fetching analytics:", error);
         throw error;
     }
+};
+
+export const reportDelay = async (orderId, delayMinutes) => {
+    await apiClient.post(`/drivers/orders/${orderId}/report-delay`, { delayMinutes });
 };

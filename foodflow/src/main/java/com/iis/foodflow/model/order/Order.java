@@ -88,4 +88,7 @@ public class Order {
 
     @Column(name = "driver_reported_delay")
     private Integer driverReportedDelay = 0; // U minutama, početna vrijednost 0
+
+    @Column(name = "delay_report_count")
+    private Integer delayReportCount = 0;
 }
