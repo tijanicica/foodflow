@@ -196,14 +196,17 @@ public class DriverController {
 
     @PostMapping("/orders/{orderId}/report-delay")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> reportDeliveryDelay(
+    public ResponseEntity<Void> reportDelay(
             @PathVariable Long orderId,
-            @Valid @RequestBody ReportDelayRequest request, // 
+            @Valid @RequestBody ReportDelayRequest request, // Koristimo novi DTO
             @AuthenticationPrincipal Driver driverPrincipal) {
 
+        driverService.reportDelay(
+                driverPrincipal.getEmail(),
+                orderId,
+                request.getDelayMinutes()
+        );
 
-
-        driverService.reportDelay(driverPrincipal.getEmail(), orderId, request.getDelayMinutes());
         return ResponseEntity.ok().build();
     }
 

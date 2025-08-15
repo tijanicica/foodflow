@@ -386,7 +386,6 @@ export const markOrderAsDelivered = async (orderId) => {
     await apiClient.post(`/drivers/orders/${orderId}/deliver`);
 };
 
-
 export const cancelDelivery = async (orderId, reason) => {
     try {
         const response = await apiClient.post(`/drivers/orders/${orderId}/cancel`, { reason });
@@ -396,6 +395,7 @@ export const cancelDelivery = async (orderId, reason) => {
         throw error;
     }
 };
+
 export const getTrackingInfo = async (orderId) => {
     try {
         const response = await apiClient.get(`/orders/${orderId}/track`);
@@ -416,6 +416,10 @@ export const getMyAnalytics = async (params) => {
     }
 };
 
+export const reportDelay = async (orderId, delayMinutes) => {
+    await apiClient.post(`/drivers/orders/${orderId}/report-delay`, { delayMinutes });
+};
+  
 export const getMyProfile = async () => {
     try {
         const response = await apiClient.get('/user/profile');
@@ -564,9 +568,16 @@ export const addMenuItem = async (menuVersionId, itemData) => {
     const response = await apiClient.post(`/manager/menus/${menuVersionId}/items`, itemData);
     return response.data;
 };
-// U api.js
 
-// U src/services/api.js
+export const sendChatMessage = async (message) => {
+  try {
+    const response = await apiClient.post('/ai/chat', { message });
+    return response.data;
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
+}
 
 export const getManagerActiveOrders = async () => {
     const response = await apiClient.get('/manager/orders/active');
@@ -586,16 +597,16 @@ export const markOrderAsReady = async (orderId) => {
 };
 
 export const getManagerDeliveries = async () => {
-const response = await apiClient.get('/manager/deliveries');
-return response.data;
+  const response = await apiClient.get('/manager/deliveries');
+  return response.data;
 };
 export const getManagerTrackingInfo = async (orderId) => {
     // Mora biti unutar backtick ` navodnika, ne /
     const response = await apiClient.get(`/manager/deliveries/${orderId}/track`);
     return response.data;
 };
+  
 export const rateDriverByManager = async (orderId, ratingData) => {
-    // Sada vraćamo odgovor servera
     const response = await apiClient.post(`/ratings/driver/${orderId}/restaurant`, ratingData);
     return response.data;
 };

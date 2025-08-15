@@ -1,23 +1,20 @@
+// Datoteka: src/components/Navbar.jsx
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useCart } from '@/context/CartContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { ShoppingCart, Menu, X, LogOut, User as UserIcon } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { ShoppingCart, Menu, X, LogOut, User as UserIcon, Home, ScrollText, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jwtDecode } from 'jwt-decode';
 
-// 1. Definišemo linkove za GLAVNU navigaciju
 const mainNavLinks = [
     { href: "/home", label: "Home", activePaths: ["/home", "/restaurant"] },
     { href: "/orders", label: "My Orders", activePaths: ["/orders", "/order/", "/track/"] },
     { href: "/analytics", label: "My Analytics", activePaths: ["/analytics"] },
 ];
 
-/**
- * Pomoćna komponenta za jedan navigacioni link.
- */
 const NavItem = ({ href, label, activePaths, onClick }) => {
     const location = useLocation();
     const isActive = activePaths.some(path => location.pathname.startsWith(path));
@@ -33,19 +30,17 @@ const NavItem = ({ href, label, activePaths, onClick }) => {
 
 export const Navbar = () => {
     const navigate = useNavigate();
-    const { totalItemsInCart } = useCart();
+    const { totalItemsInCart, toggleCart } = useCart();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [userName, setUserName] = useState('');
 
-    // Hook za detekciju skrola i dodavanje senke
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 10);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Hook za čitanje imena korisnika iz JWT tokena
     useEffect(() => {
         try {
             const token = localStorage.getItem('jwtToken');
@@ -53,10 +48,7 @@ export const Navbar = () => {
                 const decodedToken = jwtDecode(token);
                 setUserName(decodedToken.name || decodedToken.fullName || 'Account');
             }
-        } catch (error) {
-            console.error("Invalid token:", error);
-            setUserName('Account');
-        }
+        } catch (error) { console.error("Invalid token:", error); setUserName('Account'); }
     }, []);
 
     const handleLogout = () => {
@@ -64,11 +56,9 @@ export const Navbar = () => {
         navigate('/login', { replace: true });
     };
 
-    const handleCartClick = (event) => {
-        if (totalItemsInCart === 0) {
-            event.preventDefault();
-            toast.error("Your cart is empty!");
-        }
+    const navigateTo = (path) => {
+        navigate(path);
+        setIsMenuOpen(false);
     };
 
     return (
@@ -80,7 +70,6 @@ export const Navbar = () => {
                     foodFlow
                 </Link>
               
-                {/* === DESKTOP NAVIGACIJA (Home, My Orders, My Analytics) === */}
                 <nav className="hidden lg:flex items-center gap-6 text-lg font-medium">
                     {mainNavLinks.map((link) => (
                         <NavItem key={link.href} {...link} />
@@ -88,22 +77,18 @@ export const Navbar = () => {
                 </nav>
         
                 <div className="flex items-center gap-2">
-                    <NavLink 
-                        to="/checkout" 
-                        onClick={handleCartClick}
-                        className={({ isActive }) => `relative ${isActive && "ring-2 ring-brand-primary rounded-full"}`}
-                    >
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <ShoppingCart className="h-6 w-6 text-brand-primary/80" />
-                            {totalItemsInCart > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                                    {totalItemsInCart}
-                                </span>
-                            )}
-                        </Button>
-                    </NavLink>
+                    <Button variant="ghost" size="icon" className="rounded-full relative" onClick={toggleCart}>
+                        <ShoppingCart className="h-6 w-6 text-brand-primary/80" />
+                        {totalItemsInCart > 0 && (
+                            <motion.span 
+                                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                            >
+                                {totalItemsInCart}
+                            </motion.span>
+                        )}
+                    </Button>
                     
-                    {/* === KORISNIČKI DROPDOWN MENI (My Profile, Logout) === */}
                     <div className="hidden lg:block">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -113,9 +98,7 @@ export const Navbar = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 mt-2">
-                                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                                    <UserIcon className="mr-2 h-4 w-4" /> My Profile
-                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate('/profile')}><UserIcon className="mr-2 h-4 w-4" /> My Profile</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-700">
                                     <LogOut className="mr-2 h-4 w-4" /> Logout
@@ -124,14 +107,12 @@ export const Navbar = () => {
                         </DropdownMenu>
                     </div>
 
-                    {/* Hamburger ikonica - vidljiva samo na manjim ekranima */}
                     <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMenuOpen(true)}>
                         <Menu className="h-6 w-6" />
                     </Button>
                 </div>
             </header>
 
-            {/* === MOBILNI MENI (OVERLAY) === */}
             <AnimatePresence>
                 {isMenuOpen && (
                     <motion.div
@@ -149,17 +130,14 @@ export const Navbar = () => {
                                 <span className="text-2xl font-bold text-brand-primary italic">Menu</span>
                                 <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}><X className="h-6 w-6" /></Button>
                             </div>
-                            <div className="flex flex-col items-start gap-5 text-xl">
+                            <div className="flex flex-col gap-2 text-lg">
                                 {mainNavLinks.map((link) => (
-                                    <NavItem key={link.href} {...link} onClick={() => setIsMenuOpen(false)} />
+                                    <button key={link.href} onClick={() => navigateTo(link.href)} className="text-left p-3 rounded-md hover:bg-gray-100">{link.label}</button>
                                 ))}
-                                {/* "My Profile" je odvojen u mobilnom meniju radi važnosti */}
-                                <NavItem href="/profile" label="My Profile" activePaths={["/profile"]} onClick={() => setIsMenuOpen(false)} />
-                                
+                                <button onClick={() => navigateTo('/profile')} className="text-left p-3 rounded-md hover:bg-gray-100">My Profile</button>
                                 <div className="w-full h-px bg-gray-200 my-4"></div>
-
-                                <button onClick={handleLogout} className="flex items-center gap-3 text-red-600 hover:text-red-800 font-semibold">
-                                    <LogOut size={22} /><span>Logout</span>
+                                <button onClick={handleLogout} className="flex items-center gap-3 p-3 rounded-md text-red-600 hover:bg-red-50 font-semibold">
+                                    <LogOut /><span>Logout</span>
                                 </button>
                             </div>
                         </motion.nav>

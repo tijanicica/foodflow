@@ -808,24 +808,23 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
 
 
 
--- Resetovanje sekvenci
-ALTER SEQUENCE customer_id_seq RESTART WITH 200;
-ALTER SEQUENCE driver_id_seq RESTART WITH 200;
-ALTER SEQUENCE operator_id_seq RESTART WITH 200;
-ALTER SEQUENCE manager_id_seq RESTART WITH 200;
-ALTER SEQUENCE administrator_id_seq RESTART WITH 200;
-ALTER SEQUENCE support_administrator_id_seq RESTART WITH 200;
-ALTER SEQUENCE address_id_seq RESTART WITH 200;
-ALTER SEQUENCE restaurant_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_version_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_item_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_item_version_id_seq RESTART WITH 200;
-ALTER SEQUENCE orders_id_seq RESTART WITH 200;
-ALTER SEQUENCE order_item_id_seq RESTART WITH 200;
-ALTER SEQUENCE problem_category_id_seq RESTART WITH 200;
-ALTER SEQUENCE allergen_id_seq RESTART WITH 200;
-ALTER SEQUENCE diet_type_id_seq RESTART WITH 200;
-ALTER SEQUENCE driver_rating_id_seq RESTART WITH 200;
-ALTER SEQUENCE order_offer_id_seq RESTART WITH 200;
-ALTER SEQUENCE repeating_order_id_seq RESTART WITH 200;
+ALTER SEQUENCE customer_id_seq RESTART WITH 100;
+ALTER SEQUENCE driver_id_seq RESTART WITH 100;
+ALTER SEQUENCE operator_id_seq RESTART WITH 100;
+ALTER SEQUENCE manager_id_seq RESTART WITH 100;
+ALTER SEQUENCE administrator_id_seq RESTART WITH 100;
+ALTER SEQUENCE support_administrator_id_seq RESTART WITH 100;
+ALTER SEQUENCE address_id_seq RESTART WITH 100;
+ALTER SEQUENCE restaurant_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_version_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_item_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_item_version_id_seq RESTART WITH 100;
+ALTER SEQUENCE orders_id_seq RESTART WITH 100;
+ALTER SEQUENCE order_item_id_seq RESTART WITH 100;
+ALTER SEQUENCE problem_category_id_seq RESTART WITH 100;
+ALTER SEQUENCE allergen_id_seq RESTART WITH 100;
+ALTER SEQUENCE diet_type_id_seq RESTART WITH 100;
+ALTER SEQUENCE driver_rating_id_seq RESTART WITH 100;
+ALTER SEQUENCE order_offer_id_seq RESTART WITH 100;
+ALTER SEQUENCE repeating_order_id_seq RESTART WITH 100;

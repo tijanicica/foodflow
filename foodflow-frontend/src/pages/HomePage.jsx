@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from 'react-router-dom';
 import { getFilteredRestaurants, getAllergens, getDietTypes } from '@/services/api';
-import { SlidersHorizontal, UtensilsCrossed, X as XIcon, Search, Star as StarIcon, ChevronLeft, ChevronRight, CheckCircle, Circle } from 'lucide-react'; 
+import { SlidersHorizontal, Sparkles, MessageSquarePlus,UtensilsCrossed, X as XIcon, Search, Star as StarIcon, ChevronLeft, ChevronRight, CheckCircle, Circle } from 'lucide-react'; 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { AIChatModal } from '@/components/modals/AIChatModal'; // <-- VAŽAN IMPORT
+
 
 //================================================================================
 // POMOĆNE KOMPONENTE (kompletne)
@@ -216,16 +218,18 @@ export function HomePage() {
   const [filters, setFilters] = useState({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
   const [dietTypeMap, setDietTypeMap] = useState({});
   const [allergenMap, setAllergenMap] = useState({});
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showChatTooltip, setShowChatTooltip] = useState(false);
 
-  const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
-    setLoading(true);
+const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
+    // Ne setujemo loading ovde da ne bi bilo treperenja pri svakom kucanju
     try {
       const data = await getFilteredRestaurants(currentFilters);
       setFilteredRestaurants(data);
     } catch (error) { console.log("Error fetching restaurants", error); } 
-    finally { setLoading(false); }
   }, []);
 
+  // Inicijalno dohvatanje SVIH podataka i prikaz poruke
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -242,20 +246,53 @@ export function HomePage() {
       } catch (error) { console.error("Failed to load initial data", error); }
       finally { setLoading(false); }
     };
+    
     fetchInitialData();
-  }, []);
 
-  useEffect(() => {
-    const timerId = setTimeout(() => {
-      fetchFilteredRestaurants(filters);
-    }, 300);
-    return () => clearTimeout(timerId);
-  }, [filters, fetchFilteredRestaurants]);
+    // === ISPRAVLJENA LOGIKA ZA PORUKU - SADA JE NA PRAVOM MESTU ===
+    const hasSeenTooltip = sessionStorage.getItem('hasSeenAIChatTooltip');
+    if (!hasSeenTooltip) {
+        const showTimer = setTimeout(() => {
+            setShowChatTooltip(true);
+            sessionStorage.setItem('hasSeenAIChatTooltip', 'true');
+        }, 2500); // Malo duže čekanje
+        const hideTimer = setTimeout(() => {
+            setShowChatTooltip(false);
+        }, 10000); 
+
+        return () => {
+            clearTimeout(showTimer);
+            clearTimeout(hideTimer);
+        };
+    }
+  }, []); // Ovaj hook se izvršava samo jednom
   
   const highestRated = useMemo(() => 
     [...allRestaurants].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10),
     [allRestaurants]
   );
+
+   useEffect(() => {
+    // === POČETAK NOVE LOGIKE ZA PORUKU ===
+    const hasSeenTooltip = sessionStorage.getItem('hasSeenAIChatTooltip');
+    if (!hasSeenTooltip) {
+        // Pokaži poruku nakon 2 sekunde
+        const showTimer = setTimeout(() => {
+            setShowChatTooltip(true);
+            sessionStorage.setItem('hasSeenAIChatTooltip', 'true');
+        }, 2000);
+        // Sakrij poruku nakon dodatnih 8 sekundi
+        const hideTimer = setTimeout(() => {
+            setShowChatTooltip(false);
+        }, 10000); // 2s + 8s = 10s
+
+        return () => {
+            clearTimeout(showTimer);
+            clearTimeout(hideTimer);
+        };
+    }
+    // === KRAJ NOVE LOGIKE ===
+  }, []);
   
   const handleSearchChange = (e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }));
   const handleApplyModalFilters = (modalFilters) => setFilters(prev => ({ ...prev, ...modalFilters }));
@@ -327,12 +364,47 @@ export function HomePage() {
                 </AnimatePresence>
             </div>
         </div>
-      </main>
+    </main>
+
+      <Footer />
 
       <AnimatePresence>
         {isFilterModalOpen && <FilterModal isOpen={isFilterModalOpen} onClose={() => setFilterModalOpen(false)} onApply={handleApplyModalFilters} initialFilters={filters} />}
+        {isChatOpen && <AIChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
       </AnimatePresence>
-      <Footer />
+
+      <div className="fixed bottom-6 right-6 z-40">
+        <AnimatePresence>
+            {showChatTooltip && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                    className="absolute bottom-full right-0 mb-3 bg-white text-gray-800 p-3 rounded-lg shadow-lg w-64"
+                >
+                    <p className="font-semibold flex items-center gap-2">
+                        <MessageSquarePlus size={18} className="text-brand-primary"/>
+                        Need a recommendation?
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">Click here to ask our AI assistant!</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        <motion.div
+          initial={{ scale: 0, y: 50 }}
+          animate={{ scale: 1, y: 0 }}
+          transition={{ delay: 0.5, type: 'spring', stiffness: 150 }}
+        >
+          <Button 
+              onClick={() => { setIsChatOpen(true); setShowChatTooltip(false); }}
+              className="rounded-full h-16 w-16 bg-brand-primary shadow-lg hover:bg-brand-primary/90"
+          >
+              <Sparkles className="h-8 w-8 text-white" />
+          </Button>
+        </motion.div>
+      </div>
     </div>
   );
 }
