@@ -405,16 +405,20 @@ export const getTrackingInfo = async (orderId) => {
         throw error;
     }
 };
-
-export const getMyAnalytics = async () => {
+export const getMyAnalytics = async (params) => { // Prihvata objekat sa parametrima
     try {
-        const response = await apiClient.get('/analytics/my-analytics');
+        // Prosleđujemo 'params' objekat direktno u config.
+        // Axios će ga automatski formatirati u "?period=30d"
+        const response = await apiClient.get('/analytics/my-analytics', { params });
         return response.data;
     } catch (error) {
-        console.error("Error fetching analytics:", error);
+        // Dodajemo bolji log za buduće debagovanje
+        console.error("Error fetching analytics: ", error);
         throw error;
     }
 };
+
+
 
 export const getMyProfile = async () => {
     try {

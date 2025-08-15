@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 public class OrderSummaryDTO {
     private Long id;
     private String restaurantName;
+    private String restaurantImageUrl; // <-- DODAJEMO NOVO POLJE
+
     private LocalDateTime creationDate;
     private LocalDateTime scheduledFor; // Dodajemo i ovo za scheduled tab
     private BigDecimal totalPrice;

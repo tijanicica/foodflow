@@ -17,6 +17,7 @@ public class AddressDTO {
     private String nickname;
     private String postalCode;
 
+
     // Statička metoda za laku konverziju iz entiteta u DTO
     public static AddressDTO fromEntity(Address address) {
         return new AddressDTO(

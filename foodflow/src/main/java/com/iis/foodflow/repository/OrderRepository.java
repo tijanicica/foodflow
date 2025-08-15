@@ -129,4 +129,25 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // ===================================
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.customer = :customer AND o.status = 'DELIVERED' AND o.creationDate >= :since")
+    Long countDeliveredOrdersForCustomerSince(@Param("customer") Customer customer, @Param("since") LocalDateTime since);
+
+    @Query("SELECT SUM(o.totalPrice) FROM Order o WHERE o.customer = :customer AND o.status = 'DELIVERED' AND o.creationDate >= :since")
+    Optional<BigDecimal> sumTotalPriceForCustomerSince(@Param("customer") Customer customer, @Param("since") LocalDateTime since);
+
+    @Query("SELECT oi.menuItemVersion.menuVersion.menu.restaurant.name FROM OrderItem oi WHERE oi.order.customer = :customer AND oi.order.status = 'DELIVERED' AND oi.order.creationDate >= :since GROUP BY oi.menuItemVersion.menuVersion.menu.restaurant.name ORDER BY COUNT(oi) DESC LIMIT 1")
+    Optional<String> findFavoriteRestaurantSince(@Param("customer") Customer customer, @Param("since") LocalDateTime since);
+
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (o.delivered_at - o.creation_date))) FROM orders o WHERE o.customer_id = :customerId AND o.status = 'DELIVERED' AND o.delivered_at IS NOT NULL AND o.creation_date >= :since", nativeQuery = true)
+    Optional<Double> getAverageDeliveryTimeInSecondsSince(@Param("customerId") Long customerId, @Param("since") LocalDateTime since);
+
+    @Query("SELECT oi.menuItemVersion.menuVersion.menu.restaurant.name, SUM(oi.menuItemVersion.price * oi.quantity) as totalValue FROM OrderItem oi WHERE oi.order.customer = :customer AND oi.order.status = 'DELIVERED' AND oi.order.creationDate >= :since GROUP BY oi.menuItemVersion.menuVersion.menu.restaurant.name ORDER BY totalValue DESC LIMIT 5")
+    List<Object[]> findTop5SpendingByCategorySince(@Param("customer") Customer customer, @Param("since") LocalDateTime since);
+
+    // Dinamički upit za grafikon potrošnje
+    @Query(value = "SELECT TO_CHAR(creation_date, :dateFormat) as time_point, SUM(total_price) as amount " +
+            "FROM orders WHERE customer_id = :customerId AND status = 'DELIVERED' AND creation_date >= :since " +
+            "GROUP BY time_point ORDER BY MIN(creation_date)", nativeQuery = true)
+    List<Object[]> findSpendingOverTimeSince(@Param("customerId") Long customerId, @Param("since") LocalDateTime since, @Param("dateFormat") String dateFormat);
+
 }

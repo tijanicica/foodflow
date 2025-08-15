@@ -48,18 +48,25 @@ public class AuthService {
 
         Customer savedCustomer = customerRepository.save(customer);
 
-        // 4. Kreiranje i povezivanje adrese
         AddressRequest addressDto = request.getAddress();
-        Address address = new Address();
-        address.setNickname(addressDto.getNickname());
-        address.setCountry(addressDto.getCountry());
-        address.setCity(addressDto.getCity());
-        address.setStreet(addressDto.getStreet());
-        address.setStreetNumber(addressDto.getStreetNumber());
-        address.setPostalCode(addressDto.getPostalCode());
-        address.setCustomer(savedCustomer); // Povezujemo adresu sa upravo sačuvanim kupcem
+        if (addressDto != null) { // Dobra praksa je proveriti da li je adresa poslata
+            Address address = new Address();
+            address.setNickname(addressDto.getNickname());
+            address.setCountry(addressDto.getCountry());
+            address.setCity(addressDto.getCity());
+            address.setStreet(addressDto.getStreet());
+            address.setStreetNumber(addressDto.getStreetNumber());
+            address.setPostalCode(addressDto.getPostalCode());
 
-        addressRepository.save(address);
+            // --- KLJUČNA IZMENA JE OVDE ---
+            // Postavljamo koordinate koje su stigle sa frontenda
+            address.setLatitude(addressDto.getLatitude());
+            address.setLongitude(addressDto.getLongitude());
+
+            address.setCustomer(savedCustomer);
+
+            addressRepository.save(address);
+        }
 
         return savedCustomer;
     }

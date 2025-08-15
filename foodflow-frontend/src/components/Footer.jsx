@@ -1,14 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Vraćamo Link
 import { Facebook, Twitter, Instagram } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 export const Footer = () => {
-  // Pomoćna funkcija za mock linkove
-  const handleMockLinkClick = (e) => {
-    e.preventDefault(); // Sprečava da se stranica osveži
-    toast.info("This page is under construction!");
-  };
 
   return (
     <footer className="bg-[#4A4A4A] text-white">
@@ -26,15 +20,14 @@ export const Footer = () => {
           </div>
 
           {/* Quick Links */}
-          <div>
+        <div>
             <h3 className="font-bold text-lg mb-4">Quick Links</h3>
             <ul className="space-y-2 text-slate-300">
-              <li><a href="#" onClick={handleMockLinkClick} className="hover:text-[#D4A056] transition-colors">About Us</a></li>
-              <li><a href="#" onClick={handleMockLinkClick} className="hover:text-[#D4A056] transition-colors">FAQ</a></li>
-              <li><a href="#" onClick={handleMockLinkClick} className="hover:text-[#D4A056] transition-colors">Contact</a></li>
+              <li><Link to="/about" className="hover:text-[#D4A056] transition-colors">About Us</Link></li>
+              <li><Link to="/faq" className="hover:text-[#D4A056] transition-colors">FAQ</Link></li>
+              <li><Link to="/contact" className="hover:text-[#D4A056] transition-colors">Contact</Link></li>
             </ul>
           </div>
-
           {/* Social Media */}
           <div>
             <h3 className="font-bold text-lg mb-4">Follow Us</h3>
@@ -47,10 +40,10 @@ export const Footer = () => {
         </div>
 
         {/* Donja linija */}
-        <div className="mt-12 pt-8 border-t border-slate-700 text-center text-slate-400 text-sm">
+    <div className="mt-12 pt-8 border-t border-slate-700 text-center text-slate-400 text-sm">
           <p>&copy; {new Date().getFullYear()} FoodFlow. All Rights Reserved.</p>
           <p className="mt-1">
-            <a href="#" onClick={handleMockLinkClick} className="hover:text-white">Privacy Policy</a> &middot; <a href="#" onClick={handleMockLinkClick} className="hover:text-white">Terms of Service</a>
+            <Link to="/privacy-policy" className="hover:text-white">Privacy Policy</Link> &middot; <Link to="/terms-of-service" className="hover:text-white">Terms of Service</Link>
           </p>
         </div>
       </div>

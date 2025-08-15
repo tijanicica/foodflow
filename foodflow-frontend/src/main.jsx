@@ -27,10 +27,18 @@ import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
 import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 import { MyProfilePage } from './pages/MyProfilePage';
+
 import { ManagerDashboard } from './pages/ManagerDashboard.jsx'; // <-- 1. DODAJTE OVAJ IMPORT
 import { ManagerProfilePage } from './pages/ManagerProfilePage.jsx'; // <-- DODAJTE OVAJ IMPORT
 import { ManagerMenuPage } from './pages/ManagerMenuPage.jsx'; // <-- DODAJTE OVAJ IMPORT
 import { ManagerEditMenuPage } from './pages/ManagerEditMenuPage.jsx';
+
+import { AboutUsPage } from './pages/AboutUsPage.jsx';
+import { FaqPage } from './pages/FaqPage.jsx';
+import { ContactPage } from './pages/ContactPage.jsx';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage.jsx';
+import { TermsOfServicePage } from './pages/TermsOfServicePage.jsx';
+
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -103,6 +111,7 @@ const router = createBrowserRouter([
     element: <MyProfilePage />,
   },
    {
+
     path: "/manager/dashboard",
     element: <ManagerDashboard />,
   },
@@ -119,6 +128,26 @@ const router = createBrowserRouter([
   {
     path: "/manager/menu/:menuVersionId",
     element: <ManagerEditMenuPage />,
+
+    path: "/about",
+    element: <AboutUsPage />,
+  },
+  {
+    path: "/faq",
+    element: <FaqPage />,
+  },
+  {
+    path: "/contact",
+    element: <ContactPage />,
+  },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/terms-of-service",
+    element: <TermsOfServicePage />,
+
   },
   // Ovde ćeš kasnije dodavati i druge rute
   // {
