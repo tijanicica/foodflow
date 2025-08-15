@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import { getActiveMenu } from '@/services/api';
 import { useCart } from '@/context/CartContext';
 import { Navbar } from '@/components/Navbar';
-import { Star, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Footer } from '@/components/Footer';
+import { Star, Clock, ShoppingCart, Check, Utensils } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// --- HELPER FUNCTION FOR AVAILABILITY CHECK ---
+//================================================================================
+// POMOĆNE FUNKCIJE I KOMPONENTE (kompletne)
+//================================================================================
+
 const isItemAvailable = (item) => {
     const isTimeLimited = item.timeFrom && item.timeTo;
     if (!isTimeLimited) {
@@ -20,7 +24,6 @@ const isItemAvailable = (item) => {
     return item.available && isAvailableByTime;
 };
 
-// --- MENU ITEM CARD COMPONENT (IMPROVED) ---
 const MenuItemCard = ({ item, restaurant }) => {
     const [quantity, setQuantity] = useState(1);
     const [isAdded, setIsAdded] = useState(false);
@@ -29,117 +32,122 @@ const MenuItemCard = ({ item, restaurant }) => {
     const handleAddToCart = () => {
         addToCart(item, quantity, restaurant);
         setIsAdded(true);
-        setTimeout(() => {
-            setIsAdded(false);
-        }, 2000); // Revert button state after 2 seconds
+        setTimeout(() => setIsAdded(false), 2000);
     };
     
     const available = isItemAvailable(item);
     const imageUrl = item.imageUrl || "https://via.placeholder.com/150";
 
     return (
-        <div 
-            className={`
-                bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row items-start sm:items-center gap-4
-                transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.01]
-                ${!available ? 'opacity-50' : ''} 
-                ${item.popular && available ? 'border-yellow-400 border-2' : ''}
-            `}
+        <motion.div 
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={`bg-white rounded-xl shadow-sm border flex flex-col sm:flex-row items-stretch gap-5 p-4 transition-all duration-300 ${!available ? 'opacity-60' : 'hover:shadow-lg'}`}
         >
-          <img src={imageUrl} alt={item.name} className="w-full sm:w-28 h-40 sm:h-28 rounded-md object-cover" />
+            <img src={imageUrl} alt={item.name} className="w-full sm:w-40 h-40 sm:h-auto rounded-lg object-cover flex-shrink-0" />
       
-            <div className="flex-grow">
-                <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-bold text-brand-primary">{item.name}</h3>
-                    {item.popular && (
-                        <div className="flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">
-                            <Star size={12} />
-                            <span>POPULAR</span>
-                        </div>
+            <div className="flex flex-col flex-grow">
+                <div className="flex-grow">
+                    <div className="flex justify-between items-start">
+                        <h3 className="text-xl font-bold text-brand-primary">{item.name}</h3>
+                        {item.popular && available && (
+                            <div className="flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 ml-2">
+                                <Star size={12} /><span>POPULAR</span>
+                            </div>
+                        )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mt-3">
+                        {item.dietTypes?.map(diet => ( <span key={diet} className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">{diet}</span> ))}
+                        {item.allergens?.map(allergen => ( <span key={allergen} className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Contains: {allergen}</span> ))}
+                    </div>
+                     {item.timeFrom && item.timeTo && (
+                         <p className="text-xs text-blue-600 font-semibold mt-2 flex items-center gap-1">
+                            <Clock size={14} /> Available from {item.timeFrom.slice(0, 5)} to {item.timeTo.slice(0, 5)}
+                         </p>
                     )}
                 </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
 
-                <div className="flex flex-wrap gap-2 mt-3">
-                    {item.dietTypes?.map(diet => (
-                        <span key={diet} className="px-2.5 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">{diet}</span>
-                    ))}
-                    {item.allergens?.map(allergen => (
-                        <span key={allergen} className="px-2.5 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Contains: {allergen}</span>
-                    ))}
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 pt-4 border-t border-dashed">
+                    <p className="text-2xl font-bold text-brand-primary mb-3 sm:mb-0">{item.price.toFixed(2)} <span className="text-lg font-normal text-gray-500">RSD</span></p>
+
+                    {available ? (
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={isAdded}>-</Button>
+                            <span className="font-bold w-10 text-center text-xl">{quantity}</span>
+                            <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => setQuantity(q => q + 1)} disabled={isAdded}>+</Button>
+                            <Button className="h-10 px-4 w-32 bg-brand-primary hover:bg-brand-primary/90" onClick={handleAddToCart} disabled={isAdded}>
+                                <AnimatePresence mode="wait">
+                                    {isAdded ? (
+                                        <motion.span key="added" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center justify-center"><Check className="mr-2"/>Added</motion.span>
+                                    ) : (
+                                        <motion.span key="add" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center justify-center"><ShoppingCart className="mr-2"/>Add</motion.span>
+                                    )}
+                                </AnimatePresence>
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="text-sm font-semibold text-red-600">Currently Unavailable</div>
+                    )}
                 </div>
-                
-                {item.timeFrom && item.timeTo && (
-                     <p className="text-xs text-blue-600 font-semibold mt-2 flex items-center gap-1">
-                        <Clock size={14} />
-                        Available from {item.timeFrom.slice(0, 5)} to {item.timeTo.slice(0, 5)}
-                     </p>
-                )}
-                
-                <p className="text-lg font-bold text-brand-primary mt-3">{item.price.toFixed(2)} RSD</p>
             </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-center ml-auto">
-                {available ? (
-                    <>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={isAdded}>-</Button>
-                        <span className="font-bold w-8 text-center text-lg">{quantity}</span>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => q + 1)} disabled={isAdded}>+</Button>
-                        <Button 
-                            className={`h-10 px-6 transition-colors ${isAdded ? 'bg-green-500 hover:bg-green-600' : 'bg-brand-primary'}`} 
-                            onClick={handleAddToCart}
-                            disabled={isAdded}
-                        >
-                            {isAdded ? '✓ Added' : 'Add'}
-                        </Button>
-                    </>
-                ) : (
-                    <div className="text-sm font-semibold text-red-500 bg-red-100 px-3 py-1 rounded-md">
-                        Currently Unavailable
-                    </div>
-                )}
-            </div>
-        </div>
+        </motion.div>
     );
 };
 
-// --- SKELETON COMPONENT FOR LOADING EFFECT ---
 const MenuPageSkeleton = () => (
     <div className="w-full min-h-screen bg-brand-background-light">
         <Navbar />
-        <header className="h-56 bg-gray-300 animate-pulse flex items-end p-8">
-            <div className="space-y-3">
-                <div className="h-12 w-80 bg-gray-400 rounded"></div>
-                <div className="h-6 w-24 bg-gray-400 rounded"></div>
+        <header className="h-64 bg-gray-300 animate-pulse flex items-end p-8">
+            <div className="space-y-4">
+                <div className="h-14 w-80 bg-gray-400 rounded-lg"></div>
+                <div className="h-6 w-64 bg-gray-400 rounded"></div>
             </div>
         </header>
-        <main className="container mx-auto px-4 md:px-6 py-8">
-            <div className="h-12 w-full bg-gray-200 rounded-md mb-8"></div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {[...Array(6)].map((_, i) => (
-                     <div key={i} className="bg-white p-4 rounded-lg shadow-sm border flex gap-4 animate-pulse">
-                        <div className="w-28 h-28 rounded-md bg-gray-200"></div>
+        <main className="container mx-auto px-4 md:px-6 py-10">
+            <div className="h-12 w-full bg-gray-200 rounded-full mb-8"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {[...Array(4)].map((_, i) => (
+                     <div key={i} className="bg-white p-4 rounded-xl shadow-sm border flex gap-5 animate-pulse">
+                        <div className="w-40 h-auto rounded-lg bg-gray-200 flex-shrink-0"></div>
                         <div className="flex-grow space-y-3">
-                            <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                            <div className="h-6 bg-gray-200 rounded w-3/4"></div>
                             <div className="h-4 bg-gray-200 rounded w-full"></div>
                             <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                            <div className="h-8 bg-gray-200 rounded w-1/4 mt-2"></div>
+                            <div className="flex justify-between items-center mt-8 pt-4 border-t border-dashed">
+                                <div className="h-8 w-1/3 bg-gray-200 rounded"></div>
+                                <div className="h-10 w-32 bg-gray-200 rounded-md"></div>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
         </main>
+        <Footer />
     </div>
 );
 
-// --- MAIN PAGE COMPONENT (IMPROVED) ---
+const EmptyState = ({ message }) => (
+    <div className="text-center py-16 px-6 bg-white rounded-xl border-2 border-dashed h-full flex flex-col justify-center items-center">
+        <Utensils className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-4 text-xl font-semibold text-gray-800">No Items Found</h3>
+        <p className="mt-1 text-gray-500">{message}</p>
+    </div>
+);
+
+//================================================================================
+// GLAVNA KOMPONENTA STRANICE
+//================================================================================
 export function MenuPage() {
     const { restaurantId } = useParams();
     const [searchParams] = useSearchParams();
     const [menuData, setMenuData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeCategory, setActiveCategory] = useState('MAIN_COURSE');
+    const [activeCategory, setActiveCategory] = useState(null);
 
     const groupedAndSortedItems = useMemo(() => {
         if (!menuData) return {};
@@ -161,11 +169,19 @@ export function MenuPage() {
         return grouped;
     }, [menuData]);
 
-    const categories = Object.keys(groupedAndSortedItems);
     const sortedCategories = useMemo(() => {
-        const order = ['MAIN_COURSE', 'DESSERT', 'DRINK'];
-        return categories.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    }, [categories]);
+        if (!menuData) return [];
+        const order = ['MAIN_COURSE', 'SIDE_DISH', 'SALAD', 'DESSERT', 'DRINK'];
+        const categories = Object.keys(groupedAndSortedItems);
+        if(categories.length > 0 && !activeCategory) {
+            setActiveCategory(categories[0]);
+        }
+        return categories.sort((a, b) => {
+            const indexA = order.indexOf(a) === -1 ? order.length : order.indexOf(a);
+            const indexB = order.indexOf(b) === -1 ? order.length : order.indexOf(b);
+            return indexA - indexB;
+        });
+    }, [groupedAndSortedItems, menuData, activeCategory]);
 
     useEffect(() => {
         const fetchMenu = async () => {
@@ -177,6 +193,10 @@ export function MenuPage() {
                 setLoading(true);
                 const data = await getActiveMenu(restaurantId, filters);
                 setMenuData(data);
+                if (data?.items.length > 0 && !activeCategory) {
+                    const firstCategory = data.items[0].type || 'MAIN_COURSE';
+                    setActiveCategory(firstCategory);
+                }
             } catch (err) {
                 console.error("Failed to fetch menu:", err);
                 setError("Could not load menu. Please try again later.");
@@ -185,73 +205,80 @@ export function MenuPage() {
             }
         };
         fetchMenu();
-    }, [restaurantId, searchParams]);
-
-    const headerImageUrl = menuData?.restaurantImageUrl || '';
+    }, [restaurantId, searchParams, activeCategory]);
     
     if (loading) return <MenuPageSkeleton />;
     if (error) return <div className="flex justify-center items-center h-screen text-red-500">{error}</div>;
 
     return (
-        <div className="w-full min-h-screen bg-brand-background-light">
+        <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
             <Navbar />
-            <header 
-                className="h-56 bg-gray-400 bg-center bg-cover flex items-end p-8" 
-                style={{backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${headerImageUrl})`}}
-            >
-                <div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-white">{menuData.restaurantName}</h1>
-                    <div className="flex items-center gap-4 mt-2 text-lg">
-                        <p className="text-yellow-300 flex items-center gap-1.5">
-                            <Star size={20} /> 
-                            {menuData.restaurantRating}
-                        </p>
-                        {menuData.openingTime && menuData.closingTime && (
-                            <p className="text-white flex items-center gap-1.5">
-                                <Clock size={18} /> 
-                                {menuData.openingTime.slice(0,5)} - {menuData.closingTime.slice(0,5)}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            </header>
-      
-            <main className="container mx-auto px-4 md:px-6 py-8">
-                {/* STICKY CATEGORY NAVIGATION */}
-                <nav className="sticky top-0 z-10 bg-brand-background-light/90 backdrop-blur-md flex justify-center gap-4 sm:gap-8 mb-8 border-b">
-                    {sortedCategories.map(category => (
-                        <button 
-                            key={category}
-                            onClick={() => setActiveCategory(category)}
-                            className={`py-3 px-2 sm:px-4 font-semibold capitalize transition-colors duration-200 ${activeCategory === category ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-gray-500 hover:text-brand-primary'}`}
-                        >
-                            {category.replace('_', ' ').toLowerCase()}s
-                        </button>
-                    ))}
-                </nav>
-                
-                {/* GRID LAYOUT FOR MENU ITEMS */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {groupedAndSortedItems[activeCategory]?.length > 0 ? (
-                        groupedAndSortedItems[activeCategory].map((item, index) => (
-                            // ANIMATION FOR EACH ITEM
+            <div className="flex-grow">
+                <header 
+                    className="h-64 bg-gray-400 bg-center bg-cover flex items-end" 
+                    style={{backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url(${menuData.restaurantImageUrl})`}}
+                >
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+                        className="container mx-auto px-4 md:px-6 py-8 text-white"
+                    >
+                        <h1 className="text-4xl md:text-6xl font-extrabold drop-shadow-lg">{menuData.restaurantName}</h1>
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-lg">
+                            <p className="flex items-center gap-1.5"><Star className="text-yellow-300" size={22}/> <span className="font-bold">{menuData.restaurantRating}</span></p>
+                            <p className="flex items-center gap-1.5"><Clock size={18}/> {menuData.openingTime.slice(0,5)} - {menuData.closingTime.slice(0,5)}</p>
+                        </div>
+                    </motion.div>
+                </header>
+          
+                <main className="container mx-auto px-4 md:px-6 py-10">
+                    <nav className="sticky top-16 z-30 bg-brand-background-light/90 backdrop-blur-md -mx-4 px-4 border-b">
+                        <div className="container mx-auto flex items-center gap-2 sm:gap-4 overflow-x-auto">
+                            {sortedCategories.map(category => (
+                                <button 
+                                    key={category}
+                                    onClick={() => setActiveCategory(category)}
+                                    className={`py-3 px-3 sm:px-4 font-semibold capitalize whitespace-nowrap transition-all duration-300 relative ${
+                                        activeCategory === category ? 'text-brand-primary' : 'text-gray-500 hover:text-brand-primary'
+                                    }`}
+                                >
+                                    {category.replace(/_/g, ' ').toLowerCase()}
+                                    {activeCategory === category && (
+                                        <motion.div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" layoutId="underline" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+                    
+                    <div className="mt-8">
+                        <AnimatePresence mode="wait">
                             <motion.div
-                                key={item.id}
+                                key={activeCategory}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
                             >
-                                <MenuItemCard 
-                                    item={item} 
-                                    restaurant={{ id: restaurantId, address: menuData.address, name: menuData.restaurantName, openingTime: menuData.openingTime, closingTime: menuData.closingTime }}
-                                />
+                                {(groupedAndSortedItems[activeCategory] || []).length > 0 ? (
+                                    groupedAndSortedItems[activeCategory].map((item) => (
+                                        <MenuItemCard 
+                                            key={item.id}
+                                            item={item} 
+                                            restaurant={{ id: restaurantId, address: menuData.address, name: menuData.restaurantName, openingTime: menuData.openingTime, closingTime: menuData.closingTime }}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="lg:col-span-2">
+                                        <EmptyState message="There are no items available in this category." />
+                                    </div>
+                                )}
                             </motion.div>
-                        ))
-                    ) : (
-                        <p className="text-center text-gray-500 mt-8 xl:col-span-2">No items match your criteria in this category.</p>
-                    )}
-                </div>
-            </main>
+                        </AnimatePresence>
+                    </div>
+                </main>
+            </div>
+            <Footer />
         </div>
     );
 }

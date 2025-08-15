@@ -344,10 +344,14 @@ public class OrderService {
 
     // Pomoćne metode za mapiranje
     private OrderSummaryDTO mapToOrderSummaryDTO(Order order) {
-        String restaurantName = order.getOrderItems().stream()
+
+        Restaurant restaurant = order.getOrderItems().stream()
                 .findFirst()
-                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getName())
-                .orElse("Unknown Restaurant");
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElse(null); // Vrati null ako nema stavki, da ne pukne aplikacija
+
+        String restaurantName = (restaurant != null) ? restaurant.getName() : "Unknown Restaurant";
+        String restaurantImageUrl = (restaurant != null) ? restaurant.getImageUrl() : null; // Dohvatamo i URL slike
 
         boolean hasOrderRating = order.getOrderRating() != null;
         boolean hasDriverRatingByCustomer = driverRatingRepository.existsByOrder_IdAndRatedByCustomerIsNotNull(order.getId());
@@ -357,6 +361,7 @@ public class OrderService {
         return new OrderSummaryDTO(
                 order.getId(),
                 restaurantName,
+                restaurantImageUrl, // <-- DODAJEMO SLIKU U KONSTRUKTOR
                 order.getCreationDate(),
                 order.getScheduledFor(),
                 order.getTotalPrice(),
@@ -366,14 +371,17 @@ public class OrderService {
     }
 
     private RepeatingOrderTemplateDTO mapToRepeatingOrderTemplateDTO(RepeatingOrder template) {
-        String restaurantName = template.getOriginalOrder().getOrderItems().stream()
+        Restaurant restaurant = template.getOriginalOrder().getOrderItems().stream()
                 .findFirst()
-                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getName())
-                .orElse("Unknown Restaurant");
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElse(null);
 
+        String restaurantName = (restaurant != null) ? restaurant.getName() : "Unknown Restaurant";
+        String restaurantImageUrl = (restaurant != null) ? restaurant.getImageUrl() : null;
         return new RepeatingOrderTemplateDTO(
                 template.getId(),
                 restaurantName,
+                restaurantImageUrl, // <-- DODAJEMO SLIKU
                 template.getRepeatType(),
                 template.getDayOfWeek(),
                 template.getDeliveryTime(),
@@ -474,6 +482,8 @@ public class OrderService {
     }
 
 
+    // ... unutar OrderService.java ...
+
     @Transactional(readOnly = true)
     public TrackOrderDTO getTrackingInfo(Long orderId, Customer customer) {
         Order order = orderRepository.findById(orderId)
@@ -490,13 +500,29 @@ public class OrderService {
 
         Driver driver = order.getDriver();
         Address customerAddress = order.getAddress();
-        // Dohvatamo adresu restorana preko prve stavke
-        Address restaurantAddress = order.getOrderItems().stream().findFirst()
-                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getAddress())
-                .orElseThrow(() -> new IllegalStateException("Restaurant address not found."));
+
+        // === POČETAK IZMENA ===
+
+        // Dohvatamo ceo restoran objekat, ne samo adresu
+        Restaurant restaurant = order.getOrderItems().stream().findFirst()
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElseThrow(() -> new IllegalStateException("Restaurant not found."));
+        Address restaurantAddress = restaurant.getAddress();
+
+        // Mapiramo stavke porudžbine u DTO
+        List<TrackOrderDTO.OrderItemSummaryDTO> itemDTOs = order.getOrderItems().stream()
+                .map(item -> new TrackOrderDTO.OrderItemSummaryDTO(
+                        item.getMenuItemVersion().getMenuItem().getName(),
+                        item.getQuantity()
+                ))
+                .collect(Collectors.toList());
+
+        // === KRAJ IZMENA ===
 
         return TrackOrderDTO.builder()
                 .orderId(order.getId())
+                .restaurantName(restaurant.getName()) // <-- DODATO
+                .orderItems(itemDTOs) // <-- DODATO
                 .driverName(driver.getFirstName() + " " + driver.getLastName().charAt(0) + ".")
                 .customerName(customer.getFirstName() + " " + customer.getLastName())
                 .customerAddress(customerAddress.toString())
