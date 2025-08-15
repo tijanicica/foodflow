@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { EtaCountdown } from '../components/EtaCountdown';
+import { motion } from 'framer-motion';
 
 // WebSocket i API
 import Stomp from 'stompjs';
@@ -12,7 +13,7 @@ import { getOrderDetails, cancelDelivery,getDriverInfo, startSimulation,markOrde
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
-import { FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
+import { FiEdit3,FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
 
 
 const predefinedReasons = [
