@@ -12,13 +12,9 @@ import { createOrder, getMyAddresses, getMyCoupons } from '@/services/api';
 import { AddNewAddressModal } from '@/components/modals/AddNewAddressModal';
 import { ScheduleDeliveryModal } from '@/components/modals/ScheduleDeliveryModal';
 import { RepeatOrderModal } from '@/components/modals/RepeatOrderModal';
-import { Loader2, X, Calendar, Repeat, PlusCircle, Home as HomeIcon, Briefcase, Building } from 'lucide-react';
+import { Loader2, X, Calendar, Repeat, PlusCircle, Home as HomeIcon, Briefcase, Building, Phone, Ban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Footer } from '@/components/Footer';
-
-//================================================================================
-// POMOĆNE KOMPONENTE (kompletne)
-//================================================================================
 
 const OrderItemRow = ({ item }) => (
     <div className="flex items-center gap-4 py-3">
@@ -54,9 +50,6 @@ const InfoBox = ({ type, text, onClear }) => (
     </motion.div>
 );
 
-//================================================================================
-// GLAVNA KOMPONENTA
-//================================================================================
 export function CheckoutPage() {
     const { cartItems, restaurantInfo, clearCart } = useCart();
     const navigate = useNavigate();
@@ -74,9 +67,7 @@ export function CheckoutPage() {
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     
     useEffect(() => {
-        if (!restaurantInfo || cartItems.length === 0) {
-            navigate('/home', { replace: true });
-        }
+        if (!restaurantInfo || cartItems.length === 0) { navigate('/home', { replace: true }); }
     }, [cartItems, restaurantInfo, navigate]);
 
     useEffect(() => {
@@ -97,6 +88,16 @@ export function CheckoutPage() {
     const total = appliedCoupon ? subtotal : subtotal + deliveryFee;
     const remainingCash = paymentMethod === 'COMBINED' && cardAmount ? (total - parseFloat(cardAmount)) : 0;
     
+    const driverNotes = [
+        { text: "Call me when you arrive", icon: <Phone size={16}/> },
+        { text: "Leave order at the door", icon: <HomeIcon size={16}/> }, // Zamenjeno sa HomeIcon
+        { text: "Intercom is not working", icon: <Ban size={16}/> },
+    ];
+
+    const handleNoteClick = (note) => {
+        setNoteForDriver(prev => prev ? `${prev}. ${note}` : note);
+    };
+
     const handleAddressAdded = (newAddress) => {
         setSavedAddresses(prev => [...prev, newAddress]);
         setSelectedAddressId(newAddress.id.toString());
@@ -108,14 +109,9 @@ export function CheckoutPage() {
              return toast.error("Please enter a valid amount for card payment.");
         }
         const orderData = {
-            restaurantId: restaurantInfo.id,
-            addressId: selectedAddressId,
-            items: cartItems.map(item => ({ menuItemVersionId: item.id, quantity: item.quantity })),
-            noteForRestaurant, noteForDriver,
-            paymentType: paymentMethod,
-            cardAmount: paymentMethod === 'COMBINED' ? parseFloat(cardAmount) : null,
-            couponCode: appliedCoupon ? selectedCouponCode : null,
-            orderType: scheduleInfo ? 'SCHEDULED' : repeatInfo ? 'REPEATING' : 'REGULAR',
+            restaurantId: restaurantInfo.id, addressId: selectedAddressId, items: cartItems.map(item => ({ menuItemVersionId: item.id, quantity: item.quantity })),
+            noteForRestaurant, noteForDriver, paymentType: paymentMethod, cardAmount: paymentMethod === 'COMBINED' ? parseFloat(cardAmount) : null,
+            couponCode: appliedCoupon ? selectedCouponCode : null, orderType: scheduleInfo ? 'SCHEDULED' : repeatInfo ? 'REPEATING' : 'REGULAR',
             scheduleInfo, repeatInfo,
         };
         setIsPlacingOrder(true);
@@ -144,7 +140,6 @@ export function CheckoutPage() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                        {/* LEVA KOLONA (Sadržaj koji se skroluje) */}
                         <div className="lg:col-span-3 space-y-6">
                             <div className="bg-white p-6 rounded-xl shadow-sm">
                                 <h2 className="text-2xl font-bold text-[#4A4A4A] mb-4 flex items-center"><span className="bg-brand-primary text-white rounded-full h-8 w-8 text-lg flex items-center justify-center mr-3">1</span> Delivery Details</h2>
@@ -182,20 +177,27 @@ export function CheckoutPage() {
 
                              <div className="bg-white p-6 rounded-xl shadow-sm">
                                <h2 className="text-2xl font-bold text-[#4A4A4A] mb-4 flex items-center"><span className="bg-brand-primary text-white rounded-full h-8 w-8 text-lg flex items-center justify-center mr-3">3</span> Notes</h2>
-                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                   <Textarea placeholder="Note for restaurant..." value={noteForRestaurant} onChange={e => setNoteForRestaurant(e.target.value)} />
-                                   <Textarea placeholder="Note for driver..." value={noteForDriver} onChange={e => setNoteForDriver(e.target.value)} />
+                               <div className="space-y-4">
+                                   <Textarea placeholder="Note for restaurant (e.g. 'no onions')..." value={noteForRestaurant} onChange={e => setNoteForRestaurant(e.target.value)} />
+                                   <div>
+                                       <Textarea placeholder="Note for driver..." value={noteForDriver} onChange={e => setNoteForDriver(e.target.value)} />
+                                       <div className="flex flex-wrap gap-2 mt-2">
+                                           {driverNotes.map(note => (
+                                               <Button key={note.text} variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => handleNoteClick(note.text)}>
+                                                   {note.icon} <span className="ml-2">{note.text}</span>
+                                               </Button>
+                                           ))}
+                                       </div>
+                                   </div>
                                </div>
                             </div>
                         </div>
 
-                        {/* DESNA KOLONA ("Lepljiva") */}
                         <aside className="lg:col-span-2 lg:sticky lg:top-24 space-y-6">
                             <div className="bg-white p-6 rounded-xl shadow-sm border">
                                 <h2 className="text-2xl font-bold mb-2">Order Summary</h2>
                                 <p className="text-brand-primary font-semibold mb-4 text-xl">from {restaurantInfo.name}</p>
                                 <div className="max-h-64 overflow-y-auto divide-y divide-dashed pr-2">{cartItems.map(item => <OrderItemRow key={item.id} item={item} />)}</div>
-                                
                                 <div className="mt-4">
                                     {savedCoupons.length > 0 ? (
                                         <Select onValueChange={setSelectedCouponCode} value={selectedCouponCode}>
@@ -206,7 +208,6 @@ export function CheckoutPage() {
                                         </Select>
                                     ) : ( <p className="text-sm text-center text-gray-500 py-2">No available coupons.</p> )}
                                 </div>
-
                                 <div className="space-y-2 mt-6 text-md border-t pt-4">
                                     <div className="flex justify-between"><span>Subtotal</span><span>{subtotal.toFixed(2)} RSD</span></div>
                                     <div className="flex justify-between"><span>Delivery</span><span className={appliedCoupon ? 'line-through text-gray-400' : ''}>{deliveryFee.toFixed(2)} RSD</span></div>
@@ -222,7 +223,6 @@ export function CheckoutPage() {
                 </main>
                 <Footer />
             </div>
-
             <AddNewAddressModal isOpen={modalOpen === 'address'} onClose={() => setModalOpen(null)} onAddressAdded={handleAddressAdded} />
             <ScheduleDeliveryModal isOpen={modalOpen === 'schedule'} onClose={() => setModalOpen(null)} onConfirm={(data) => { setScheduleInfo(data); setRepeatInfo(null); setModalOpen(null); toast.success('Delivery scheduled!'); }} openingTime={restaurantInfo?.openingTime} closingTime={restaurantInfo?.closingTime} />
             <RepeatOrderModal isOpen={modalOpen === 'repeat'} onClose={() => setModalOpen(null)} onSave={(data) => { setRepeatInfo(data); setScheduleInfo(null); setModalOpen(null); toast.success('Repetition set!'); }} openingTime={restaurantInfo?.openingTime} closingTime={restaurantInfo?.closingTime} />
