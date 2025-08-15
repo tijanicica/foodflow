@@ -6,6 +6,7 @@ import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.order.RepeatingOrder;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
+import com.iis.foodflow.model.user.Manager;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -99,4 +100,33 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY oi.menuItemVersion.menuVersion.menu.restaurant.name " +
             "ORDER BY SUM(oi.menuItemVersion.price * oi.quantity) DESC LIMIT 5") // <-- LIMIT 5
     List<Object[]> findTop5SpendingByCategory(@Param("customer") Customer customer);
+
+    // Nove metode za analitiku menadžera
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate")
+    List<Order> findOrdersByManagerAndDate(@Param("manager") com.iis.foodflow.model.user.Manager manager, @Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT oi.menuItemVersion.menuItem.name, COUNT(o.id) as orderCount " +
+            "FROM Order o JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate " +
+            "GROUP BY oi.menuItemVersion.menuItem.name " +
+            "ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItems(@Param("manager") com.iis.foodflow.model.user.Manager manager, @Param("startDate") LocalDateTime startDate);
+    // ===== DODAJ OVE DVE METODE =====
+
+    // Novi upit za filtriranje porudžbina po restoranu
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate AND m.restaurant.id = :restaurantId")
+    List<Order> findOrdersByManagerAndDateAndRestaurant(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
+
+    // Novi upit za filtriranje najprodavanijih stavki po restoranu
+    @Query("SELECT oi.menuItemVersion.menuItem.name, COUNT(o.id) as orderCount " +
+            "FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate AND m.restaurant.id = :restaurantId " +
+            "GROUP BY oi.menuItemVersion.menuItem.name " +
+            "ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItemsByRestaurant(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
+
+    // ===================================
+
 }

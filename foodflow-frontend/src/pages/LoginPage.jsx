@@ -41,9 +41,11 @@ export function LoginPage() {
         case 'ROLE_OPERATOR':
           navigate('/operator/dashboard'); // Primjer rute za operatora
           break;
+         // ===== ISPRAVKA JE OVDE =====
         case 'ROLE_MANAGER':
-          navigate('/manager/overview'); // Primjer rute za menadžera
+          navigate('/manager/dashboard'); // Bilo je '/manager/overview'
           break;
+        // ============================
         case 'ROLE_ADMINISTRATOR':
           navigate('/admin/panel'); // Primjer rute za administratora
           break;

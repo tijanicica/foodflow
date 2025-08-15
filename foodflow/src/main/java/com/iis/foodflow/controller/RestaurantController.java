@@ -27,13 +27,13 @@ public class RestaurantController {
     }
 
     @GetMapping("/allergens")
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MANAGER')")
     public ResponseEntity<List<AllergenDTO>> getAllAllergens() {
         return ResponseEntity.ok(restaurantService.getAllAllergens());
     }
 
     @GetMapping("/diet-types")
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MANAGER')")
     public ResponseEntity<List<DietTypeDTO>> getAllDietTypes() {
         return ResponseEntity.ok(restaurantService.getAllDietTypes());
     }
