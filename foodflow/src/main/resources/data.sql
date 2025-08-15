@@ -791,25 +791,40 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
     (1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
 
+-- ===== PORUDŽBINA ZA TESTIRANJE "TRACK ON MAP" =====
 
--- Resetovanje sekvenci
-ALTER SEQUENCE customer_id_seq RESTART WITH 200;
-ALTER SEQUENCE driver_id_seq RESTART WITH 200;
-ALTER SEQUENCE operator_id_seq RESTART WITH 200;
-ALTER SEQUENCE manager_id_seq RESTART WITH 200;
-ALTER SEQUENCE administrator_id_seq RESTART WITH 200;
-ALTER SEQUENCE support_administrator_id_seq RESTART WITH 200;
-ALTER SEQUENCE address_id_seq RESTART WITH 200;
-ALTER SEQUENCE restaurant_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_version_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_item_id_seq RESTART WITH 200;
-ALTER SEQUENCE menu_item_version_id_seq RESTART WITH 200;
-ALTER SEQUENCE orders_id_seq RESTART WITH 200;
-ALTER SEQUENCE order_item_id_seq RESTART WITH 200;
-ALTER SEQUENCE problem_category_id_seq RESTART WITH 200;
-ALTER SEQUENCE allergen_id_seq RESTART WITH 200;
-ALTER SEQUENCE diet_type_id_seq RESTART WITH 200;
-ALTER SEQUENCE driver_rating_id_seq RESTART WITH 200;
-ALTER SEQUENCE order_offer_id_seq RESTART WITH 200;
-ALTER SEQUENCE repeating_order_id_seq RESTART WITH 200;
+-- Porudžbina sa ID-jem 150, status je PICKED_UP
+-- Dodeljena je vozaču sa ID-jem 9 (Marko Marković)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta) VALUES
+    (150, 'PICKED_UP', 'CARD', 'REGULAR', NOW() - INTERVAL '15 minute', 150.00, 1450.00, 1, 1, 9, NOW() + INTERVAL '25 minute');
+
+-- Stavka za tu porudžbinu je iz restorana "Wok Express" (menu_item_version_id = 122)
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (150, 1, 150, 122);
+
+-- Ponuda je morala biti prihvaćena da bi status bio PICKED_UP
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+    (150, 150, 9, 'ACCEPTED');
+
+
+
+ALTER SEQUENCE customer_id_seq RESTART WITH 100;
+ALTER SEQUENCE driver_id_seq RESTART WITH 100;
+ALTER SEQUENCE operator_id_seq RESTART WITH 100;
+ALTER SEQUENCE manager_id_seq RESTART WITH 100;
+ALTER SEQUENCE administrator_id_seq RESTART WITH 100;
+ALTER SEQUENCE support_administrator_id_seq RESTART WITH 100;
+ALTER SEQUENCE address_id_seq RESTART WITH 100;
+ALTER SEQUENCE restaurant_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_version_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_item_id_seq RESTART WITH 100;
+ALTER SEQUENCE menu_item_version_id_seq RESTART WITH 100;
+ALTER SEQUENCE orders_id_seq RESTART WITH 100;
+ALTER SEQUENCE order_item_id_seq RESTART WITH 100;
+ALTER SEQUENCE problem_category_id_seq RESTART WITH 100;
+ALTER SEQUENCE allergen_id_seq RESTART WITH 100;
+ALTER SEQUENCE diet_type_id_seq RESTART WITH 100;
+ALTER SEQUENCE driver_rating_id_seq RESTART WITH 100;
+ALTER SEQUENCE order_offer_id_seq RESTART WITH 100;
+ALTER SEQUENCE repeating_order_id_seq RESTART WITH 100;

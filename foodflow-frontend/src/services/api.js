@@ -386,7 +386,6 @@ export const markOrderAsDelivered = async (orderId) => {
     await apiClient.post(`/drivers/orders/${orderId}/deliver`);
 };
 
-
 export const cancelDelivery = async (orderId, reason) => {
     try {
         const response = await apiClient.post(`/drivers/orders/${orderId}/cancel`, { reason });
@@ -396,6 +395,7 @@ export const cancelDelivery = async (orderId, reason) => {
         throw error;
     }
 };
+
 export const getTrackingInfo = async (orderId) => {
     try {
         const response = await apiClient.get(`/orders/${orderId}/track`);
@@ -405,21 +405,21 @@ export const getTrackingInfo = async (orderId) => {
         throw error;
     }
 };
-export const getMyAnalytics = async (params) => { // Prihvata objekat sa parametrima
+
+export const getMyAnalytics = async (params) => {
     try {
-        // Prosleđujemo 'params' objekat direktno u config.
-        // Axios će ga automatski formatirati u "?period=30d"
-        const response = await apiClient.get('/analytics/my-analytics', { params });
+        const response = await apiClient.get('/analytics/my-analytics',{params});
         return response.data;
     } catch (error) {
-        // Dodajemo bolji log za buduće debagovanje
-        console.error("Error fetching analytics: ", error);
+        console.error("Error fetching analytics:", error);
         throw error;
     }
 };
 
-
-
+export const reportDelay = async (orderId, delayMinutes) => {
+    await apiClient.post(`/drivers/orders/${orderId}/report-delay`, { delayMinutes });
+};
+  
 export const getMyProfile = async () => {
     try {
         const response = await apiClient.get('/user/profile');
@@ -577,4 +577,37 @@ export const sendChatMessage = async (message) => {
     console.error("Error sending chat message:", error);
     throw error;
   }
+
+
+export const getManagerActiveOrders = async () => {
+    const response = await apiClient.get('/manager/orders/active');
+    return response.data;
+};
+
+export const confirmManagerOrder = async (orderId) => {
+    await apiClient.post(`/manager/orders/${orderId}/confirm`);
+};
+
+export const rejectManagerOrder = async (orderId, reason) => {
+    await apiClient.post(`/manager/orders/${orderId}/reject`, { reason });
+};
+
+export const markOrderAsReady = async (orderId) => {
+    await apiClient.post(`/manager/orders/${orderId}/ready`);
+};
+
+export const getManagerDeliveries = async () => {
+  const response = await apiClient.get('/manager/deliveries');
+  return response.data;
+};
+export const getManagerTrackingInfo = async (orderId) => {
+    // Mora biti unutar backtick ` navodnika, ne /
+    const response = await apiClient.get(`/manager/deliveries/${orderId}/track`);
+    return response.data;
+};
+  
+export const rateDriverByManager = async (orderId, ratingData) => {
+    // Mora biti unutar backtick ` navodnika, ne /
+    await apiClient.post(`/ratings/driver/${orderId}/restaurant`, ratingData);
+
 };

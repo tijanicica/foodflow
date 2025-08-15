@@ -6,7 +6,6 @@ import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
 import { getOrderDetails, cancelDelivery,startSimulation,markOrderAsPickedUp , getDriverInfo } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { EtaCountdown } from '../components/EtaCountdown';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import {
@@ -178,82 +177,70 @@ export function ViewOrderPage() {
     const [driverLocation, setDriverLocation] = useState(null);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const navigate = useNavigate();
-
         const refreshOrderDetails = async () => {
         try {
-            const updatedOrderDetails = await getOrderDetails(orderId);
-            setOrder(updatedOrderDetails);
-        } catch (error) {
-            console.error("Failed to refresh order details:", error);
+            const updatedOrder = await getOrderDetails(orderId);
+            setOrder(updatedOrder);
+        } catch (err) {
             toast.error("Could not refresh order details.");
         }
     };
 
 
-useEffect(() => {
-    let stompClient = null;
+ useEffect(() => {
+        let stompClient = null;
 
-    const fetchPageData = async () => {
-        try {
-            setLoading(true);
-            const [orderDetails, driverInfo] = await Promise.all([
-                getOrderDetails(orderId),
-                getDriverInfo()
-            ]);
+        const fetchPageData = async () => {
+            try {
+                setLoading(true);
+                const [orderDetails, driverInfo] = await Promise.all([
+                    getOrderDetails(orderId),
+                    getDriverInfo()
+                ]);
 
-            setOrder(orderDetails);
-            setVehicleType(driverInfo.vehicleType);
+                setOrder(orderDetails);
+                setVehicleType(driverInfo.vehicleType);
 
-            // ✅ Postavljamo POČETNU lokaciju vozača iz driverInfo (backend DTO)
-            if (driverInfo.latitude && driverInfo.longitude) {
-                setDriverLocation({
-                    lat: driverInfo.latitude,
-                    lng: driverInfo.longitude
-                });
-            } 
-            // Fallback ako backend ne pošalje koordinate
-            else if (orderDetails.driverCoordinates) {
-                setDriverLocation(orderDetails.driverCoordinates);
+                if (driverInfo.latitude && driverInfo.longitude) {
+                    setDriverLocation({
+                        lat: driverInfo.latitude,
+                        lng: driverInfo.longitude
+                    });
+                } else if (orderDetails.driverCoordinates) {
+                    setDriverLocation(orderDetails.driverCoordinates);
+                }
+                return true;
+            } catch (err) {
+                setError('Failed to load page data.');
+                return false;
+            } finally {
+                setLoading(false);
             }
+        };
 
-            return true; // Signaliziramo uspeh
-        } catch (err) {
-            setError('Failed to load page data. The order might not be assigned to you.');
-            return false; // Signaliziramo neuspeh
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    fetchPageData().then((isDataLoaded) => {
-        // WebSocket konekciju uspostavljamo samo ako su podaci uspešno učitani
-        if (isDataLoaded) {
-            const socket = new SockJS('http://localhost:8088/ws'); // Proveri port
-            stompClient = Stomp.over(socket);
-            stompClient.debug = null; // Isključi debug poruke
-
-            stompClient.connect({}, () => {
-                console.log('Connected to WebSocket');
-                stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
-                    const newLocation = JSON.parse(message.body);
-                    // Ažuriramo stanje sa novom lokacijom
-                    setDriverLocation({ 
-                        lat: newLocation.lat, 
-                        lng: newLocation.lng 
+        fetchPageData().then((isDataLoaded) => {
+            if (isDataLoaded) {
+                const socket = new SockJS('http://localhost:8088/ws');
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+                stompClient.connect({}, () => {
+                    stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
+                        const newLocation = JSON.parse(message.body);
+                        setDriverLocation({ 
+                            lat: newLocation.lat, 
+                            lng: newLocation.lng 
+                        });
                     });
                 });
-            });
-        }
-    });
+            }
+        });
 
-    // Cleanup funkcija za prekid konekcije
-    return () => {
-        if (stompClient && stompClient.connected) {
-            stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
-        }
-    };
-}, [orderId]);
+        return () => {
+            if (stompClient && stompClient.connected) {
+                stompClient.disconnect();
+            }
+        };
+    }, [orderId]);
 
 
     // --- KLJUČNA IZMENA: MEMOIZACIJA PROPS-OVA ZA MAPU ---
@@ -405,9 +392,8 @@ const handleMarkAsPickedUp = async () => {
                         <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
                             <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0, letterSpacing: '0.5px' }}>Estimated Arrival (ETA)</p>
                             <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
-                                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                {'N/A'}
                             </p>
-                            {order.eta && <EtaCountdown eta={order.eta} />}
                         </div>
                         
                         <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' , opacity: 1.6,}}>
