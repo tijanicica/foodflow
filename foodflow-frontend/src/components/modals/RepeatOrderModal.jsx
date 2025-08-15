@@ -1,71 +1,82 @@
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { useState } from "react";
-import { format } from "date-fns";
+import { format, addMinutes, setHours, setMinutes } from "date-fns";
 import { enUS } from 'date-fns/locale';
+import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { Loader2, Repeat, CheckCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import toast from "react-hot-toast";
+
+//================================================================================
+// POMOĆNE FUNKCIJE I KOMPONENTE
+//================================================================================
+
+const generateTimeSlots = (startStr, endStr, interval) => {
+    const slots = [];
+    if (!startStr || !endStr) return slots;
+    let current = new Date();
+    const [startHour, startMinute] = startStr.split(':').map(Number);
+    const [endHour, endMinute] = endStr.split(':').map(Number);
+    current = setHours(setMinutes(new Date(), startMinute), startHour);
+    let end = setHours(setMinutes(new Date(), endMinute), endHour);
+    while (current <= end) {
+        slots.push(format(current, "HH:mm"));
+        current = addMinutes(current, interval);
+    }
+    return slots;
+};
+
+const OptionPicker = ({ options, selected, onSelect, columns = 2 }) => (
+    <div className={`grid grid-cols-${columns} gap-2`}>
+        {options.map(({ value, label }) => (
+            <Button key={value} variant={selected === value ? 'default' : 'outline'}
+                onClick={() => onSelect(value)}
+                className={`h-10 ${selected === value && 'bg-brand-primary hover:bg-brand-primary/90'}`}>
+                {label}
+            </Button>
+        ))}
+    </div>
+);
+
+//================================================================================
+// GLAVNA KOMPONENTA MODALA
+//================================================================================
 
 export const RepeatOrderModal = ({ isOpen, onClose, onSave, openingTime, closingTime }) => {
-    // Stanja forme
     const [repeatType, setRepeatType] = useState('WEEKLY');
     const [dayOfWeek, setDayOfWeek] = useState(null);
     const [dayOfMonth, setDayOfMonth] = useState(null);
     const [deliveryTime, setDeliveryTime] = useState('');
-    const [ends, setEnds] = useState('never');
-    const [repeatUntil, setRepeatUntil] = useState(null); // Sada je tipa Date
+    const [repeatUntil, setRepeatUntil] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-
-    const [timeError, setTimeError] = useState('');
-
-
-    const handleRepeatTypeChange = (type) => {
-        setRepeatType(type);
-        // Resetuj suprotno stanje da sprečiš slanje nevalidnih podataka
-        if (type === 'WEEKLY') {
-            setDayOfMonth(null);
-        } else {
+    useEffect(() => {
+        if (isOpen) {
+            setRepeatType('WEEKLY');
             setDayOfWeek(null);
+            setDayOfMonth(null);
+            setDeliveryTime('');
+            setRepeatUntil(null);
+            setIsLoading(false);
         }
-    };
+    }, [isOpen]);
 
-
-    const validateTime = (selectedTime) => {
-        if (openingTime && closingTime && selectedTime) {
-            if (selectedTime < openingTime || selectedTime > closingTime) {
-                setTimeError(`Time must be between ${openingTime} and ${closingTime}.`);
-                return false;
-            }
-        }
-        setTimeError('');
-        return true;
-    };
-
-    const handleTimeChange = (e) => {
-        const newTime = e.target.value;
-        setDeliveryTime(newTime);
-        validateTime(newTime);
-    };
+    const allTimeSlots = useMemo(() => generateTimeSlots(openingTime, closingTime, 30), [openingTime, closingTime]);
 
     const handleSave = () => {
-        // --- VALIDACIJA ---
-        const isTimeValid = validateTime(deliveryTime);
-
-        if (!deliveryTime || !isTimeValid) return toast.error("Please select a delivery time.");
+        if (!deliveryTime) return toast.error("Please select a delivery time.");
         if (repeatType === 'WEEKLY' && !dayOfWeek) return toast.error("Please select a day of the week.");
         if (repeatType === 'MONTHLY' && !dayOfMonth) return toast.error("Please select a day of the month.");
-        if (ends === 'specific' && !repeatUntil) return toast.error("Please select an end date.");
         
+        setIsLoading(true);
         const repeatData = {
             repeatType,
             deliveryTime,
-            repeatUntil: ends === 'specific' ? format(repeatUntil, 'yyyy-MM-dd') : null,
+            repeatUntil: repeatUntil ? format(repeatUntil, 'yyyy-MM-dd') : null,
             dayOfWeek: repeatType === 'WEEKLY' ? dayOfWeek : null,
             dayOfMonth: repeatType === 'MONTHLY' ? dayOfMonth : null
         };
@@ -74,97 +85,90 @@ export const RepeatOrderModal = ({ isOpen, onClose, onSave, openingTime, closing
         onClose();
     };
 
+    const summaryText = useMemo(() => {
+        if (!deliveryTime || (repeatType === 'WEEKLY' && !dayOfWeek) || (repeatType === 'MONTHLY' && !dayOfMonth)) return null;
+        
+        let frequency = '';
+        if (repeatType === 'WEEKLY') {
+            frequency = `every ${dayOfWeek.toLowerCase()}`;
+        } else {
+            const dayText = dayOfMonth.replace('_', ' ').toLowerCase();
+            frequency = `on the ${dayText} of the month`;
+        }
+        
+        const endDate = repeatUntil ? `until ${format(repeatUntil, "MMM d, yyyy")}` : 'indefinitely';
+        return `Repeats ${frequency} at ${deliveryTime}, ${endDate}.`;
+    }, [repeatType, dayOfWeek, dayOfMonth, deliveryTime, repeatUntil]);
+
+    const weekDayOptions = [ { value: 'MONDAY', label: 'Mon' }, { value: 'TUESDAY', label: 'Tue' }, { value: 'WEDNESDAY', label: 'Wed' }, { value: 'THURSDAY', label: 'Thu' }, { value: 'FRIDAY', label: 'Fri' }, { value: 'SATURDAY', label: 'Sat' }, { value: 'SUNDAY', label: 'Sun' } ];
+    const monthDayOptions = [ { value: 'FIRST', label: '1st' }, { value: 'FIFTEENTH', label: '15th' }, { value: 'LAST', label: 'Last' } ];
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>Repeat Order Settings</DialogTitle></DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="flex gap-2">
-
-                        <Button variant={repeatType === 'WEEKLY' ? 'default' : 'outline'} onClick={() => handleRepeatTypeChange('WEEKLY')} className="w-full">Weekly</Button>
-                        <Button variant={repeatType === 'MONTHLY' ? 'default' : 'outline'} onClick={() => handleRepeatTypeChange('MONTHLY')} className="w-full">Monthly</Button>                    </div>
-
-                    {repeatType === 'WEEKLY' && (
-                        <div>
-                            <Label>Repeat on:</Label>
-                            <RadioGroup onValueChange={setDayOfWeek} className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-                                {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map((day, i) => (
-                                    <div key={day} className="flex items-center space-x-2">
-                                        <RadioGroupItem value={day} id={`day-${i}`} />
-                                        <Label htmlFor={`day-${i}`}>{day.substring(0,3)}</Label>
-                                    </div>
-                                ))}
-                            </RadioGroup>
-                        </div>
-                    )}
-                    
-                    {repeatType === 'MONTHLY' && (
-                        <div>
-                           <Label>Repeat on:</Label>
-                           <RadioGroup onValueChange={setDayOfMonth} className="space-y-2 mt-2">
-                               <div className="flex items-center space-x-2"><RadioGroupItem value="FIRST" id="dom-1" /><Label htmlFor="dom-1">1st of the month</Label></div>
-                               <div className="flex items-center space-x-2"><RadioGroupItem value="FIFTEENTH" id="dom-15" /><Label htmlFor="dom-15">15th of the month</Label></div>
-                               <div className="flex items-center space-x-2"><RadioGroupItem value="LAST" id="dom-last" /><Label htmlFor="dom-last">Last day of the month</Label></div>
-                           </RadioGroup>
-                        </div>
-                    )}
-
-                    <div>
-                        <Label>
-                            At Time: {openingTime && closingTime && `(Open ${openingTime}-${closingTime})`}
-                        </Label>
-                        <Input 
-                            type="time" 
-                            value={deliveryTime} 
-                            onChange={handleTimeChange} // Koristi novi handler
-                            min={openingTime}
-                            max={closingTime}
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl flex items-center gap-2"><Repeat size={24}/> Set Up Repeating Order</DialogTitle>
+                    <DialogDescription>
+                        Automate your favorite orders. The first order is placed immediately.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-3">
+                    <div className="space-y-2">
+                        <Label className="font-semibold text-gray-700">1. Frequency</Label>
+                        <OptionPicker 
+                            options={[{value: 'WEEKLY', label: 'Weekly'}, {value: 'MONTHLY', label: 'Monthly'}]}
+                            selected={repeatType}
+                            onSelect={(type) => { setRepeatType(type); setDayOfWeek(null); setDayOfMonth(null); }}
                         />
-                          {timeError && <p className="text-red-500 text-sm mt-1">{timeError}</p>}
                     </div>
 
-                    <div>
-                        <Label>Ends:</Label>
-                        <RadioGroup onValueChange={setEnds} defaultValue="never" className="space-y-2 mt-2">
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="never" id="ends-never" /><Label htmlFor="ends-never">Never</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="specific" id="ends-specific" /><Label htmlFor="ends-specific">On a specific date</Label></div>
-                        </RadioGroup>
-                        {ends === 'specific' && (
-                            // === KORIŠĆENJE CALENDAR KOMPONENTE ===
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn("w-full justify-start text-left font-normal mt-2", !repeatUntil && "text-muted-foreground")}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {repeatUntil ? format(repeatUntil, "PPP", { locale: enUS }) : <span>Pick an end date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={repeatUntil}
-                                        onSelect={setRepeatUntil}
-                                        initialFocus
-                                        fromDate={new Date()} // Ne može se izabrati datum u prošlosti
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                    <div className="space-y-2">
+                        <Label className="font-semibold text-gray-700">{repeatType === 'WEEKLY' ? '2. Day of the Week' : '2. Day of the Month'}</Label>
+                        {repeatType === 'WEEKLY' ? (
+                            <OptionPicker options={weekDayOptions} selected={dayOfWeek} onSelect={setDayOfWeek} columns={4}/>
+                        ) : (
+                            <OptionPicker options={monthDayOptions} selected={dayOfMonth} onSelect={setDayOfMonth} columns={3}/>
                         )}
                     </div>
-                </div>
-                <DialogFooter>
-                    <div className="flex justify-end gap-2 w-full">
-                        <Button variant="outline" onClick={onClose}>Cancel</Button>
-                        <Button onClick={handleSave} disabled={!!timeError}>Save Repetition</Button>
+                    
+                    <div className="space-y-2">
+                        <Label className="font-semibold text-gray-700">3. Delivery Time</Label>
+                        <div className="border rounded-md p-2 max-h-32 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {allTimeSlots.length > 0 ? allTimeSlots.map(slot => (
+                                <Button key={slot} variant={deliveryTime === slot ? 'default' : 'outline'} size="sm" onClick={() => setDeliveryTime(slot)} className={deliveryTime === slot ? 'bg-brand-primary' : ''}>{slot}</Button>
+                            )) : <p className="col-span-full text-center text-sm text-gray-500 py-4">Restaurant hours not available.</p>}
+                        </div>
                     </div>
+
+                    <div className="space-y-2">
+                        <Label className="font-semibold text-gray-700">4. End Date (Optional)</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal h-10", !repeatUntil && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {repeatUntil ? format(repeatUntil, "PPP", { locale: enUS }) : <span>Never ends</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={repeatUntil} onSelect={setRepeatUntil} fromDate={new Date()} />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+                
+                {summaryText && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-brand-background-light p-3 rounded-lg text-center font-semibold text-brand-primary text-sm flex items-center justify-center gap-2">
+                        <CheckCircle size={16} className="text-green-600"/> {summaryText}
+                    </motion.div>
+                )}
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isLoading} className="bg-brand-primary hover:bg-brand-primary/90 w-36">
+                        {isLoading ? <Loader2 className="animate-spin" /> : 'Save Repetition'}
+                    </Button>
                 </DialogFooter>
-
-                    <p className="text-xs text-gray-500 text-left mt-2">
-                    Note: The first order will be placed immediately, and will then repeat based on these settings.
-                    </p>
-
             </DialogContent>
         </Dialog>
     );

@@ -34,7 +34,7 @@ INSERT INTO support_administrator (id, email, password, first_name, last_name, p
 
 -- Adrese sa koordinatama
 INSERT INTO address (id, street, street_number, city, country, nickname, postal_code, latitude, longitude, customer_id) VALUES
-    (1, 'Kralja Milana', '20', 'Beograd', 'Srbija', 'Kuća', '11000', 44.8111, 20.4593, 1);
+    (1, 'Kralja Milana', '20', 'Beograd', 'Serbia', 'Home', '11000', 44.8111, 20.4593, 1);
 
 INSERT INTO address (id, street, street_number, city, country, postal_code, latitude, longitude) VALUES
                                                                                                      (10, 'Kralja Petra', '12', 'Beograd', 'Srbija', '11000', 44.8196, 20.4569),
@@ -75,6 +75,7 @@ INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, pr
     (11, 'Fish & Chips', '12:00:00', '22:00:00', 4.3, '$', 4, 20, '/images/restaurants/Fish-Chips.jpeg');
 INSERT INTO restaurant (id, name, opening_time, closing_time, average_rating, price_range, manager_id, address_id, image_url) VALUES
     (12, 'Wok Express', '11:00:00', '23:00:00', 4.6, '$$', 7, 21, '/images/restaurants/Wok.jpg');
+
 INSERT INTO menu (id, name, restaurant_id, is_deleted) VALUES
     (1, 'Glavni Meni', 1, false);
 INSERT INTO menu (id, name, restaurant_id, is_deleted) VALUES
