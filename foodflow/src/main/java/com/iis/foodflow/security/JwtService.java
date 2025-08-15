@@ -48,6 +48,9 @@ public class JwtService {
         // Stavljamo ulogu u mapu pod ključem "role".
         // Ovaj ključ ("role") je VAŽAN jer ćete ga koristiti na frontendu.
         extraClaims.put("role", role);
+        if (userDetails instanceof com.iis.foodflow.model.user.Manager) {
+            extraClaims.put("id", ((com.iis.foodflow.model.user.Manager) userDetails).getId());
+        }
 
         return generateToken(extraClaims, userDetails);
     }

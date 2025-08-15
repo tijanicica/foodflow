@@ -30,7 +30,7 @@ public class RatingService {
         Driver driver = order.getDriver();
         if (driver == null) throw new IllegalStateException("Order has no assigned driver.");
 
-        DriverRating rating = ratingRepository.findById(orderId).orElse(new DriverRating());
+        DriverRating rating = ratingRepository.findByOrder_Id(orderId).orElse(new DriverRating());
         rating.setOrder(order);
         rating.setDriver(driver);
 

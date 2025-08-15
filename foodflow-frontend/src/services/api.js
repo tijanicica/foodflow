@@ -405,20 +405,16 @@ export const getTrackingInfo = async (orderId) => {
         throw error;
     }
 };
-export const getMyAnalytics = async (params) => { // Prihvata objekat sa parametrima
+
+export const getMyAnalytics = async (params) => {
     try {
-        // Prosleđujemo 'params' objekat direktno u config.
-        // Axios će ga automatski formatirati u "?period=30d"
-        const response = await apiClient.get('/analytics/my-analytics', { params });
+        const response = await apiClient.get('/analytics/my-analytics',{params});
         return response.data;
     } catch (error) {
-        // Dodajemo bolji log za buduće debagovanje
-        console.error("Error fetching analytics: ", error);
+        console.error("Error fetching analytics:", error);
         throw error;
     }
 };
-
-
 
 export const getMyProfile = async () => {
     try {
@@ -567,4 +563,38 @@ export const activateMenu = async (menuVersionId) => {
 export const addMenuItem = async (menuVersionId, itemData) => {
     const response = await apiClient.post(`/manager/menus/${menuVersionId}/items`, itemData);
     return response.data;
+};
+// U api.js
+
+// U src/services/api.js
+
+export const getManagerActiveOrders = async () => {
+    const response = await apiClient.get('/manager/orders/active');
+    return response.data;
+};
+
+export const confirmManagerOrder = async (orderId) => {
+    await apiClient.post(`/manager/orders/${orderId}/confirm`);
+};
+
+export const rejectManagerOrder = async (orderId, reason) => {
+    await apiClient.post(`/manager/orders/${orderId}/reject`, { reason });
+};
+
+export const markOrderAsReady = async (orderId) => {
+    await apiClient.post(`/manager/orders/${orderId}/ready`);
+};
+
+export const getManagerDeliveries = async () => {
+const response = await apiClient.get('/manager/deliveries');
+return response.data;
+};
+export const getManagerTrackingInfo = async (orderId) => {
+    // Mora biti unutar backtick ` navodnika, ne /
+    const response = await apiClient.get(`/manager/deliveries/${orderId}/track`);
+    return response.data;
+};
+export const rateDriverByManager = async (orderId, ratingData) => {
+    // Mora biti unutar backtick ` navodnika, ne /
+    await apiClient.post(`/ratings/driver/${orderId}/restaurant`, ratingData);
 };

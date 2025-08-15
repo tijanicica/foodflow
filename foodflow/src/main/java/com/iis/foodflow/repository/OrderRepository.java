@@ -149,5 +149,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "FROM orders WHERE customer_id = :customerId AND status = 'DELIVERED' AND creation_date >= :since " +
             "GROUP BY time_point ORDER BY MIN(creation_date)", nativeQuery = true)
     List<Object[]> findSpendingOverTimeSince(@Param("customerId") Long customerId, @Param("since") LocalDateTime since, @Param("dateFormat") String dateFormat);
+// U OrderRepository.java
 
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.status IN :statuses " +
+            "ORDER BY o.creationDate ASC")
+    List<Order> findOrdersByManagerAndStatuses(@Param("manager") Manager manager, @Param("statuses") List<OrderStatus> statuses);
 }
