@@ -1,12 +1,14 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.repository.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -30,6 +32,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private  SupportAdministratorRepository supportAdministratorRepository;
 
     @Override
+    @Transactional(readOnly = true) // <-- DODAJEMO TRANSAKCIONU ANOTACIJU
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         // Traži redom u svakom repozitorijumu dok ne nađe korisnika
         return customerRepository.findByEmail(email)
