@@ -577,7 +577,7 @@ export const sendChatMessage = async (message) => {
     console.error("Error sending chat message:", error);
     throw error;
   }
-
+}
 
 export const getManagerActiveOrders = async () => {
     const response = await apiClient.get('/manager/orders/active');
