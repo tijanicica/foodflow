@@ -56,6 +56,38 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%
   }
+  .custom-phone-input .PhoneInputInput {
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid hsl(var(--brand-accent)); /* Koristi tvoju boju */
+  border-radius: 0;
+  padding-left: 0;
+  height: 2.5rem; /* Ista visina kao tvoji ostali inputi */
+  font-size: 1rem;
+}
+
+
+.custom-phone-input .PhoneInputInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+}
+
+.custom-phone-input .PhoneInputCountry {
+  margin-right: 0.5rem;
+}
+/* U datoteci src/index.css */
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
 }
 
 @layer base {
@@ -66,3 +98,4 @@
     @apply bg-background text-foreground;
   }
 }
+
