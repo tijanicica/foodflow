@@ -79,6 +79,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-phone-input .PhoneInputCountry {
   margin-right: 0.5rem;
 }
+/* U datoteci src/index.css */
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
 }
 
 @layer base {

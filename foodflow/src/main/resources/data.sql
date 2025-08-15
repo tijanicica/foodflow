@@ -40,7 +40,7 @@ INSERT INTO support_administrator (id, email, password, first_name, last_name, p
 
 -- Adrese sa koordinatama
 INSERT INTO address (id, street, street_number, city, country, nickname, postal_code, latitude, longitude, customer_id) VALUES
-    (1, 'Kralja Milana', '20', 'Beograd', 'Srbija', 'Kuća', '11000', 44.8111, 20.4593, 1);
+    (1, 'Kralja Milana', '20', 'Beograd', 'Serbia', 'Home', '11000', 44.8111, 20.4593, 1);
 
 INSERT INTO address (id, street, street_number, city, country, postal_code, latitude, longitude) VALUES
     (10, 'Kralja Petra', '12', 'Beograd', 'Srbija', '11000', 44.8196, 20.4569),
@@ -131,7 +131,7 @@ INSERT INTO menu_version (id, version_number, creation_date, active, menu_id) VA
 INSERT INTO menu_version (id, version_number, creation_date, active, menu_id) VALUES
     (12, 1, NOW(), true, 12);
 
- 
+
 -- ALERGENI I TIPOVI ISHRANE
 INSERT INTO allergen (id, name) VALUES
     (1, 'Gluten');

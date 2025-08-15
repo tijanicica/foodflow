@@ -11,10 +11,11 @@ import countryList from 'country-list';
 import { geocodeAddress } from '@/services/geocoding';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertTriangle, ArrowLeft, User, Home as HomeIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, User, Home as HomeIcon, Eye, EyeOff } from 'lucide-react';
+import zxcvbn from 'zxcvbn';
 
 //================================================================================
-// POMOĆNE KOMPONENTE
+// POMOĆNE KOMPONENTE (sa ispravljenim stilovima)
 //================================================================================
 
 const ProgressBar = ({ currentStep }) => (
@@ -33,12 +34,53 @@ const ProgressBar = ({ currentStep }) => (
     </div>
 );
 
-const InputWithLabel = ({ name, label, ...props }) => (
-    <div className="grid gap-2">
-        <Label htmlFor={name} className="font-semibold text-gray-700">{label}</Label>
-        <Input id={name} name={name} required {...props} className="h-11 bg-gray-50 border-gray-300 focus:border-brand-primary focus:ring-brand-primary rounded-lg"/>
-    </div>
-);
+const InputWithLabel = ({ name, label, type = 'text', ...props }) => {
+    const [showPass, setShowPass] = useState(false);
+    const isPassword = type === 'password';
+
+    return (
+        <div className="grid gap-2">
+            <Label htmlFor={name} className="font-semibold text-gray-700">{label}</Label>
+            <div className="relative">
+                <Input 
+                    id={name} 
+                    name={name} 
+                    type={isPassword && !showPass ? 'password' : 'text'} 
+                    required 
+                    {...props} 
+                    className={`h-11 bg-gray-50 border-gray-300 rounded-lg transition-colors duration-200 focus:border-brand-primary focus:bg-white focus-visible:ring-0 ${isPassword ? 'pr-10' : ''}`}
+                />
+                {isPassword && (
+                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
+                        {showPass ? <EyeOff size={18}/> : <Eye size={18}/>}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const PasswordStrengthIndicator = ({ password }) => {
+    const result = zxcvbn(password);
+    const score = result.score;
+    const strengthLevels = [
+        { label: 'Very Weak', color: 'bg-red-500', width: 'w-1/5' },
+        { label: 'Weak', color: 'bg-orange-500', width: 'w-2/5' },
+        { label: 'Medium', color: 'bg-yellow-500', width: 'w-3/5' },
+        { label: 'Strong', color: 'bg-green-400', width: 'w-4/5' },
+        { label: 'Very Strong', color: 'bg-green-600', width: 'w-full' },
+    ];
+    if (!password) return <div className="h-6"></div>; // Čuva prostor kada je prazno
+    return (
+        <div className="space-y-1 mt-1 h-6">
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <motion.div className={`h-1.5 rounded-full ${strengthLevels[score].color}`}
+                    initial={{ width: 0 }} animate={{ width: strengthLevels[score].width }} transition={{ duration: 0.3 }} />
+            </div>
+            <p className="text-xs text-right font-semibold text-gray-500">{strengthLevels[score].label}</p>
+        </div>
+    );
+};
 
 //================================================================================
 // GLAVNA KOMPONENTA STRANICE
@@ -54,12 +96,10 @@ export function RegisterPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    // Sva logika ostaje ista i ispravna
     const handleChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
     const handleAddressChange = (e) => setFormData(p => ({ ...p, address: { ...p.address, [e.target.name]: e.target.value } }));
     const handlePhoneChange = (value) => setFormData(p => ({ ...p, phone: value || '' }));
     const handleCountryChange = (option) => setFormData(p => ({ ...p, address: { ...p.address, country: option.value } }));
-
     const countryOptions = useMemo(() => countryList.getData().map(c => ({ value: c.code, label: c.name })), []);
 
     const handleNext = () => {
@@ -96,10 +136,22 @@ export function RegisterPage() {
     };
     
     const customSelectStyles = {
-        control: (provided) => ({ ...provided, minHeight: '44px', backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' }),
-        input: (provided) => ({ ...provided, height: '40px' }),
+        control: (provided, state) => ({
+            ...provided,
+            minHeight: '44px',
+            backgroundColor: '#F9FAFB',
+            borderColor: state.isFocused ? '#4F4A40' : '#D1D5DB',
+            boxShadow: 'none',
+            '&:hover': {
+                borderColor: state.isFocused ? '#4F4A40' : '#A1A1AA',
+            },
+            transition: 'border-color 0.2s ease-in-out',
+            borderRadius: '0.5rem',
+        }),
+        input: (provided) => ({ ...provided, margin: '0', padding: '0' }),
         option: (provided, state) => ({...provided, backgroundColor: state.isSelected ? '#4F4A40' : 'white', '&:hover': {backgroundColor: '#EAE3D3'}}),
     };
+
     const variants = {
         enter: { opacity: 0, x: 30 },
         center: { opacity: 1, x: 0 },
@@ -124,7 +176,7 @@ export function RegisterPage() {
                 <ProgressBar currentStep={step} />
 
                 <form onSubmit={handleSubmit}>
-                    <div className="overflow-hidden relative">
+                    <div className="overflow-hidden relative min-h-[320px]">
                         <AnimatePresence mode="wait">
                             {step === 1 && (
                                 <motion.div key="step1" variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }} className="w-full grid gap-4">
@@ -133,8 +185,11 @@ export function RegisterPage() {
                                         <InputWithLabel name="lastName" label="Last Name" value={formData.lastName} onChange={handleChange} />
                                     </div>
                                     <InputWithLabel name="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <InputWithLabel name="password" label="Password" type="password" value={formData.password} onChange={handleChange} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                                        <div>
+                                            <InputWithLabel name="password" label="Password" type="password" value={formData.password} onChange={handleChange} />
+                                            <PasswordStrengthIndicator password={formData.password} />
+                                        </div>
                                         <InputWithLabel name="confirmPassword" label="Confirm Password" type="password" value={formData.confirmPassword} onChange={handleChange} />
                                     </div>
                                 </motion.div>
@@ -143,7 +198,9 @@ export function RegisterPage() {
                                 <motion.div key="step2" variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }} className="w-full grid gap-4">
                                     <div className="grid gap-2">
                                         <Label className="font-semibold text-gray-700">Phone Number</Label>
-                                        <PhoneInput value={formData.phone} onChange={handlePhoneChange} className="custom-phone-input" required />
+                                        <div className="h-11 bg-gray-50 border border-gray-300 rounded-lg flex items-center focus-within:border-brand-primary transition-colors pl-3">
+                                            <PhoneInput value={formData.phone} onChange={handlePhoneChange} className="custom-phone-input" required />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <InputWithLabel name="nickname" label="Address Nickname" value={formData.address.nickname} onChange={handleAddressChange} />
@@ -166,7 +223,6 @@ export function RegisterPage() {
                     </div>
 
                     <div className="mt-4">
-                        {/* Kontejner za grešku sada nema fiksnu visinu */}
                         <div className="min-h-[2.5rem] flex items-center">
                             {error && <div className="w-full bg-red-100/80 border border-red-300 text-red-800 p-2 rounded-lg flex items-center gap-2 text-sm"><AlertTriangle size={18}/><span>{error}</span></div>}
                         </div>

@@ -30,6 +30,7 @@
     "leaflet-routing-machine": "^3.2.12",
     "lucide-react": "^0.539.0",
     "react": "^18.2.0",
+    "react-credit-cards-2": "^1.0.3",
     "react-day-picker": "^9.8.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.5.2",
@@ -44,7 +45,8 @@
     "sockjs-client": "^1.6.1",
     "stompjs": "^2.3.3",
     "tailwind-merge": "^2.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
