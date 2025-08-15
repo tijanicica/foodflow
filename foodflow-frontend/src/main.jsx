@@ -41,6 +41,8 @@ import { TermsOfServicePage } from './pages/TermsOfServicePage.jsx';
 import { ManagerOrdersPage } from './pages/ManagerOrdersPage.jsx';
 import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
 import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
+import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
+
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -164,6 +166,10 @@ const router = createBrowserRouter([
     {
       path: "/manager/deliveries/track/:orderId",
       element: <ManagerTrackOrderPage />,
+    },
+      {
+      path: "/admin/managers",
+      element: <AdminManagerManagementPage />,
     },
   // Ovde ćeš kasnije dodavati i druge rute
   // {

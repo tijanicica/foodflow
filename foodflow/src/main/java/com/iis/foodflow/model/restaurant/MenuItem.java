@@ -18,6 +18,8 @@ public class MenuItem {
     private Long id;
     private String name;
     private String description;
+
+    @Column(length = 1024) // <-- DODAJ OVU LINIJU
     private String imageUrl;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

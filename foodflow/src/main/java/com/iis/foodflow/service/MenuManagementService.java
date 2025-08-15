@@ -2,6 +2,7 @@ package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.CreateMenuItemRequestDTO;
 import com.iis.foodflow.dto.request.CreateMenuRequestDTO;
+import com.iis.foodflow.dto.request.UpdateMenuItemRequestDTO;
 import com.iis.foodflow.dto.request.UpdateMenuRequestDTO;
 import com.iis.foodflow.dto.response.ManagerMenuDTO;
 import com.iis.foodflow.dto.response.MenuItemDetailDTO;
@@ -112,6 +113,7 @@ public class MenuManagementService {
                         .id(miv.getId())
                         .name(miv.getMenuItem().getName())
                         .price(miv.getPrice())
+                        .imageUrl(miv.getMenuItem().getImageUrl()) // <-- DODAJ OVAJ RED
                         .build())
                 .collect(Collectors.toList());
 
@@ -207,6 +209,14 @@ public class MenuManagementService {
         newItem.setDietTypes(dietTypes);
         newItem.setImageUrl("/images/placeholder.jpg");
 
+        // ===== KORISTIMO URL IZ ZAHTEVA =====
+        // Ako URL nije poslat, koristimo podrazumevanu vrednost
+        newItem.setImageUrl(request.getImageUrl() != null && !request.getImageUrl().isEmpty()
+                ? request.getImageUrl()
+                : "/images/placeholder.jpg");
+        // ===================================
+
+
         MenuItem savedMenuItem = menuItemRepository.save(newItem);
 
         MenuItemVersion newMenuItemVersion = new MenuItemVersion();
@@ -221,5 +231,58 @@ public class MenuManagementService {
         }
 
         menuItemVersionRepository.save(newMenuItemVersion);
+    }
+    // U MenuManagementService.java
+
+    @Transactional
+    public void updateMenuItem(Long menuItemVersionId, UpdateMenuItemRequestDTO request, Manager manager) {
+        MenuItemVersion miv = menuItemVersionRepository.findById(menuItemVersionId)
+                .orElseThrow(() -> new RuntimeException("Menu item version not found"));
+
+        // Sigurnosna provera
+        if (!miv.getMenuVersion().getMenu().getRestaurant().getManager().getId().equals(manager.getId())) {
+            throw new SecurityException("Not authorized to edit this item.");
+        }
+
+        MenuItem menuItem = miv.getMenuItem();
+
+        // Ažuriranje MenuItem entiteta
+        menuItem.setName(request.getName());
+        menuItem.setDescription(request.getDescription());
+        menuItem.setImageUrl(request.getImageUrl());
+        menuItem.setType(request.getType());
+        menuItem.setAllergens(new HashSet<>(allergenRepository.findAllById(request.getAllergenIds())));
+        menuItem.setDietTypes(new HashSet<>(dietTypeRepository.findAllById(request.getDietTypeIds())));
+
+        // Ažuriranje MenuItemVersion entiteta
+        miv.setPrice(request.getPrice());
+        if (request.isAvailableAllDay()) {
+            miv.setTimeFrom(null);
+            miv.setTimeTo(null);
+        } else {
+            miv.setTimeFrom(request.getTimeFrom());
+            miv.setTimeTo(request.getTimeTo());
+        }
+
+        menuItemRepository.save(menuItem);
+        menuItemVersionRepository.save(miv);
+    }
+
+    @Transactional
+    public void deleteMenuItem(Long menuItemVersionId, Manager manager) {
+        MenuItemVersion miv = menuItemVersionRepository.findById(menuItemVersionId)
+                .orElseThrow(() -> new RuntimeException("Menu item version not found"));
+
+        // Sigurnosna provera
+        if (!miv.getMenuVersion().getMenu().getRestaurant().getManager().getId().equals(manager.getId())) {
+            throw new SecurityException("Not authorized to delete this item.");
+        }
+
+        // Radimo logičko brisanje i na osnovnom itemu i na verziji
+        miv.getMenuItem().setDeleted(true);
+        miv.setDeleted(true);
+
+        menuItemRepository.save(miv.getMenuItem());
+        menuItemVersionRepository.save(miv);
     }
 }

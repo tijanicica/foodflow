@@ -5,12 +5,15 @@ import com.iis.foodflow.dto.response.AllergenDTO;
 import com.iis.foodflow.dto.response.DietTypeDTO;
 import com.iis.foodflow.dto.response.MenuDTO;
 import com.iis.foodflow.dto.response.RestaurantDTO;
+import com.iis.foodflow.model.restaurant.Restaurant;
+import com.iis.foodflow.repository.RestaurantRepository;
 import com.iis.foodflow.service.RestaurantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/restaurants")
@@ -18,7 +21,19 @@ import java.util.List;
 public class RestaurantController {
 
     private final RestaurantService restaurantService;
+    private final RestaurantRepository restaurantRepository;
 
+    public record RestaurantOptionDTO(Long id, String name) {}
+
+
+    @GetMapping("/options")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRATOR')")
+    public ResponseEntity<List<RestaurantOptionDTO>> getRestaurantOptions() {
+        List<RestaurantOptionDTO> options = restaurantService.getAllRestaurantsForAdmin().stream()
+                .map(r -> new RestaurantOptionDTO(r.getId(), r.getName())) // Samo jedna .map() linija
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(options);
+    }
     @PostMapping("/filter")
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<List<RestaurantDTO>> getFilteredRestaurants(@RequestBody FilterRequestDTO filters) {

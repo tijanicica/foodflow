@@ -16,4 +16,6 @@ public class MenuItemDetailDTO {
     private Long id; // ID od MenuItemVersion
     private String name;
     private BigDecimal price;
+    private String imageUrl; // <-- KLJUČNO POLJE
+
 }
