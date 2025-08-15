@@ -607,7 +607,37 @@ export const getManagerTrackingInfo = async (orderId) => {
 };
   
 export const rateDriverByManager = async (orderId, ratingData) => {
-    // Mora biti unutar backtick ` navodnika, ne /
-    await apiClient.post(`/ratings/driver/${orderId}/restaurant`, ratingData);
+    const response = await apiClient.post(`/ratings/driver/${orderId}/restaurant`, ratingData);
+    return response.data;
+};
+export const updateMenuItem = async (menuItemVersionId, itemData) => {
+    const response = await apiClient.put(`/manager/menus/items/${menuItemVersionId}`, itemData);
+    return response.data;
+};
 
+export const deleteMenuItem = async (menuItemVersionId) => {
+    await apiClient.delete(`/manager/menus/items/${menuItemVersionId}`);
+};
+export const getAllManagers = async () => {
+    const response = await apiClient.get('/admin/managers');
+    return response.data;
+};
+
+export const registerManager = async (managerData) => {
+    const response = await apiClient.post('/admin/managers', managerData);
+    return response.data;
+};
+export const getManagerDetails = async (managerId) => {
+    const response = await apiClient.get(`/admin/managers/${managerId}`);
+    return response.data;
+};
+
+export const updateManager = async (managerId, managerData) => {
+    const response = await apiClient.put(`/admin/managers/${managerId}`, managerData);
+    return response.data;
+};
+
+export const getRestaurantOptions = async () => {
+    const response = await apiClient.get('/restaurants/options');
+    return response.data;
 };

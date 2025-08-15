@@ -42,12 +42,17 @@ export function LoginPage() {
           navigate('/manager/dashboard'); // Bilo je '/manager/overview'
           break;
         // ============================
-        case 'ROLE_ADMINISTRATOR':
-          navigate('/admin/panel'); // Primjer rute za administratora
-          break;
+       
         case 'ROLE_SUPPORT_ADMINISTRATOR':
           navigate('/support/tickets'); // Primjer rute za podršku
           break;
+
+        // ===== ISPRAVKA JE OVDE =====
+    case 'ROLE_ADMINISTRATOR':
+      navigate('/admin/managers'); // Umesto '/admin/panel'
+      break;
+    // ============================
+
         default:
           // Ako uloga nije prepoznata, vrati ga na login ili prikaži grešku
           console.warn(`Unknown role: ${userRole}`);

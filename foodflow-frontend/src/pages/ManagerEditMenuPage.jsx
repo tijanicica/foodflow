@@ -1,21 +1,30 @@
-// src/pages/ManagerEditMenuPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ManagerNavbar } from '@/components/ui/ManagerNavbar';
 import { Button } from '@/components/ui/button';
-import { getMenuVersionDetails, addMenuItem, getAllergens, getDietTypes } from '@/services/api';
+import { getMenuVersionDetails, addMenuItem, getAllergens, getDietTypes, updateMenuItem, deleteMenuItem } from '@/services/api';
 import toast from 'react-hot-toast';
 import { AddMenuItemModal } from '@/components/modals/AddMenuItemModal';
+import { EditMenuItemModal } from '@/components/modals/EditMenuItemModal';
 
-const MenuItemRow = ({ item }) => (
+const MenuItemRow = ({ item, onEdit, onDelete }) => (
     <div className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
-        <p className="text-lg font-semibold text-brand-primary">{item.name}</p>
+        <div className="flex items-center gap-4">
+            <img 
+                src={item.imageUrl || "/images/placeholder.jpg"} 
+                alt={item.name}
+                className="w-16 h-16 rounded-md object-cover bg-gray-100"
+            />
+            <div>
+                 <p className="text-lg font-semibold text-brand-primary">{item.name}</p>
+                 <p className="text-sm text-gray-500">{item.description}</p> {/* Prikazujemo i opis */}
+            </div>
+        </div>
         <div className="flex items-center gap-6">
-            <p className="text-md text-gray-700">{item.price ? item.price.toFixed(2) : 'N/A'} RSD</p>
+            <p className="text-md text-gray-700 w-24 text-right">{item.price ? `${item.price.toFixed(2)} RSD` : 'N/A'}</p>
             <div className="flex items-center gap-4 text-sm font-medium">
-                <button className="text-brand-primary hover:underline">Edit</button>
-                <button className="text-red-600 hover:underline">Delete</button>
+                 <button onClick={() => onEdit(item)} className="text-brand-primary hover:underline">Edit</button>
+                 <button onClick={() => onDelete(item.id)} className="text-red-600 hover:underline">Delete</button>
             </div>
         </div>
     </div>
@@ -25,12 +34,14 @@ export function ManagerEditMenuPage() {
     const { menuVersionId } = useParams();
     const [menuDetails, setMenuDetails] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [isEditModalOpen, setEditModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
     const [allergens, setAllergens] = useState([]);
     const [dietTypes, setDietTypes] = useState([]);
 
     const fetchDetails = async () => {
-        setLoading(true);
+        // Ne postavljamo loading na true da bi osvežavanje bilo tiho
         try {
             const data = await getMenuVersionDetails(menuVersionId);
             setMenuDetails(data);
@@ -42,6 +53,7 @@ export function ManagerEditMenuPage() {
     };
     
     useEffect(() => {
+        setLoading(true);
         const loadInitialData = async () => {
             try {
                 const [allergensData, dietTypesData] = await Promise.all([getAllergens(), getDietTypes()]);
@@ -60,10 +72,40 @@ export function ManagerEditMenuPage() {
         try {
             await addMenuItem(menuVersionId, itemData);
             toast.success('Item added successfully!', { id: toastId });
-            setIsModalOpen(false);
-            fetchDetails(); // Osveži listu stavki
+            setAddModalOpen(false);
+            fetchDetails();
         } catch (error) {
             toast.error('Failed to add item.', { id: toastId });
+        }
+    };
+
+    const handleEditClick = (item) => {
+        setSelectedItem(item);
+        setEditModalOpen(true);
+    };
+
+    const handleUpdateItem = async (id, itemData) => {
+        const toastId = toast.loading('Updating item...');
+        try {
+            await updateMenuItem(id, itemData);
+            toast.success('Item updated successfully!', { id: toastId });
+            setEditModalOpen(false);
+            fetchDetails();
+        } catch (error) {
+             toast.error('Failed to update item.', { id: toastId });
+        }
+    };
+
+    const handleDeleteItem = async (id) => {
+        if (window.confirm("Are you sure you want to delete this item?")) {
+            const toastId = toast.loading('Deleting item...');
+            try {
+                await deleteMenuItem(id);
+                toast.success('Item deleted.', { id: toastId });
+                fetchDetails();
+            } catch (error) {
+                 toast.error('Failed to delete item.', { id: toastId });
+            }
         }
     };
     
@@ -81,13 +123,13 @@ export function ManagerEditMenuPage() {
                     </div>
                     <div className="flex items-center gap-6">
                         <Link to="/manager/menu" className="text-sm font-medium text-gray-700 hover:text-brand-primary">&larr; Back to All Menus</Link>
-                        <Button onClick={() => setIsModalOpen(true)}>+ Add Item to this Menu</Button>
+                        <Button onClick={() => setAddModalOpen(true)}>+ Add Item to this Menu</Button>
                     </div>
                 </div>
 
                 <div className="bg-white p-6 mt-8 rounded-lg shadow-md">
                      {menuDetails.items && menuDetails.items.length > 0 ? (
-                        menuDetails.items.map(item => <MenuItemRow key={item.id} item={item} />)
+                        menuDetails.items.map(item => <MenuItemRow key={item.id} item={item} onEdit={handleEditClick} onDelete={handleDeleteItem} />)
                      ) : (
                         <p className="text-center text-gray-500 py-8">This menu has no items yet. Add your first one!</p>
                      )}
@@ -95,12 +137,22 @@ export function ManagerEditMenuPage() {
             </main>
 
             <AddMenuItemModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isAddModalOpen}
+                onClose={() => setAddModalOpen(false)}
                 onSubmit={handleAddItem}
                 allergens={allergens}
                 dietTypes={dietTypes}
             />
+            {isEditModalOpen && (
+                <EditMenuItemModal 
+                    isOpen={isEditModalOpen}
+                    onClose={() => setEditModalOpen(false)}
+                    onSubmit={handleUpdateItem}
+                    item={selectedItem}
+                    allergens={allergens}
+                    dietTypes={dietTypes}
+                />
+            )}
         </div>
     );
 }

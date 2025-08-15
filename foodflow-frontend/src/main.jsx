@@ -40,14 +40,17 @@ import { TermsOfServicePage } from './pages/TermsOfServicePage.jsx';
 import { ManagerOrdersPage } from './pages/ManagerOrdersPage.jsx';
 import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
 import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
+import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
 
+// Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
+// Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
   {
     // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
     element: <AppLayout />,
-    // Ovde možete dodati i ErrorBoundary komponentu ako želite
-    // errorElement: <ErrorPage />, 
+  
+      //Customer
     children: [
       { path: "/home", element: <HomePage /> },
       { path: "/restaurant/:restaurantId", element: <MenuPage /> },
@@ -62,17 +65,15 @@ const router = createBrowserRouter([
       { path: "/contact", element: <ContactPage /> },
       { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
       { path: "/terms-of-service", element: <TermsOfServicePage /> },
-      
     ]
   },
-  // Stranice koje su van glavnog layouta (nemaju MiniCart)
-  // Rute za Vozača
+  // Driver
   { path: "/driver", element: <DriverDashboard /> },
   { path: "/driver/profile", element: <DriverProfilePage /> },
   { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
   { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> },
 
-  // Rute za Menadžera
+  // Manager
   { path: "/manager/dashboard", element: <ManagerDashboard /> },
   { path: "/manager/profile", element: <ManagerProfilePage /> },
   { path: "/manager/menu", element: <ManagerMenuPage /> },
@@ -80,9 +81,13 @@ const router = createBrowserRouter([
   { path: "/manager/orders", element: <ManagerOrdersPage /> },
   { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
   { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
+  { path: "/admin/managers", element: <AdminManagerManagementPage />,},
+   
+   // All
   { path: "/", element: <LoginPage /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
+
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

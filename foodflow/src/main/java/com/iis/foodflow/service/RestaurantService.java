@@ -119,4 +119,8 @@ public class RestaurantService {
                 miv.getTimeTo()
         );
     }
+    public List<Restaurant> getAllRestaurantsForAdmin() {
+        // Jednostavno vraća sve restorane iz baze
+        return restaurantRepository.findAll();
+    }
 }

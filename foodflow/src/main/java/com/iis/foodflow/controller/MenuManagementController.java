@@ -2,6 +2,7 @@ package com.iis.foodflow.controller;
 
 import com.iis.foodflow.dto.request.CreateMenuItemRequestDTO;
 import com.iis.foodflow.dto.request.CreateMenuRequestDTO;
+import com.iis.foodflow.dto.request.UpdateMenuItemRequestDTO;
 import com.iis.foodflow.dto.request.UpdateMenuRequestDTO;
 import com.iis.foodflow.dto.response.ManagerMenuDTO;
 import com.iis.foodflow.dto.response.MenuVersionDetailDTO;
@@ -90,5 +91,24 @@ public class MenuManagementController {
     public ResponseEntity<Void> activateMenu(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
         menuManagementService.activateMenuVersion(id, manager);
         return ResponseEntity.ok().build();
+    }
+
+    // ...
+
+    @PutMapping("/items/{id}")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
+    public ResponseEntity<Void> updateMenuItem(
+            @PathVariable Long id,
+            @RequestBody UpdateMenuItemRequestDTO request,
+            @AuthenticationPrincipal Manager manager) {
+        menuManagementService.updateMenuItem(id, request, manager);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/items/{id}")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
+    public ResponseEntity<Void> deleteMenuItem(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+        menuManagementService.deleteMenuItem(id, manager);
+        return ResponseEntity.noContent().build();
     }
 }
