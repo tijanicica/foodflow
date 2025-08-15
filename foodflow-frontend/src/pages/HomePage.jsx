@@ -1,19 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Link } from 'react-router-dom';
 import { getFilteredRestaurants, getAllergens, getDietTypes } from '@/services/api';
-import { SlidersHorizontal, Sparkles, MessageSquarePlus,UtensilsCrossed, X as XIcon, Search, Star as StarIcon, ChevronLeft, ChevronRight, CheckCircle, Circle } from 'lucide-react'; 
+import { SlidersHorizontal, Sparkles, MessageSquarePlus, UtensilsCrossed, X as XIcon, Search, Star as StarIcon, ChevronLeft, ChevronRight, CheckCircle, Circle } from 'lucide-react'; 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DialogHeader, DialogFooter } from "@/components/ui/dialog";
-import { AIChatModal } from '@/components/modals/AIChatModal'; // <-- VAŽAN IMPORT
-
-
+import { AIChatModal } from '@/components/modals/AIChatModal';
 //================================================================================
-// POMOĆNE KOMPONENTE (kompletne)
+// POMOĆNE KOMPONENTE
 //================================================================================
 
 const RestaurantCard = ({ restaurant }) => {
@@ -122,17 +119,17 @@ const FilterModal = ({ isOpen, onClose, onApply, initialFilters }) => {
                             <section>
                                 <h3 className="font-bold text-lg text-gray-800 mb-2 px-2">Dietary Options</h3>
                                 <div className="space-y-1">
-                                    {availableDietTypes.length > 0 ? availableDietTypes.map(diet => (
+                                    {availableDietTypes.map(diet => (
                                         <FilterOption key={diet.id} label={diet.name} isSelected={selectedDietTypeIds.includes(diet.id)} onSelect={() => handleToggle(diet.id, selectedDietTypeIds, setSelectedDietTypeIds)}/>
-                                    )) : <p className="text-sm text-gray-500 px-2">No dietary options available.</p>}
+                                    ))}
                                 </div>
                             </section>
                             <section>
                                 <h3 className="font-bold text-lg text-gray-800 mb-2 px-2">Exclude Allergens</h3>
                                 <div className="space-y-1">
-                                     {availableAllergens.length > 0 ? availableAllergens.map(allergen => (
+                                     {availableAllergens.map(allergen => (
                                         <FilterOption key={allergen.id} label={allergen.name} isSelected={selectedExcludeAllergenIds.includes(allergen.id)} onSelect={() => handleToggle(allergen.id, selectedExcludeAllergenIds, setExcludeAllergenIds)}/>
-                                    )) : <p className="text-sm text-gray-500 px-2">No allergens to exclude.</p>}
+                                    ))}
                                 </div>
                             </section>
                         </div>
@@ -207,12 +204,12 @@ const FeaturedSection = ({ title, restaurants }) => {
     );
 };
 
+
 //================================================================================
 // GLAVNA KOMPONENTA STRANICE
 //================================================================================
 export function HomePage() {
-  const [allRestaurants, setAllRestaurants] = useState([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
+  const [restaurants, setRestaurants] = useState([]); // <--- Samo JEDNO stanje za restorane
   const [loading, setLoading] = useState(true);
   const [isFilterModalOpen, setFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
@@ -221,41 +218,51 @@ export function HomePage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showChatTooltip, setShowChatTooltip] = useState(false);
 
-const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
-    // Ne setujemo loading ovde da ne bi bilo treperenja pri svakom kucanju
+  // Funkcija za dohvatanje restorana sa servera na osnovu filtera
+  const fetchRestaurants = useCallback(async (currentFilters) => {
+    // Ne postavljamo loading na true ovde da izbegnemo treperenje pri kucanju
     try {
       const data = await getFilteredRestaurants(currentFilters);
-      setFilteredRestaurants(data);
-    } catch (error) { console.log("Error fetching restaurants", error); } 
-  }, []);
+      setRestaurants(data);
+    } catch (error) {
+      console.error("Error fetching restaurants:", error);
+      // Možete dodati toast notifikaciju ako želite
+    } finally {
+        // Postavljamo loading na false tek kada stignu prvi podaci
+        if(loading) setLoading(false);
+    }
+  }, [loading]); // Dodajemo 'loading' kao zavisnost
 
-  // Inicijalno dohvatanje SVIH podataka i prikaz poruke
+  // Hook koji se izvršava samo jednom za inicijalno učitavanje
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [allData, diets, allergens] = await Promise.all([
-          getFilteredRestaurants({}),
+        // Paralelno dohvatamo sve potrebne podatke
+        const [initialRestaurants, diets, allergens] = await Promise.all([
+          getFilteredRestaurants({}), // Prvi poziv bez filtera
           getDietTypes(),
           getAllergens()
         ]);
-        setAllRestaurants(allData);
-        setFilteredRestaurants(allData);
+        setRestaurants(initialRestaurants);
         setDietTypeMap(Object.fromEntries(diets.map(d => [d.id, d.name])));
         setAllergenMap(Object.fromEntries(allergens.map(a => [a.id, a.name])));
-      } catch (error) { console.error("Failed to load initial data", error); }
-      finally { setLoading(false); }
+      } catch (error) {
+        console.error("Failed to load initial data", error);
+      } finally {
+        setLoading(false);
+      }
     };
     
     fetchInitialData();
 
-    // === ISPRAVLJENA LOGIKA ZA PORUKU - SADA JE NA PRAVOM MESTU ===
+    // Logika za tooltip ostaje ista
     const hasSeenTooltip = sessionStorage.getItem('hasSeenAIChatTooltip');
     if (!hasSeenTooltip) {
         const showTimer = setTimeout(() => {
             setShowChatTooltip(true);
             sessionStorage.setItem('hasSeenAIChatTooltip', 'true');
-        }, 2500); // Malo duže čekanje
+        }, 2500);
         const hideTimer = setTimeout(() => {
             setShowChatTooltip(false);
         }, 10000); 
@@ -265,39 +272,32 @@ const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
             clearTimeout(hideTimer);
         };
     }
-  }, []); // Ovaj hook se izvršava samo jednom
+  }, []); // Prazan niz zavisnosti osigurava da se ovo izvrši samo jednom
+
+  // Hook koji reaguje na SVAKU promenu filtera i poziva backend
+    // Hook koji reaguje na SVAKU promenu filtera
+  useEffect(() => {
+    // Koristimo debounce da ne bismo slali previše zahteva
+    const timerId = setTimeout(() => {
+      fetchRestaurants(filters);
+    }, 300);
+
+    return () => clearTimeout(timerId);
+  }, [filters, fetchRestaurants]);
   
   const highestRated = useMemo(() => 
-    [...allRestaurants].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10),
-    [allRestaurants]
+    [...restaurants].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10),
+    [restaurants]
   );
-
-   useEffect(() => {
-    // === POČETAK NOVE LOGIKE ZA PORUKU ===
-    const hasSeenTooltip = sessionStorage.getItem('hasSeenAIChatTooltip');
-    if (!hasSeenTooltip) {
-        // Pokaži poruku nakon 2 sekunde
-        const showTimer = setTimeout(() => {
-            setShowChatTooltip(true);
-            sessionStorage.setItem('hasSeenAIChatTooltip', 'true');
-        }, 2000);
-        // Sakrij poruku nakon dodatnih 8 sekundi
-        const hideTimer = setTimeout(() => {
-            setShowChatTooltip(false);
-        }, 10000); // 2s + 8s = 10s
-
-        return () => {
-            clearTimeout(showTimer);
-            clearTimeout(hideTimer);
-        };
-    }
-    // === KRAJ NOVE LOGIKE ===
-  }, []);
   
   const handleSearchChange = (e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }));
   const handleApplyModalFilters = (modalFilters) => setFilters(prev => ({ ...prev, ...modalFilters }));
   const handlePriceFilterToggle = (price) => setFilters(prev => ({ ...prev, priceRanges: prev.priceRanges.includes(price) ? prev.priceRanges.filter(p => p !== price) : [...prev.priceRanges, price] }));
-  const handleClearAllFilters = () => setFilters({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
+  
+  // ISPRAVLJENA FUNKCIJA
+  const handleClearAllFilters = () => {
+    setFilters({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
+  };
 
   return (
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
@@ -323,7 +323,7 @@ const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
       
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
         
-        {!loading && allRestaurants.length > 0 && (
+        {!loading && restaurants.length > 0 && (
             <div className="mb-16">
                 <FeaturedSection title="Trending Now" restaurants={highestRated} />
             </div>
@@ -350,8 +350,8 @@ const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
                 <AnimatePresence>
                     {loading ? (
                         [...Array(8)].map((_, i) => <RestaurantCardSkeleton key={i} />)
-                    ) : filteredRestaurants.length > 0 ? (
-                        filteredRestaurants.map((restaurant) => (
+                    ) : restaurants.length > 0 ? (
+                        restaurants.map((restaurant) => (
                             <motion.div key={restaurant.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
                                 <RestaurantCard restaurant={restaurant} />
                             </motion.div>
