@@ -31,7 +31,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -47,8 +47,11 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 // 3. Definiši pravila za autorizaciju
                 .authorizeHttpRequests(req ->
+
                         req.requestMatchers("/api/auth/**").permitAll().requestMatchers("/ws/**").permitAll() // Dozvoli login/register
                                 // --- PREMJEŠTENO NA KRAJ ---
+                                // ===== IZMENJENA PRAVILA (koristi se hasAuthority) =====
+
                                 .anyRequest().authenticated()             // Sve ostalo zahteva autentifikaciju
                 )
 

@@ -490,3 +490,81 @@ export const setActiveCard = async (cardId) => {
     }
 };
 
+// U api.js
+
+export const getManagerAnalytics = async (days = 30, restaurantId = null) => {
+    const params = { days };
+    // Šaljemo restaurantId samo ako ima vrednost (nije null, undefined, 0, ili prazan string)
+    if (restaurantId) {
+        params.restaurantId = restaurantId;
+    }
+    const response = await apiClient.get('/manager/analytics', { params });
+    return response.data;
+};
+
+export const getMyRestaurants = async () => {
+    const response = await apiClient.get('/manager/my-restaurants');
+    return response.data;
+};
+
+
+// --- MANAGER PROFILE ---
+export const getManagerProfile = async () => {
+    try {
+        const response = await apiClient.get('/manager/profile');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching manager profile:", error);
+        throw error;
+    }
+};
+
+export const updateManagerProfile = async (profileData) => {
+    try {
+        const response = await apiClient.put('/manager/profile', profileData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating manager profile:", error);
+        throw error;
+    }
+};
+
+export const changeManagerPassword = async (passwordData) => {
+    // Ne očekujemo povratne podatke osim statusa
+    await apiClient.post('/manager/profile/change-password', passwordData);
+};
+// --- MANAGER MENU MANAGEMENT ---
+
+// --- MANAGER (MENU MANAGEMENT) ---
+export const getManagerMenus = async () => {
+    const response = await apiClient.get('/manager/menus');
+    return response.data;
+};
+
+export const createManagerMenu = async (menuData) => {
+    const response = await apiClient.post('/manager/menus', menuData);
+    return response.data;
+};
+
+export const getMenuVersionDetails = async (menuVersionId) => {
+    const response = await apiClient.get(`/manager/menus/${menuVersionId}`);
+    return response.data;
+};
+
+export const updateMenuName = async (menuVersionId, menuData) => {
+    const response = await apiClient.put(`/manager/menus/${menuVersionId}`, menuData);
+    return response.data;
+};
+
+export const deactivateMenu = async (menuVersionId) => {
+    await apiClient.post(`/manager/menus/${menuVersionId}/deactivate`);
+};
+
+export const activateMenu = async (menuVersionId) => {
+    await apiClient.post(`/manager/menus/${menuVersionId}/activate`);
+};
+
+export const addMenuItem = async (menuVersionId, itemData) => {
+    const response = await apiClient.post(`/manager/menus/${menuVersionId}/items`, itemData);
+    return response.data;
+};
