@@ -1,37 +1,33 @@
-// src/pages/LoginPage.jsx
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginUser } from '@/services/api';
 import { Link, useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // <-- 1. Uvezite jwt-decode
+import { jwtDecode } from 'jwt-decode';
+import { motion } from 'framer-motion';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Logika prijave ostaje ista
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-
+    setIsLoading(true);
     try {
-      // Vaš API poziv za prijavu
-      const response = await loginUser(email, password); // Pretpostavka: response = { token: '...' }
+      const response = await loginUser(email, password);
       const { token } = response;
-
-      // 2. Sačuvajte token u Local Storage. Ovo je ključno!
       localStorage.setItem('jwtToken', token);
-
-      // 3. Dekodirajte token i izvucite ulogu
       const decodedToken = jwtDecode(token);
-      const userRole = decodedToken.role; // Čita 'role' polje koje je backend postavio
+      const userRole = decodedToken.role;
 
-      // 4. Preusmjerite korisnika na osnovu njegove uloge
-      switch (userRole) {
+    switch (userRole) {
         case 'ROLE_DRIVER':
           navigate('/driver'); // Vozač ide na /driver
           break;
@@ -41,9 +37,11 @@ export function LoginPage() {
         case 'ROLE_OPERATOR':
           navigate('/operator/dashboard'); // Primjer rute za operatora
           break;
+         // ===== ISPRAVKA JE OVDE =====
         case 'ROLE_MANAGER':
-          navigate('/manager/overview'); // Primjer rute za menadžera
+          navigate('/manager/dashboard'); // Bilo je '/manager/overview'
           break;
+        // ============================
         case 'ROLE_ADMINISTRATOR':
           navigate('/admin/panel'); // Primjer rute za administratora
           break;
@@ -56,86 +54,121 @@ export function LoginPage() {
           navigate('/login');
           break;
       }
-
     } catch (err) {
-      console.error('Login failed:', err);
-      // Prikazivanje konkretnije greške ako je backend pošalje
-      const errorMessage = err.response?.data || 'Login failed. Please check your credentials.';
+      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
-    <main className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="flex items-center justify-center p-6 sm:p-12 bg-brand-background-light">
-        <form onSubmit={handleSubmit} className="mx-auto grid w-full max-w-sm gap-8">
-          <div className="absolute top-8 left-8">
-            <h1 className="text-3xl font-bold text-brand-primary italic">
-              foodFlow
-            </h1>
-            <p className="text-brand-primary/70 text-sm text-center">anywhere you are</p>
+return (
+    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      
+      {/* LEVA STRANA */}
+      <div className="flex flex-col items-center justify-center p-6 sm:p-12 bg-[#F9F5EC]">
+        <div className="mb-8 text-center">
+            <h1 className="text-5xl font-bold text-[#4A4A4A] italic">foodFlow</h1>
+            <p className="text-[#4A4A4A]/70 text-sm -mt-1">anywhere you are</p>
+        </div>
+
+        <motion.div 
+          className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-[#4A4A4A]">Welcome Back!</h2>
+            <p className="text-gray-500 mt-1">Please enter your details to sign in.</p>
           </div>
-          <div className="grid gap-6 text-left">
-            <div className="grid gap-2"></div>
-            <div className="grid gap-8">
-              <div className="grid gap-2">
-                <Label htmlFor="email" className="text-brand-primary/90">
-                  Email Address
-                </Label>
-                <Input
+
+          <form onSubmit={handleSubmit} className="grid gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="email" className="font-semibold text-gray-700">Email Address</Label>
+              <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="name@example.com"
                   required
-                  className="bg-transparent border-0 border-b-2 border-brand-accent rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="h-12 bg-gray-50 border-gray-300 focus:border-brand-primary focus:ring-brand-primary rounded-md"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password" className="text-brand-primary/90">
-                  Password
-                </Label>
-                <Input
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="font-semibold text-gray-700">Password</Label>
+              <Input
                   id="password"
                   type="password"
                   required
-                  className="bg-transparent border-0 border-b-2 border-brand-accent rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  placeholder="Enter your password"
+                  className="h-12 bg-gray-50 border-gray-300 focus:border-brand-primary focus:ring-brand-primary rounded-md"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button
-                type="submit"
-                className="w-full h-12 text-lg rounded-xl bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90"
-              >
-                Login
-              </Button>
             </div>
-          </div>
-        </form>
+            
+            {/* === OVDE JE KLJUČNA IZMENA === */}
+            {/* 1. Kreiramo kontejner fiksne visine (h-14) koji UVEK postoji */}
+            <div className="h-14">
+              {/* 2. Poruka o grešci se sada prikazuje UNUTAR ovog kontejnera */}
+              {error && (
+                <motion.div 
+                  className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-md flex items-center gap-3 text-sm"
+                  initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                >
+                  <AlertTriangle size={20} />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              // Koristimo negativnu gornju marginu (-mt-6) da vizuelno kompenzujemo prazan prostor
+              // kada greške nema, čime se održava isti vizuelni raspored.
+              className="w-full h-12 text-lg font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary/90 transition-colors -mt-6"
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Sign In'}
+            </Button>
+            
+            <p className="text-center text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link to="/register" className="font-semibold underline text-brand-primary hover:text-brand-primary/90">
+                Register
+              </Link>
+            </p>
+          </form>
+        </motion.div>
       </div>
 
-      <div className="hidden lg:flex relative items-end justify-center p-10">
+      {/* DESNA STRANA (ostaje ista) */}
+      <div className="hidden lg:flex relative items-center justify-center bg-gray-900">
         <img
-          src="/foodflowlogin.png"
+          src="foodflowlogin.png"
           alt="A delicious display of food"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover opacity-30"
         />
-        <div className="absolute inset-0 bg-black opacity-50"></div>
-        <div className="relative z-10 bg-brand-background-light/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-md">
-          <p className="text-sm text-brand-primary">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="font-semibold underline underline-offset-4 text-brand-primary"
-            >
-              Register
-            </Link>
-          </p>
+        <div className="relative z-10 text-center text-white p-10">
+           <motion.div
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ delay: 0.3, duration: 0.5 }}
+           >
+            <h2 className="text-5xl font-extrabold leading-tight tracking-tight">
+              Your next meal <br/> is just a click away.
+            </h2>
+            <p className="mt-4 text-lg text-gray-200 max-w-md mx-auto">
+              From local gems to popular chains, find all your favorite restaurants in one place.
+            </p>
+           </motion.div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

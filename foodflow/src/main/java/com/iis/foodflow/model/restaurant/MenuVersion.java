@@ -27,6 +27,10 @@ public class MenuVersion {
     @ToString.Exclude
     private Menu menu;
 
+    // ===== NOVO POLJE =====
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
     @OneToMany(mappedBy = "menuVersion")
     @ToString.Exclude
     private Set<MenuItemVersion> menuItemVersions = new HashSet<>();

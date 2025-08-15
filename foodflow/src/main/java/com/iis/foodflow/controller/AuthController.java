@@ -4,8 +4,10 @@ package com.iis.foodflow.controller;
 import com.iis.foodflow.dto.request.LoginRequest;
 import com.iis.foodflow.dto.request.RegisterRequest;
 import com.iis.foodflow.dto.response.LoginResponse;
+import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.security.JwtService;
 import com.iis.foodflow.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,13 +45,13 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponse(token));
     }
 
+
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) { // <-- DODAJ @Valid
         try {
-            authService.register(request);
-            return ResponseEntity.ok("Registration successful!");
+            Customer customer = authService.register(request);
+            return ResponseEntity.ok(customer); // Ili neki DTO
         } catch (IllegalStateException e) {
-            // Vraća grešku ako lozinke nisu iste ili email već postoji
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

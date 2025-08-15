@@ -1,9 +1,13 @@
 package com.iis.foodflow.controller;
 
+import com.iis.foodflow.dto.request.AddressRequest;
 import com.iis.foodflow.dto.request.AddressRequestDTO;
+import com.iis.foodflow.dto.request.UpdateAddressRequestDTO;
 import com.iis.foodflow.dto.response.AddressDTO;
+import com.iis.foodflow.dto.response.UserProfileDTO;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.service.AddressService;
+import com.iis.foodflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,10 +34,22 @@ public class AddressController {
     @PostMapping
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<AddressDTO> addNewAddress(
-            @RequestBody AddressRequestDTO addressRequest,
+            @RequestBody AddressRequest addressRequest,
             @AuthenticationPrincipal Customer customer
     ) {
         AddressDTO newAddress = addressService.addNewAddress(addressRequest, customer);
         return ResponseEntity.status(HttpStatus.CREATED).body(newAddress);
+    }
+
+    private final UserService userService; // Može biti i u AddressService
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<UserProfileDTO.AddressDTO> updateAddress(
+            @PathVariable("id") Long id,
+            @RequestBody UpdateAddressRequestDTO addressData,
+            @AuthenticationPrincipal Customer customer) {
+        UserProfileDTO.AddressDTO updatedAddress = userService.updateAddress(id, addressData, customer);
+        return ResponseEntity.ok(updatedAddress);
     }
 }

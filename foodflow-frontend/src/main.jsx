@@ -24,10 +24,23 @@ import { DriverProfilePage } from './pages/DriverProfilePage.jsx';
 import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
 import { ViewOrderPage } from './pages/ViewOrderPage'; 
 import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
-import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
 import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
+import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
+import { MyProfilePage } from './pages/MyProfilePage';
 
+import { ManagerDashboard } from './pages/ManagerDashboard.jsx'; // <-- 1. DODAJTE OVAJ IMPORT
+import { ManagerProfilePage } from './pages/ManagerProfilePage.jsx'; // <-- DODAJTE OVAJ IMPORT
+import { ManagerMenuPage } from './pages/ManagerMenuPage.jsx'; // <-- DODAJTE OVAJ IMPORT
+import { ManagerEditMenuPage } from './pages/ManagerEditMenuPage.jsx';
 
+import { AboutUsPage } from './pages/AboutUsPage.jsx';
+import { FaqPage } from './pages/FaqPage.jsx';
+import { ContactPage } from './pages/ContactPage.jsx';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage.jsx';
+import { TermsOfServicePage } from './pages/TermsOfServicePage.jsx';
+import { ManagerOrdersPage } from './pages/ManagerOrdersPage.jsx';
+import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
+import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -67,7 +80,6 @@ const router = createBrowserRouter([
   },
 
     {
-    // Ovo je stranica NAKON preuzimanja porudžbine
     path: "/delivery/:orderId", 
     element: <PickedUpOrderPage />,
   },
@@ -91,11 +103,68 @@ const router = createBrowserRouter([
     path: "/track/:orderId",
     element: <TrackOrderPage />,
   },
+
   {
     path: "/analytics",
     element: <AnalyticsPage />,
   },
+    {
+    path: "/profile",
+    element: <MyProfilePage />,
+  },
+   {
 
+    path: "/manager/dashboard",
+    element: <ManagerDashboard />,
+  },
+   {
+    path: "/manager/profile",
+    element: <ManagerProfilePage />,
+  },
+  // --- DODAJTE OVU NOVU RUTU ---
+  {
+    path: "/manager/menu",
+    element: <ManagerMenuPage />,
+  },
+   // ===== DODAJ OVU DINAMIČKU RUTU =====
+  {
+    path: "/manager/menu/:menuVersionId",
+    element: <ManagerEditMenuPage />,
+ },
+  {
+    path: "/about",
+    element: <AboutUsPage />,
+  },
+  {
+    path: "/faq",
+    element: <FaqPage />,
+  },
+  {
+    path: "/contact",
+    element: <ContactPage />,
+  },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/terms-of-service",
+    element: <TermsOfServicePage />,
+
+  },
+  {
+      path: "/manager/orders",
+      element: <ManagerOrdersPage />,
+    },
+      // --- NOVE RUTE ---
+    {
+      path: "/manager/deliveries",
+      element: <ManagerDeliveriesPage />,
+    },
+    {
+      path: "/manager/deliveries/track/:orderId",
+      element: <ManagerTrackOrderPage />,
+    },
   // Ovde ćeš kasnije dodavati i druge rute
   // {
   //   path: "/dashboard",

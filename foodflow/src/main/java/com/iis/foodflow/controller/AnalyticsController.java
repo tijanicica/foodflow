@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,7 +21,12 @@ public class AnalyticsController {
 
     @GetMapping("/my-analytics")
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    public ResponseEntity<CustomerAnalyticsDTO> getMyAnalytics(@AuthenticationPrincipal Customer customer) {
-        return ResponseEntity.ok(analyticsService.getCustomerAnalytics(customer));
+    public ResponseEntity<CustomerAnalyticsDTO> getMyAnalytics(
+            // --- POČETAK IZMENE ---
+            @RequestParam("period") String period,
+            @AuthenticationPrincipal Customer customer
+    ) {
+        return ResponseEntity.ok(analyticsService.getCustomerAnalytics(customer, period));
+        // --- KRAJ IZMENE ---
     }
 }

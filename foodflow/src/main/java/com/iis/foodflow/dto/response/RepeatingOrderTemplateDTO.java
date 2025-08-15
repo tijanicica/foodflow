@@ -14,6 +14,8 @@ import java.time.LocalTime;
 public class RepeatingOrderTemplateDTO {
         private Long id;
         private String restaurantName;
+        private String restaurantImageUrl; // <-- DODAJEMO NOVO POLJE
+
         private RepeatType repeatType;
         private DayOfWeek dayOfWeek;
         private LocalTime deliveryTime;

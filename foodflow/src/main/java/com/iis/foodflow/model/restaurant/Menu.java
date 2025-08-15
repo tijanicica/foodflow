@@ -17,13 +17,18 @@ public class Menu {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    // NOVO POLJE
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 
     @ManyToOne
     @JoinColumn(name = "restaurant_id", nullable = false)
     @ToString.Exclude // Isključi toString da sprečiš rekurziju
     private Restaurant restaurant;
 
-    @OneToMany(mappedBy = "menu")
+
+    // ===== KLJUČNA IZMENA JE OVDE =====
+    @OneToMany(mappedBy = "menu", cascade = CascadeType.ALL) // Dodajemo cascade = CascadeType.ALL
     @ToString.Exclude // NAJVAŽNIJE: Isključi kolekciju iz toString
     private Set<MenuVersion> versions = new HashSet<>();
 }

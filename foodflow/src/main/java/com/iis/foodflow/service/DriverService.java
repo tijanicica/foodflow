@@ -41,7 +41,7 @@ public class DriverService {
     private final DriverRatingRepository driverRatingRepository;
     private final OrderOfferRepository orderOfferRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final NotificationService notificationService;
 
     @Autowired
     private RoutingService routingService;
@@ -348,6 +348,7 @@ public class DriverService {
         order.setCancellationReason(reason);
 
         Order savedOrder = orderRepository.save(order);
+        notificationService.notifyManagerOfOrderStatusUpdate(savedOrder);
 
         // Vraćamo DTO, a ne entitet
         return new CancelDeliveryResponse(
@@ -473,6 +474,9 @@ public class DriverService {
         // Pozovi pomoćnu metodu da ponovo izračuna ETA sa novim, ukupnim kašnjenjem
         recalculateEtaAndUpdateOrder(order, driver);
 
+        Order updatedOrder = orderRepository.save(order);
+        notificationService.notifyManagerOfOrderStatusUpdate(updatedOrder);
+
         return orderRepository.save(order);
     }
 
@@ -585,6 +589,9 @@ public class DriverService {
         // Ako su sve provere prošle, menjamo status porudžbine
         order.setStatus(OrderStatus.DELIVERED);
         order.setDeliveredAt(LocalDateTime.now());
+
+        Order updatedOrder = orderRepository.save(order);
+        notificationService.notifyManagerOfOrderStatusUpdate(updatedOrder);
 
         // Kada je porudžbina dostavljena, vozač je ponovo slobodan
         driver.setStatus(DriverStatus.ONLINE);

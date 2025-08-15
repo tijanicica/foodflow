@@ -21,6 +21,9 @@ public class MenuItemVersion {
     private LocalTime timeTo;   // Bilo je dateTo (LocalDateTime)
     private boolean available;
     private boolean popular;
+    // NOVO POLJE
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 
     @ManyToOne
     @JoinColumn(name = "menu_item_id", nullable = false)

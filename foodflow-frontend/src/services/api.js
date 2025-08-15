@@ -406,9 +406,9 @@ export const getTrackingInfo = async (orderId) => {
     }
 };
 
-export const getMyAnalytics = async () => {
+export const getMyAnalytics = async (params) => {
     try {
-        const response = await apiClient.get('/analytics/my-analytics');
+        const response = await apiClient.get('/analytics/my-analytics',{params});
         return response.data;
     } catch (error) {
         console.error("Error fetching analytics:", error);
@@ -418,4 +418,187 @@ export const getMyAnalytics = async () => {
 
 export const reportDelay = async (orderId, delayMinutes) => {
     await apiClient.post(`/drivers/orders/${orderId}/report-delay`, { delayMinutes });
+};
+  
+export const getMyProfile = async () => {
+    try {
+        const response = await apiClient.get('/user/profile');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        throw error;
+    }
+};
+
+
+export const addNewCard = async (cardData) => {
+    try {
+        const response = await apiClient.post('/user/cards', cardData);
+        return response.data;
+    } catch (error) {
+        console.error("Error adding new card:", error);
+        throw error;
+    }
+};
+
+
+export const deleteCard = async (cardId) => {
+    try {
+        await apiClient.delete(`/user/cards/${cardId}`);
+    } catch (error) {
+        console.error(`Error deleting card with ID ${cardId}:`, error);
+        throw error;
+    }
+};
+
+export const updatePhoneNumber = async (phone) => { 
+    try {
+        const response = await apiClient.patch('/user/profile/phone', { phone });
+        return response.data;
+    } catch (error) {
+        console.error("Error updating phone number:", error);
+        throw error;
+    }
+};
+
+export const changePassword = async (passwordData) => { 
+    try {
+        const response = await apiClient.post('/user/profile/change-password', passwordData);
+        return response.data;
+    } catch (error) {
+        console.error("Error changing password:", error);
+        throw error;
+    }
+};
+
+export const updateAddress = async (addressId, addressData) => {
+    try {
+        const response = await apiClient.put(`/addresses/${addressId}`, addressData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating address ${addressId}:`, error);
+        throw error;
+    }
+};
+
+export const setActiveCard = async (cardId) => {
+    try {
+        await apiClient.patch(`/user/cards/${cardId}/set-active`);
+    } catch (error) {
+        console.error("Error setting active card:", error);
+        throw error;
+    }
+};
+
+// U api.js
+
+export const getManagerAnalytics = async (days = 30, restaurantId = null) => {
+    const params = { days };
+    // Šaljemo restaurantId samo ako ima vrednost (nije null, undefined, 0, ili prazan string)
+    if (restaurantId) {
+        params.restaurantId = restaurantId;
+    }
+    const response = await apiClient.get('/manager/analytics', { params });
+    return response.data;
+};
+
+export const getMyRestaurants = async () => {
+    const response = await apiClient.get('/manager/my-restaurants');
+    return response.data;
+};
+
+
+// --- MANAGER PROFILE ---
+export const getManagerProfile = async () => {
+    try {
+        const response = await apiClient.get('/manager/profile');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching manager profile:", error);
+        throw error;
+    }
+};
+
+export const updateManagerProfile = async (profileData) => {
+    try {
+        const response = await apiClient.put('/manager/profile', profileData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating manager profile:", error);
+        throw error;
+    }
+};
+
+export const changeManagerPassword = async (passwordData) => {
+    // Ne očekujemo povratne podatke osim statusa
+    await apiClient.post('/manager/profile/change-password', passwordData);
+};
+// --- MANAGER MENU MANAGEMENT ---
+
+// --- MANAGER (MENU MANAGEMENT) ---
+export const getManagerMenus = async () => {
+    const response = await apiClient.get('/manager/menus');
+    return response.data;
+};
+
+export const createManagerMenu = async (menuData) => {
+    const response = await apiClient.post('/manager/menus', menuData);
+    return response.data;
+};
+
+export const getMenuVersionDetails = async (menuVersionId) => {
+    const response = await apiClient.get(`/manager/menus/${menuVersionId}`);
+    return response.data;
+};
+
+export const updateMenuName = async (menuVersionId, menuData) => {
+    const response = await apiClient.put(`/manager/menus/${menuVersionId}`, menuData);
+    return response.data;
+};
+
+export const deactivateMenu = async (menuVersionId) => {
+    await apiClient.post(`/manager/menus/${menuVersionId}/deactivate`);
+};
+
+export const activateMenu = async (menuVersionId) => {
+    await apiClient.post(`/manager/menus/${menuVersionId}/activate`);
+};
+
+export const addMenuItem = async (menuVersionId, itemData) => {
+    const response = await apiClient.post(`/manager/menus/${menuVersionId}/items`, itemData);
+    return response.data;
+};
+// U api.js
+
+// U src/services/api.js
+
+export const getManagerActiveOrders = async () => {
+    const response = await apiClient.get('/manager/orders/active');
+    return response.data;
+};
+
+export const confirmManagerOrder = async (orderId) => {
+    await apiClient.post(`/manager/orders/${orderId}/confirm`);
+};
+
+export const rejectManagerOrder = async (orderId, reason) => {
+    await apiClient.post(`/manager/orders/${orderId}/reject`, { reason });
+};
+
+export const markOrderAsReady = async (orderId) => {
+    await apiClient.post(`/manager/orders/${orderId}/ready`);
+};
+
+export const getManagerDeliveries = async () => {
+const response = await apiClient.get('/manager/deliveries');
+return response.data;
+};
+export const getManagerTrackingInfo = async (orderId) => {
+    // Mora biti unutar backtick ` navodnika, ne /
+    const response = await apiClient.get(`/manager/deliveries/${orderId}/track`);
+    return response.data;
+};
+export const rateDriverByManager = async (orderId, ratingData) => {
+    // Mora biti unutar backtick ` navodnika, ne /
+    await apiClient.post(`/ratings/driver/${orderId}/restaurant`, ratingData);
 };

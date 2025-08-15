@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface DriverRatingRepository extends JpaRepository<DriverRating, Long> {
-
+    Optional<DriverRating> findByOrder_Id(Long orderId);
     /**
      * Izračunava ukupnu prosječnu ocjenu za vozača, uzimajući u obzir sve parametre
      * od kupca i restorana.
@@ -34,6 +34,7 @@ public interface DriverRatingRepository extends JpaRepository<DriverRating, Long
     Optional<Double> findAverageRatingByDriverId(@Param("driverId") Long driverId);
 
     boolean existsByOrder_IdAndRatedByCustomerIsNotNull(Long orderId);
-
+    // U DriverRatingRepository.java
+    boolean existsByOrder_IdAndRatedByManagerIsNotNull(Long orderId);
 
 }
