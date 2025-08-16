@@ -26,21 +26,20 @@ public class ManagerOrderController {
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> confirmOrder(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<Void> confirmOrder(@PathVariable("id") Long id, @AuthenticationPrincipal Manager manager) {
         managerOrderService.confirmOrder(id, manager);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> rejectOrder(@PathVariable Long id, @RequestBody Map<String, String> payload, @AuthenticationPrincipal Manager manager) {
-        managerOrderService.rejectOrder(id, manager, payload.get("reason"));
+    public ResponseEntity<Void> rejectOrder(@PathVariable("id") Long id, @RequestBody Map<String, String> payload, @AuthenticationPrincipal Manager manager) {        managerOrderService.rejectOrder(id, manager, payload.get("reason"));
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/ready")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> markAsReady(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<Void> markAsReady(@PathVariable("id") Long id, @AuthenticationPrincipal Manager manager) {
         managerOrderService.markAsReady(id, manager);
         return ResponseEntity.ok().build();
     }
