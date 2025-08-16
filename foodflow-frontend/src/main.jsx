@@ -13,6 +13,7 @@ import 'leaflet/dist/leaflet.css';
 // Uvezite sve Vaše komponente i stranice
 import { AppLayout } from './components/AppLayout'; // <-- NOVI IMPORT
 import { MiniCart } from './components/MiniCart';   // <-- NOVI IMPORT
+import { DriverLayout } from './layouts/DriverLayout.jsx';
 
 import { LoginPage } from './pages/LoginPage.jsx';
 import { RegisterPage } from './pages/RegisterPage.jsx';
@@ -42,6 +43,7 @@ import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
 import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
 import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
 
+
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -67,11 +69,15 @@ const router = createBrowserRouter([
       { path: "/terms-of-service", element: <TermsOfServicePage /> },
     ]
   },
-  // Driver
-  { path: "/driver", element: <DriverDashboard /> },
-  { path: "/driver/profile", element: <DriverProfilePage /> },
-  { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
-  { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> },
+  {
+    element: <DriverLayout />, // Postavi DriverLayout kao glavni element
+    children: [ // Sve prethodne driver rute sada idu unutar 'children' niza
+      { path: "/driver", element: <DriverDashboard /> },
+      { path: "/driver/profile", element: <DriverProfilePage /> },
+      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
+      { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> },
+    ]
+  },
 
   // Manager
   { path: "/manager/dashboard", element: <ManagerDashboard /> },
@@ -92,9 +98,10 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <Toaster position="bottom-right" />
     <CartProvider>
       <RouterProvider router={router} />
-      <Toaster position="bottom-right" />
+      
     </CartProvider>
   </React.StrictMode>
 );

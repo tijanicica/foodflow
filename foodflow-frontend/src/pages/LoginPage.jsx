@@ -16,49 +16,62 @@ export function LoginPage() {
   const navigate = useNavigate();
 
   // Logika prijave ostaje ista
+// Unutar tvoje LoginPage komponente
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
+    
     try {
       const response = await loginUser(email, password);
       const { token } = response;
+      
+      // 1. Sačuvaj token i dekodirane podatke o korisniku u localStorage
       localStorage.setItem('jwtToken', token);
       const decodedToken = jwtDecode(token);
+      localStorage.setItem('user', JSON.stringify(decodedToken));
+      
       const userRole = decodedToken.role;
 
-    switch (userRole) {
+      // === KLJUČNA IZMENA: REDOSLED OPERACIJA ===
+
+      // Prvo definišemo kuda treba da idemo
+      let destination = '/login'; // Default destinacija ako rola nije prepoznata
+      switch (userRole) {
         case 'ROLE_DRIVER':
-          navigate('/driver'); // Vozač ide na /driver
+          destination = '/driver';
           break;
         case 'ROLE_CUSTOMER':
-          navigate('/home'); // Kupac ide na /home
+          destination = '/home';
           break;
         case 'ROLE_OPERATOR':
-          navigate('/operator/dashboard'); // Primjer rute za operatora
+          destination = '/operator/dashboard';
           break;
-         // ===== ISPRAVKA JE OVDE =====
         case 'ROLE_MANAGER':
-          navigate('/manager/dashboard'); // Bilo je '/manager/overview'
+          destination = '/manager/dashboard';
           break;
-        // ============================
-       
         case 'ROLE_SUPPORT_ADMINISTRATOR':
-          navigate('/support/tickets'); // Primjer rute za podršku
+          destination = '/support/tickets';
           break;
-
-        // ===== ISPRAVKA JE OVDE =====
-    case 'ROLE_ADMINISTRATOR':
-      navigate('/admin/managers'); // Umesto '/admin/panel'
-      break;
-    // ============================
-
+        case 'ROLE_ADMINISTRATOR':
+          destination = '/admin/managers';
+          break;
         default:
-          // Ako uloga nije prepoznata, vrati ga na login ili prikaži grešku
           console.warn(`Unknown role: ${userRole}`);
-          navigate('/login');
           break;
       }
+      
+      // 2. Odmah izvrši navigaciju
+      navigate(destination);
+      
+      // 3. NAKON navigacije, sa malom pauzom, pošalji događaj
+      // Ovo daje vremena React Router-u da počne da renderuje novu stranicu (npr. DriverLayout),
+      // tako da će ona biti spremna da "čuje" događaj.
+      setTimeout(() => {
+        window.dispatchEvent(new Event("userLoggedIn"));
+      }, 50); // Koristimo 50ms za svaki slučaj, iako je i 0 često dovoljno.
+
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);

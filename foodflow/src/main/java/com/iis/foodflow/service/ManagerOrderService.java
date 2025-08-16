@@ -6,18 +6,21 @@ import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.user.Manager;
 import com.iis.foodflow.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
+import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ManagerOrderService {
 
     private final OrderRepository orderRepository;
     private final OrderAssignmentService orderAssignmentService; // Za dodelu vozača
+    private final RealtimeNotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<ManagerOrderDTO> getActiveOrders(Manager manager) {
@@ -46,7 +49,7 @@ public class ManagerOrderService {
                 .build();
     }
 
-    @Transactional
+    /*@Transactional
     public void confirmOrder(Long orderId, Manager manager) {
         Order order = findAndValidateOrder(orderId, manager);
         if (order.getStatus() != OrderStatus.CREATED) {
@@ -57,6 +60,68 @@ public class ManagerOrderService {
 
         // Pokreni algoritam za dodelu vozača
         orderAssignmentService.findAndAssignBestDriver(order);
+
+
+    }*/
+
+    @Transactional
+    public void confirmOrder(Long orderId, Manager manager) {
+        Order order = findAndValidateOrder(orderId, manager);
+        if (order.getStatus() != OrderStatus.CREATED) {
+            throw new IllegalStateException("Order can only be confirmed if its status is CREATED.");
+        }
+
+        order.setStatus(OrderStatus.CONFIRMED);
+        orderAssignmentService.findAndAssignBestDriver(order);
+        Order savedOrder = orderRepository.save(order);
+
+        if (savedOrder.getDriver() != null) {
+            log.info("Order #{} confirmed. Driver #{} assigned. Preparing to send notification.", savedOrder.getId(), savedOrder.getDriver().getId());
+            try {
+                // Inicijalizacija pre slanja
+                Hibernate.initialize(savedOrder.getOrderItems());
+
+                // Poziv servisa
+                notificationService.notifyDriverOfNewOrder(savedOrder);
+
+                log.info("Notification for order #{} successfully dispatched.", savedOrder.getId());
+            } catch (Exception e) {
+                // === HVATAMO BILO KOJU GREŠKU KOJA SE DESI TOKOM SLANJA ===
+                log.error("!!!!!!!!!! FAILED TO SEND NOTIFICATION for order #{} !!!!!!!!!!", savedOrder.getId(), e);
+                // ==========================================================
+            }
+        } else {
+            log.warn("Order #{} was confirmed, but no available driver was found. No notification sent.", savedOrder.getId());
+        }
+    }
+
+
+    // ... tvoja 'markAsReady' metoda ...
+    @Transactional
+    public void markAsReady(Long orderId, Manager manager) {
+        Order order = findAndValidateOrder(orderId, manager);
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order can only be marked as ready if it's confirmed.");
+        }
+
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        Order savedOrder = orderRepository.save(order);
+
+        log.info("Order #{} marked as ready. Preparing to send notification.", savedOrder.getId());
+
+        try {
+            // Inicijalizacija pre slanja
+            Hibernate.initialize(savedOrder.getOrderItems());
+
+            // Poziv servisa
+            notificationService.notifyDriverOrderReadyForPickup(savedOrder);
+
+            log.info("Notification for order #{} successfully dispatched.", savedOrder.getId());
+        } catch (Exception e) {
+            // === HVATAMO BILO KOJU GREŠKU KOJA SE DESI TOKOM SLANJA ===
+            log.error("!!!!!!!!!! FAILED TO SEND 'READY FOR PICKUP' NOTIFICATION for order #{} !!!!!!!!!!", savedOrder.getId(), e);
+            // ==========================================================
+        }
     }
 
     @Transactional
@@ -70,7 +135,7 @@ public class ManagerOrderService {
         orderRepository.save(order);
     }
 
-    @Transactional
+    /*@Transactional
     public void markAsReady(Long orderId, Manager manager) {
         Order order = findAndValidateOrder(orderId, manager);
         if (order.getStatus() != OrderStatus.CONFIRMED) {
@@ -80,8 +145,23 @@ public class ManagerOrderService {
         orderRepository.save(order);
 
         // TODO: Poslati notifikaciju vozaču da je porudžbina spremna
-    }
+    }*/
 
+    /*@Transactional
+    public void markAsReady(Long orderId, Manager manager) {
+        Order order = findAndValidateOrder(orderId, manager);
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order can only be marked as ready if it's confirmed.");
+        }
+
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        Order savedOrder = orderRepository.save(order);
+
+        // <-- NOTIFIKACIJA SE ŠALJE OVDE
+        // Rešen TODO: Poslati notifikaciju vozaču da je porudžbina spremna
+        notificationService.notifyDriverOrderReadyForPickup(savedOrder);
+    }
+*/
     private Order findAndValidateOrder(Long orderId, Manager manager) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
