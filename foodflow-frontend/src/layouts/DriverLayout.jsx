@@ -3,64 +3,63 @@
 import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useWebSocket } from '../hooks/useWebSocket'; // Uvozimo naš hook
-    
-
-
+import { useWebSocket } from '../hooks/useWebSocket';
 
 /**
  * DriverLayout je "omotač" za sve stranice koje su dostupne vozaču.
- * Njegov zadatak NIJE da prikazuje neku stranicu, već da:
- * 1. Održava WebSocket konekciju aktivnom sve vreme.
- * 2. Sluša za nove notifikacije i prikazuje ih u "tosteru".
- * 3. Renderuje trenutnu stranicu na kojoj se vozač nalazi unutar <Outlet />.
+ * On je uvek aktivan dok je vozač na bilo kojoj svojoj stranici.
+ * Njegovi zadaci su:
+ * 1. Održavanje WebSocket konekcije aktivnom preko 'useWebSocket' hook-a.
+ * 2. Prikazivanje "toster" notifikacija koje stignu.
+ * 3. Obaveštavanje ostatka aplikacije o novoj notifikaciji putem custom događaja.
+ * 4. Prikazivanje trenutne stranice (npr. Dashboard, Profile) unutar <Outlet />.
  */
 export const DriverLayout = () => {
-  // 1. POZIVAMO HOOK
-  // Ova jedna linija pokreće celu mašineriju: čita token, povezuje se
-  // na WebSocket i daje nam poslednju primljenu notifikaciju.
+  // 1. Pozivamo hook koji se brine o celoj WebSocket logici
   const notification = useWebSocket();
   const navigate = useNavigate();
 
-  // 2. SIGURNOSNA PROVERA (Opciono, ali jako preporučljivo)
-  // Ovaj useEffect se pokreće samo jednom kada se layout učita.
-  // Proverava da li vozač uopšte ima token. Ako nema, vraća ga na login.
+  // 2. Sigurnosna provera: Ako korisnik nije ulogovan, vrati ga na login stranicu.
+  // Ovaj useEffect se izvršava samo jednom, kada se layout prvi put učita.
   useEffect(() => {
     const token = localStorage.getItem('jwtToken');
     if (!token) {
       toast.error("You must be logged in to access this page.");
       navigate('/login');
     }
-  }, [navigate]); // navigate je zavisnost
+  }, [navigate]); // Zavisnost je 'navigate' da bi se izbeglo upozorenje
 
-  // 3. PRIKAZIVANJE NOTIFIKACIJE
-  // Ovaj useEffect se pokreće SVAKI PUT kada stigne nova notifikacija.
+  // 3. Reakcija na novu notifikaciju
+  // Ovaj useEffect se izvršava SVAKI PUT kada stigne nova notifikacija,
+  // jer se 'notification' objekat promeni.
   useEffect(() => {
-    // Proveravamo da li notifikacija postoji (da ne bi iskočio toster pri učitavanju)
+    // Proveravamo da li notifikacija postoji (da se ne bi aktiviralo pri prvom renderu)
     if (notification) {
-      // Prikazujemo toster poruku sa sadržajem koji je stigao sa backenda
+      // Prikazujemo toster poruku
+      console.log("NOTIFICATION RECEIVED IN LAYOUT:", notification);
       toast.success(notification.message || 'You have a new update!', {
-        icon: '🚚',       // Lepa ikonica za vozača
-        duration: 8000,   // Neka notifikacija stoji 8 sekundi da se stigne pročitati
-        position: "top-right", // Pojavljuje se u gornjem desnom uglu
+        icon: '🚚',
+        duration: 8000,
+        position: "bottom-right",
       });
-    }
-  }, [notification]); // notifikacija je zavisnost
 
-  // 4. RENDER
+      // Obaveštavamo druge komponente o novom događaju
+      // Ovo omogućava npr. DriverDashboard-u da osveži listu ponuda
+      window.dispatchEvent(new CustomEvent('new-notification', { detail: notification }));
+    }
+  }, [notification]); // Zavisnost je 'notification'
+
+  // 4. Renderovanje
+  // Komponenta renderuje samo 'main' omotač i <Outlet />,
+  // gde će react-router prikazati odgovarajuću stranicu.
   return (
     <div>
       {/* 
-        Ovde kasnije možete dodati navigacionu traku samo za vozača.
-        Npr: <DriverNavbar /> 
-        Ona bi se onda videla na svim vozačkim stranicama.
+        Ovde je idealno mesto da se doda navigaciona traka specifična za vozača,
+        jer bi se tako videla na svim njegovim stranicama.
+        Npr: <DriverNavbar />
       */}
       <main>
-        {/* 
-          <Outlet /> je magična komponenta iz 'react-router-dom'.
-          Ona služi kao "ram za sliku". Ovde će se automatski prikazati
-          ona komponenta koja odgovara trenutnoj ruti (/driver, /driver/profile, itd.)
-        */}
         <Outlet />
       </main>
     </div>

@@ -44,6 +44,8 @@ import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
 import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
 
 
+
+
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -69,13 +71,16 @@ const router = createBrowserRouter([
       { path: "/terms-of-service", element: <TermsOfServicePage /> },
     ]
   },
-  {
-    element: <DriverLayout />, // Postavi DriverLayout kao glavni element
-    children: [ // Sve prethodne driver rute sada idu unutar 'children' niza
+ {
+    // Definišemo DriverLayout kao "ram"
+    element: <DriverLayout />, 
+    
+    // Sve stranice koje treba da budu unutar tog rama idu ovde, kao 'children'
+    children: [ 
       { path: "/driver", element: <DriverDashboard /> },
-      { path: "/driver/profile", element: <DriverProfilePage /> },
-      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
-      { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> },
+      { path: "/driver/profile", element: <DriverProfilePage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
     ]
   },
 
@@ -97,11 +102,12 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <Toaster position="bottom-right" />
-    <CartProvider>
-      <RouterProvider router={router} />
-      
-    </CartProvider>
-  </React.StrictMode>
+  // <React.StrictMode>  // <-- ZAKOMENTARIŠI OVO
+    <> 
+      <Toaster position="bottom-right" /> {/* Premesti na vrh, za svaki slučaj */}
+      <CartProvider>
+        <RouterProvider router={router} />
+      </CartProvider>
+    </>
+  // </React.StrictMode> // <-- I OVO
 );
