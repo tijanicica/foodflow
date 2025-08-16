@@ -1,35 +1,49 @@
+// src/pages/ManagerEditMenuPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ManagerNavbar } from '@/components/ui/ManagerNavbar';
-import { Button } from '@/components/ui/button';
 import { getMenuVersionDetails, addMenuItem, getAllergens, getDietTypes, updateMenuItem, deleteMenuItem } from '@/services/api';
 import toast from 'react-hot-toast';
 import { AddMenuItemModal } from '@/components/modals/AddMenuItemModal';
 import { EditMenuItemModal } from '@/components/modals/EditMenuItemModal';
 
-const MenuItemRow = ({ item, onEdit, onDelete }) => (
-    <div className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
-        <div className="flex items-center gap-4">
+// Ikonice za akcije
+import { PlusCircle, Pencil, Trash2, ArrowLeft, UtensilsCrossed } from 'lucide-react';
+
+// === POTPUNO REDIZAJNIRANA KARTICA ZA STAVKU MENIJA ===
+const MenuItemCard = ({ item, onEdit, onDelete }) => (
+    <div className="group relative bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        {/* Akcije koje se pojavljuju na hover */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button onClick={() => onEdit(item)} className="bg-white/80 backdrop-blur-sm text-purple-600 p-2 rounded-full shadow-md hover:bg-white" title="Izmeni stavku">
+                <Pencil size={18} />
+            </button>
+            <button onClick={() => onDelete(item.id)} className="bg-white/80 backdrop-blur-sm text-red-600 p-2 rounded-full shadow-md hover:bg-white" title="Obriši stavku">
+                <Trash2 size={18} />
+            </button>
+        </div>
+
+        <div className="w-full">
             <img 
                 src={item.imageUrl || "/images/placeholder.jpg"} 
                 alt={item.name}
-                className="w-16 h-16 rounded-md object-cover bg-gray-100"
+                // Aspect ratio osigurava da su sve slike iste visine
+                className="w-full h-auto aspect-[4/3] object-cover bg-gray-100"
             />
-            <div>
-                 <p className="text-lg font-semibold text-brand-primary">{item.name}</p>
-                 <p className="text-sm text-gray-500">{item.description}</p> {/* Prikazujemo i opis */}
-            </div>
         </div>
-        <div className="flex items-center gap-6">
-            <p className="text-md text-gray-700 w-24 text-right">{item.price ? `${item.price.toFixed(2)} RSD` : 'N/A'}</p>
-            <div className="flex items-center gap-4 text-sm font-medium">
-                 <button onClick={() => onEdit(item)} className="text-brand-primary hover:underline">Edit</button>
-                 <button onClick={() => onDelete(item.id)} className="text-red-600 hover:underline">Delete</button>
-            </div>
+        <div className="p-5">
+            <h3 className="text-xl font-bold text-gray-800 truncate">{item.name}</h3>
+            <p className="text-sm text-gray-500 mt-1 h-10 overflow-hidden">{item.description}</p>
+            <p className="text-2xl font-extrabold text-pink-600 mt-4 text-right">
+                {item.price ? `${item.price.toFixed(2)} RSD` : 'N/A'}
+            </p>
         </div>
     </div>
 );
 
+
+// === GLAVNA KOMPONENTA STRANICE ===
 export function ManagerEditMenuPage() {
     const { menuVersionId } = useParams();
     const [menuDetails, setMenuDetails] = useState(null);
@@ -41,14 +55,13 @@ export function ManagerEditMenuPage() {
     const [dietTypes, setDietTypes] = useState([]);
 
     const fetchDetails = async () => {
-        // Ne postavljamo loading na true da bi osvežavanje bilo tiho
         try {
             const data = await getMenuVersionDetails(menuVersionId);
             setMenuDetails(data);
         } catch (error) {
-            toast.error("Failed to load menu details.");
+            toast.error("Neuspešno učitavanje detalja menija.");
         } finally {
-            setLoading(false);
+            if (loading) setLoading(false);
         }
     };
     
@@ -60,7 +73,7 @@ export function ManagerEditMenuPage() {
                 setAllergens(allergensData);
                 setDietTypes(dietTypesData);
             } catch (error) {
-                toast.error("Could not load form data.");
+                toast.error("Nije moguće učitati podatke za formu.");
             }
         };
         loadInitialData();
@@ -68,15 +81,13 @@ export function ManagerEditMenuPage() {
     }, [menuVersionId]);
 
     const handleAddItem = async (itemData) => {
-        const toastId = toast.loading('Adding item...');
-        try {
-            await addMenuItem(menuVersionId, itemData);
-            toast.success('Item added successfully!', { id: toastId });
-            setAddModalOpen(false);
-            fetchDetails();
-        } catch (error) {
-            toast.error('Failed to add item.', { id: toastId });
-        }
+        await toast.promise(addMenuItem(menuVersionId, itemData), {
+            loading: 'Dodavanje stavke...',
+            success: 'Stavka uspešno dodata!',
+            error: 'Greška pri dodavanju stavke.'
+        });
+        setAddModalOpen(false);
+        fetchDetails();
     };
 
     const handleEditClick = (item) => {
@@ -85,55 +96,70 @@ export function ManagerEditMenuPage() {
     };
 
     const handleUpdateItem = async (id, itemData) => {
-        const toastId = toast.loading('Updating item...');
-        try {
-            await updateMenuItem(id, itemData);
-            toast.success('Item updated successfully!', { id: toastId });
-            setEditModalOpen(false);
-            fetchDetails();
-        } catch (error) {
-             toast.error('Failed to update item.', { id: toastId });
-        }
+        await toast.promise(updateMenuItem(id, itemData), {
+            loading: 'Ažuriranje stavke...',
+            success: 'Stavka uspešno ažurirana!',
+            error: 'Greška pri ažuriranju.'
+        });
+        setEditModalOpen(false);
+        fetchDetails();
     };
 
     const handleDeleteItem = async (id) => {
-        if (window.confirm("Are you sure you want to delete this item?")) {
-            const toastId = toast.loading('Deleting item...');
-            try {
-                await deleteMenuItem(id);
-                toast.success('Item deleted.', { id: toastId });
-                fetchDetails();
-            } catch (error) {
-                 toast.error('Failed to delete item.', { id: toastId });
-            }
+        if (window.confirm("Da li ste sigurni da želite da obrišete ovu stavku?")) {
+            await toast.promise(deleteMenuItem(id), {
+                loading: 'Brisanje stavke...',
+                success: 'Stavka obrisana.',
+                error: 'Greška pri brisanju.'
+            });
+            fetchDetails();
         }
     };
     
-    if (loading) return <div>Loading menu...</div>;
-    if (!menuDetails) return <div>Menu not found.</div>;
+    const LoadingSpinner = () => (
+        <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-500"></div>
+        </div>
+    );
+    
+    const EmptyState = () => (
+        <div className="col-span-1 md:col-span-2 text-center py-20 bg-white rounded-xl shadow-lg">
+            <UtensilsCrossed size={48} className="mx-auto text-gray-300" />
+            <p className="mt-4 text-gray-500">Ovaj meni još uvek nema nijednu stavku.</p>
+            <p className="text-sm text-gray-400">Dodajte prvu klikom na dugme iznad!</p>
+        </div>
+    );
 
     return (
-        <div className="w-full min-h-screen bg-brand-background-light">
+        <div className="w-full min-h-screen bg-pink-50/50">
             <ManagerNavbar />
-            <main className="container mx-auto max-w-5xl px-4 md:px-6 py-12">
-                <div className="flex justify-between items-center mb-4">
+            <main className="container mx-auto max-w-6xl px-4 md:px-6 py-12">
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-10">
                     <div>
-                        <p className="text-gray-600">Editing Menu:</p>
-                        <h1 className="text-4xl font-bold text-brand-primary">{menuDetails.menuName}</h1>
+                        <Link to="/manager/menu" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-pink-600 mb-2 transition-colors">
+                            <ArrowLeft size={16} />
+                            Nazad na sve menije
+                        </Link>
+                        <h1 className="text-4xl font-bold text-gray-800">{menuDetails?.menuName || 'Učitavanje...'}</h1>
                     </div>
-                    <div className="flex items-center gap-6">
-                        <Link to="/manager/menu" className="text-sm font-medium text-gray-700 hover:text-brand-primary">&larr; Back to All Menus</Link>
-                        <Button onClick={() => setAddModalOpen(true)}>+ Add Item to this Menu</Button>
+                    <button 
+                        onClick={() => setAddModalOpen(true)}
+                        className="flex items-center gap-2 bg-pink-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
+                    >
+                        <PlusCircle size={20} />
+                        Dodaj Stavku
+                    </button>
+                </div>
+                
+                {loading ? <LoadingSpinner /> : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {menuDetails && menuDetails.items.length > 0 ? (
+                            menuDetails.items.map(item => <MenuItemCard key={item.id} item={item} onEdit={handleEditClick} onDelete={handleDeleteItem} />)
+                        ) : (
+                            <EmptyState />
+                        )}
                     </div>
-                </div>
-
-                <div className="bg-white p-6 mt-8 rounded-lg shadow-md">
-                     {menuDetails.items && menuDetails.items.length > 0 ? (
-                        menuDetails.items.map(item => <MenuItemRow key={item.id} item={item} onEdit={handleEditClick} onDelete={handleDeleteItem} />)
-                     ) : (
-                        <p className="text-center text-gray-500 py-8">This menu has no items yet. Add your first one!</p>
-                     )}
-                </div>
+                )}
             </main>
 
             <AddMenuItemModal
