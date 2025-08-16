@@ -26,7 +26,7 @@ public class MenuManagementController {
     @PostMapping("/{menuVersionId}/items")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<Void> addItemToMenu(
-            @PathVariable Long menuVersionId,
+            @PathVariable("menuVersionId") Long menuVersionId,
             @RequestBody CreateMenuItemRequestDTO request,
             @AuthenticationPrincipal Manager manager) {
         try {
@@ -42,7 +42,9 @@ public class MenuManagementController {
     }
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<MenuVersionDetailDTO> getMenuVersionDetails(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<MenuVersionDetailDTO> getMenuVersionDetails(
+            @PathVariable("id") Long id,
+            @AuthenticationPrincipal Manager manager) {
         try {
             return ResponseEntity.ok(menuManagementService.getMenuVersionDetails(id, manager));
         } catch (SecurityException e) {
@@ -66,7 +68,7 @@ public class MenuManagementController {
 
     @PostMapping("/{id}/deactivate")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> deactivateMenuVersion(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<Void> deactivateMenuVersion(@PathVariable("id") Long id, @AuthenticationPrincipal Manager manager) {
         try {
             menuManagementService.deactivateMenuVersion(id, manager);
             return ResponseEntity.ok().build();
@@ -80,7 +82,7 @@ public class MenuManagementController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<ManagerMenuDTO> updateMenu(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody UpdateMenuRequestDTO request,
             @AuthenticationPrincipal Manager manager) {
         return ResponseEntity.ok(menuManagementService.updateMenu(id, request, manager));
@@ -88,7 +90,7 @@ public class MenuManagementController {
 
     @PostMapping("/{id}/activate")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> activateMenu(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<Void> activateMenu(@PathVariable("id") Long id, @AuthenticationPrincipal Manager manager) {
         menuManagementService.activateMenuVersion(id, manager);
         return ResponseEntity.ok().build();
     }
@@ -98,7 +100,7 @@ public class MenuManagementController {
     @PutMapping("/items/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<Void> updateMenuItem(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody UpdateMenuItemRequestDTO request,
             @AuthenticationPrincipal Manager manager) {
         menuManagementService.updateMenuItem(id, request, manager);
@@ -107,7 +109,7 @@ public class MenuManagementController {
 
     @DeleteMapping("/items/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> deleteMenuItem(@PathVariable Long id, @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<Void> deleteMenuItem(@PathVariable("id") Long id, @AuthenticationPrincipal Manager manager) {
         menuManagementService.deleteMenuItem(id, manager);
         return ResponseEntity.noContent().build();
     }

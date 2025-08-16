@@ -74,8 +74,8 @@ public class ManagerController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ManagerAnalyticsDTO> getManagerAnalytics(
             @AuthenticationPrincipal Manager manager,
-            @RequestParam(defaultValue = "30") int days,
-            @RequestParam(required = false) Optional<Long> restaurantId) {
+            @RequestParam(name = "days", defaultValue = "30") int days,
+            @RequestParam(name = "restaurantId", required = false) Optional<Long> restaurantId) {
 
         // === DODAJEMO LOGOVANJE PRE POZIVA SERVISA ===
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
