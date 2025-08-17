@@ -63,7 +63,6 @@ public class ManagerOrderService {
 
 
     }*/
-
     @Transactional
     public void confirmOrder(Long orderId, Manager manager) {
         Order order = findAndValidateOrder(orderId, manager);
@@ -71,28 +70,19 @@ public class ManagerOrderService {
             throw new IllegalStateException("Order can only be confirmed if its status is CREATED.");
         }
 
+        // 1. Promenimo status
         order.setStatus(OrderStatus.CONFIRMED);
+
+        // 2. Sačuvamo promenu statusa odmah
+        orderRepository.save(order);
+        log.info("Order #{} status changed to CONFIRMED.", order.getId());
+
+        // 3. Pozivamo servis za dodelu koji će sada odraditi SVE:
+        // pronaći vozača, dodeliti ga, kreirati ponudu I POSLATI NOTIFIKACIJU.
         orderAssignmentService.findAndAssignBestDriver(order);
-        Order savedOrder = orderRepository.save(order);
 
-        if (savedOrder.getDriver() != null) {
-            log.info("Order #{} confirmed. Driver #{} assigned. Preparing to send notification.", savedOrder.getId(), savedOrder.getDriver().getId());
-            try {
-                // Inicijalizacija pre slanja
-                Hibernate.initialize(savedOrder.getOrderItems());
-
-                // Poziv servisa
-                notificationService.notifyDriverOfNewOrder(savedOrder);
-
-                log.info("Notification for order #{} successfully dispatched.", savedOrder.getId());
-            } catch (Exception e) {
-                // === HVATAMO BILO KOJU GREŠKU KOJA SE DESI TOKOM SLANJA ===
-                log.error("!!!!!!!!!! FAILED TO SEND NOTIFICATION for order #{} !!!!!!!!!!", savedOrder.getId(), e);
-                // ==========================================================
-            }
-        } else {
-            log.warn("Order #{} was confirmed, but no available driver was found. No notification sent.", savedOrder.getId());
-        }
+        // Nema više potrebe za 'if (savedOrder.getDriver() != null)' blokom
+        // jer se slanje notifikacije sada dešava unutar orderAssignmentService.
     }
 
 

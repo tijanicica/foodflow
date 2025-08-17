@@ -12,6 +12,8 @@ import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.DriverRatingRepository;
 import com.iis.foodflow.repository.DriverRepository;
 import com.iis.foodflow.repository.OrderOfferRepository;
+// Na vrhu DriverService.java
+import lombok.extern.slf4j.Slf4j;
 import com.iis.foodflow.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DriverService {
 
     private final DriverRepository driverRepository;
@@ -447,6 +450,21 @@ public class DriverService {
             );
         }
         return savedOrder;
+    }
+    @Transactional(readOnly = true) // readOnly je bolji fit jer samo čitamo podatke
+    public void notifyCustomerOfArrival(String driverEmail, Long orderId) {
+
+        // Jedina preostala provera je da li porudžbina uopšte postoji u bazi.
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        log.warn("Executing 'notifyCustomerOfArrival' for order #{} without any validation checks.", orderId);
+
+        // --- SLANJE NOTIFIKACIJE ---
+        // Direktno se poziva servis za slanje notifikacije.
+        realtimeNotificationService.notifyCustomerOfDriverArrival(order);
+
+        log.info("Arrival notification request processed successfully for order #{}", orderId);
     }
 
     @Transactional

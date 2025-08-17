@@ -230,30 +230,39 @@ public class RealtimeNotificationService {
      * Notifies the customer that the driver is arriving soon.
      * @param order The relevant order.
      */
+    /**
+     * Notifies the customer that the driver is arriving soon.
+     * @param order The order being delivered.
+     */
     public void notifyCustomerOfDriverArrival(Order order) {
+        // Check if the order has a customer linked to it. If not, log a warning and exit.
         if (order.getCustomer() == null) {
-            log.warn("Cannot notify customer of driver arrival for order #{}: Customer not linked.", order.getId());
+            log.warn("Cannot send driver arrival notification for order #{}: Customer not linked.", order.getId());
             return;
         }
 
+        Customer customer = order.getCustomer();
+
+        // Create the user-facing message.
+        String message = "Your driver is about 3 minutes away with order #" + order.getId() + "!";
+
+        // Prepare the data payload for the WebSocket message.
+        Map<String, Object> payload = Map.of(
+                "type", "DRIVER_ARRIVING_SOON",
+                "orderId", order.getId(),
+                "message", message
+        );
+
+        // Call the centralized method to send the notification.
+        sendNotification(customer.getEmail(), payload, order.getId(), "DRIVER_ARRIVING_SOON");
+    }
+    private void sendNotification(String userEmail, Map<String, Object> payload, Long orderId, String notificationType) {
         try {
-            Customer customer = order.getCustomer();
-            String destination = createDestinationFromEmail(customer.getEmail());
-
-            // Fiksna poruka za ovaj specifičan događaj
-            String message = "Your driver is about 3 minutes away with order #" + order.getId() + "!";
-
-            Map<String, Object> payload = Map.of(
-                    "type", "DRIVER_ARRIVING_SOON",
-                    "orderId", order.getId(),
-                    "message", message
-            );
-
-            log.info("Sending DRIVER_ARRIVING_SOON for order #{} to customer channel: {}", order.getId(), destination);
+            String destination = createDestinationFromEmail(userEmail);
+            log.info("Slanje notifikacije tipa '{}' za porudžbinu #{} na kanal: {}", notificationType, orderId, destination);
             messagingTemplate.convertAndSend(destination, payload);
-
-        } catch (IllegalStateException e) {
-            log.error("Failed to send driver arrival notification for order #{}: {}", order.getId(), e.getMessage());
+        } catch (Exception e) {
+            log.error("Neuspešno slanje notifikacije tipa '{}' za porudžbinu #{}: {}", notificationType, orderId, e.getMessage());
         }
     }
 

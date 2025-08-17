@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +46,21 @@ public class DriverController {
     public ResponseEntity<DriverLocationResponse> getDriverLocationById(@PathVariable Long driverId) {
         DriverLocationResponse locationData = driverService.getDriverLocation(driverId);
         return ResponseEntity.ok(locationData);
+    }
+
+    // U klasi DriverController.java
+
+    @PostMapping("/orders/{orderId}/notify-arrival")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<Void> notifyCustomerOfArrival(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Driver driverPrincipal) {
+
+        // DODAJTE OVAJ LOG
+        System.out.println("!!!!!!!!!! DOSTIGAO ENDPOINT: notifyCustomerOfArrival za order #" + orderId + " !!!!!!!!!!");
+
+        driverService.notifyCustomerOfArrival(driverPrincipal.getEmail(), orderId);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/location")
