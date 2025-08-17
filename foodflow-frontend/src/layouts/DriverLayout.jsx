@@ -2,63 +2,86 @@
 
 import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { Bell, X } from 'lucide-react';
 
-/**
- * DriverLayout je "omotač" za sve stranice koje su dostupne vozaču.
- * On je uvek aktivan dok je vozač na bilo kojoj svojoj stranici.
- * Njegovi zadaci su:
- * 1. Održavanje WebSocket konekcije aktivnom preko 'useWebSocket' hook-a.
- * 2. Prikazivanje "toster" notifikacija koje stignu.
- * 3. Obaveštavanje ostatka aplikacije o novoj notifikaciji putem custom događaja.
- * 4. Prikazivanje trenutne stranice (npr. Dashboard, Profile) unutar <Outlet />.
- */
 export const DriverLayout = () => {
-  // 1. Pozivamo hook koji se brine o celoj WebSocket logici
   const notification = useWebSocket();
   const navigate = useNavigate();
 
-  // 2. Sigurnosna provera: Ako korisnik nije ulogovan, vrati ga na login stranicu.
-  // Ovaj useEffect se izvršava samo jednom, kada se layout prvi put učita.
   useEffect(() => {
+    // ... (logika za proveru tokena ostaje ista)
     const token = localStorage.getItem('jwtToken');
     if (!token) {
       toast.error("You must be logged in to access this page.");
       navigate('/login');
     }
-  }, [navigate]); // Zavisnost je 'navigate' da bi se izbeglo upozorenje
+  }, [navigate]);
 
-  // 3. Reakcija na novu notifikaciju
-  // Ovaj useEffect se izvršava SVAKI PUT kada stigne nova notifikacija,
-  // jer se 'notification' objekat promeni.
   useEffect(() => {
-    // Proveravamo da li notifikacija postoji (da se ne bi aktiviralo pri prvom renderu)
     if (notification) {
-      // Prikazujemo toster poruku
       console.log("NOTIFICATION RECEIVED IN LAYOUT:", notification);
-      toast.success(notification.message || 'You have a new update!', {
-        icon: '🚚',
-        duration: 8000,
-        position: "bottom-right",
-      });
 
-      // Obaveštavamo druge komponente o novom događaju
-      // Ovo omogućava npr. DriverDashboard-u da osveži listu ponuda
+      toast.custom(
+        (t) => (
+          <div
+            // Osiguravamo da je ceo kontejner vidljiv i iznad drugih elemenata
+            className={`
+              max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5 relative z-50
+              ${t.visible ? 'animate-enter' : 'animate-leave'}
+            `}
+          >
+            {/* ... (deo sa ikonom i porukom ostaje isti) */}
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-100">
+                    <Bell className="h-6 w-6 text-green-600" />
+                  </span>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    New Notification
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {notification.message || 'Imate novu ponudu, proverite dashboard.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* === PROMENE SU OVDE === */}
+            {/* Dugme za zatvaranje */}
+            <div className="flex items-center p-2">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                // Dodajemo z-index i osiguravamo da je dugme iznad
+                className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 relative z-10"
+                aria-label="Dismiss"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          id: `notification-${Date.now()}`,
+          duration: 10000,
+          position: "top-right",
+        }
+      );
+
       window.dispatchEvent(new CustomEvent('new-notification', { detail: notification }));
     }
-  }, [notification]); // Zavisnost je 'notification'
+  }, [notification]);
 
-  // 4. Renderovanje
-  // Komponenta renderuje samo 'main' omotač i <Outlet />,
-  // gde će react-router prikazati odgovarajuću stranicu.
   return (
     <div>
-      {/* 
-        Ovde je idealno mesto da se doda navigaciona traka specifična za vozača,
-        jer bi se tako videla na svim njegovim stranicama.
-        Npr: <DriverNavbar />
-      */}
+      {/* Dodajemo containerClassName da bismo bili sigurni da je kontejner tosta interaktivan */}
+      <Toaster containerClassName="pointer-events-none" toastOptions={{
+          className: 'pointer-events-auto'
+      }} />
       <main>
         <Outlet />
       </main>
