@@ -58,6 +58,7 @@ export const useWebSocket = () => {
             client.subscribe(topic, (message) => {
               const receivedNotif = JSON.parse(message.body);
               console.log("MESSAGE RECEIVED IN HOOK:", receivedNotif);
+                window.dispatchEvent(new CustomEvent('new-notification', { detail: receivedNotif }));
               setNotification(receivedNotif);
             });
           }
