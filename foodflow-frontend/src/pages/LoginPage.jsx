@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +15,6 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Logika prijave ostaje ista
-// Unutar tvoje LoginPage komponente
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -27,60 +24,60 @@ export function LoginPage() {
       const response = await loginUser(email, password);
       const { token } = response;
       
-      // 1. Sačuvaj token i dekodirane podatke o korisniku u localStorage
       localStorage.setItem('jwtToken', token);
       const decodedToken = jwtDecode(token);
-      localStorage.setItem('user', JSON.stringify(decodedToken));
-      
-      const userRole = decodedToken.role;
 
-      // === KLJUČNA IZMENA: REDOSLED OPERACIJA ===
+      // === KLJUČNA IZMENA: KREIRANJE STANDARDIZOVANOG USER OBJEKTA ===
+      // Kreiramo novi objekat koji uvek ima ista imena polja,
+      // bez obzira na to kako se zovu u sirovom tokenu.
+      const userToStore = {
+        id: decodedToken.id,
+        // Koristi 'sub' ako postoji, inače koristi 'email'.
+        sub: decodedToken.sub || decodedToken.email, 
+        // Koristi 'role' ako postoji, inače koristi 'authority' ili 'roles'.
+        role: decodedToken.role || decodedToken.authority || (Array.isArray(decodedToken.roles) ? decodedToken.roles[0] : null)
+      };
 
-      // Prvo definišemo kuda treba da idemo
-      let destination = '/login'; // Default destinacija ako rola nije prepoznata
+      // Proveravamo da li smo uspeli da izvučemo ključne podatke
+      if (!userToStore.role || !userToStore.sub) {
+          throw new Error("User role or email could not be determined from the token.");
+      }
+
+      // Sada čuvamo naš novi, čisti objekat.
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      // =================================================================
+
+      const userRole = userToStore.role; // Koristimo rolu iz našeg novog objekta
+
+      let destination = '/login';
       switch (userRole) {
-        case 'ROLE_DRIVER':
-          destination = '/driver';
-          break;
-        case 'ROLE_CUSTOMER':
-          destination = '/home';
-          break;
-        case 'ROLE_OPERATOR':
-          destination = '/operator/dashboard';
-          break;
-        case 'ROLE_MANAGER':
-          destination = '/manager/dashboard';
-          break;
-        case 'ROLE_SUPPORT_ADMINISTRATOR':
-          destination = '/support/tickets';
-          break;
-        case 'ROLE_ADMINISTRATOR':
-          destination = '/admin/managers';
-          break;
-        default:
-          console.warn(`Unknown role: ${userRole}`);
-          break;
+        case 'ROLE_DRIVER': destination = '/driver'; break;
+        case 'ROLE_CUSTOMER': destination = '/home'; break;
+        case 'ROLE_OPERATOR': destination = '/operator/dashboard'; break;
+        case 'ROLE_MANAGER': destination = '/manager/dashboard'; break;
+        case 'ROLE_SUPPORT_ADMINISTRATOR': destination = '/support/tickets'; break;
+        case 'ROLE_ADMINISTRATOR': destination = '/admin/managers'; break;
+        default: console.warn(`Unknown role: ${userRole}`); break;
       }
       
-      // 2. Odmah izvrši navigaciju
       navigate(destination);
       
-      // 3. NAKON navigacije, sa malom pauzom, pošalji događaj
-      // Ovo daje vremena React Router-u da počne da renderuje novu stranicu (npr. DriverLayout),
-      // tako da će ona biti spremna da "čuje" događaj.
+      // Sa malom pauzom šaljemo događaj da se layout-i koji su se upravo učitali
+      // mogu povezati na WebSocket.
       setTimeout(() => {
         window.dispatchEvent(new Event("userLoggedIn"));
-      }, 50); // Koristimo 50ms za svaki slučaj, iako je i 0 često dovoljno.
+      }, 50);
 
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      // Poboljšano rukovanje greškama
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-return (
+  return (
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
       
       {/* LEVA STRANA */}
@@ -130,10 +127,7 @@ return (
                 />
             </div>
             
-            {/* === OVDE JE KLJUČNA IZMENA === */}
-            {/* 1. Kreiramo kontejner fiksne visine (h-14) koji UVEK postoji */}
             <div className="h-14">
-              {/* 2. Poruka o grešci se sada prikazuje UNUTAR ovog kontejnera */}
               {error && (
                 <motion.div 
                   className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-md flex items-center gap-3 text-sm"
@@ -147,8 +141,6 @@ return (
 
             <Button
               type="submit"
-              // Koristimo negativnu gornju marginu (-mt-6) da vizuelno kompenzujemo prazan prostor
-              // kada greške nema, čime se održava isti vizuelni raspored.
               className="w-full h-12 text-lg font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary/90 transition-colors -mt-6"
               disabled={isLoading}
             >
@@ -165,7 +157,7 @@ return (
         </motion.div>
       </div>
 
-      {/* DESNA STRANA (ostaje ista) */}
+      {/* DESNA STRANA */}
       <div className="hidden lg:flex relative items-center justify-center bg-gray-900">
         <img
           src="foodflowlogin.png"

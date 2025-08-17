@@ -361,6 +361,7 @@ public class DriverService {
         // === KLJUČNA IZMENA #2: Koristimo novu servisnu promenljivu ===
         // notificationService.notifyManagerOfOrderStatusUpdate(savedOrder); // Stari kod
         realtimeNotificationService.notifyManagerOfOrderStatusUpdate(savedOrder); // NOVI KOD
+        realtimeNotificationService.notifyCustomerOfOrderStatusUpdate(savedOrder);
 
         // Vraćamo DTO, a ne entitet
         return new CancelDeliveryResponse(
@@ -415,6 +416,7 @@ public class DriverService {
         Order savedOrder = orderRepository.save(order);
 
         realtimeNotificationService.notifyManagerOfOrderStatusUpdate(savedOrder);
+        realtimeNotificationService.notifyCustomerOfOrderStatusUpdate(savedOrder);
 
         // --- 4. POKRETANJE SIMULACIJE ---
         Address customerAddress = savedOrder.getAddress();
@@ -605,7 +607,8 @@ public class DriverService {
         order.setDeliveredAt(LocalDateTime.now());
 
         Order updatedOrder = orderRepository.save(order);
-        notificationService.notifyManagerOfOrderStatusUpdate(updatedOrder);
+        realtimeNotificationService.notifyManagerOfOrderStatusUpdate(updatedOrder);
+        realtimeNotificationService.notifyCustomerOfOrderStatusUpdate(updatedOrder);
 
         // Kada je porudžbina dostavljena, vozač je ponovo slobodan
         driver.setStatus(DriverStatus.ONLINE);

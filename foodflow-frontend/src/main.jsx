@@ -15,6 +15,9 @@ import { AppLayout } from './components/AppLayout'; // <-- NOVI IMPORT
 import { MiniCart } from './components/MiniCart';   // <-- NOVI IMPORT
 import { DriverLayout } from './layouts/DriverLayout.jsx';
 
+import { ManagerLayout } from './layouts/ManagerLayout.jsx';
+import { CustomerLayout } from './layouts/CustomerLayout.jsx'; 
+
 import { LoginPage } from './pages/LoginPage.jsx';
 import { RegisterPage } from './pages/RegisterPage.jsx';
 import { HomePage } from './pages/HomePage.jsx';
@@ -50,27 +53,32 @@ import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.j
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
-  {
-    // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
-    element: <AppLayout />,
-  
-      //Customer
+   {
+    // 1. KAŽEMO DA OVAJ BLOK VAŽI ZA SVE OSNOVNE PUTANJE
+    path: "/", 
+    element: <CustomerLayout />,
     children: [
-      { path: "/home", element: <HomePage /> },
-      { path: "/restaurant/:restaurantId", element: <MenuPage /> },
-      { path: "/checkout", element: <CheckoutPage /> },
-      { path: "/orders", element: <MyOrdersPage /> },
-      { path: "/order/:orderId", element: <OrderDetailPage /> },
-      { path: "/track/:orderId", element: <TrackOrderPage /> },
-      { path: "/analytics", element: <AnalyticsPage /> },
-      { path: "/profile", element: <MyProfilePage /> },
-      { path: "/about", element: <AboutUsPage /> },
-      { path: "/faq", element: <FaqPage /> },
-      { path: "/contact", element: <ContactPage /> },
-      { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
-      { path: "/terms-of-service", element: <TermsOfServicePage /> },
+      {
+        element: <AppLayout />,
+        children: [
+          // 2. PUTANJE SU SADA RELATIVNE U ODNOSU NA RODITELJSKI '/'
+          { path: "home", element: <HomePage /> }, // Nema više kose crte
+          { path: "restaurant/:restaurantId", element: <MenuPage /> },
+          { path: "checkout", element: <CheckoutPage /> },
+          { path: "orders", element: <MyOrdersPage /> },
+          { path: "order/:orderId", element: <OrderDetailPage /> },
+          { path: "track/:orderId", element: <TrackOrderPage /> },
+          { path: "analytics", element: <AnalyticsPage /> },
+          { path: "profile", element: <MyProfilePage /> },
+          { path: "about", element: <AboutUsPage /> },
+          { path: "faq", element: <FaqPage /> },
+          { path: "contact", element: <ContactPage /> },
+          { path: "privacy-policy", element: <PrivacyPolicyPage /> },
+          { path: "terms-of-service", element: <TermsOfServicePage /> },
+        ]
+      }
     ]
-  },
+},
  {
     // Definišemo DriverLayout kao "ram"
     element: <DriverLayout />, 
@@ -85,14 +93,18 @@ const router = createBrowserRouter([
   },
 
   // Manager
-  { path: "/manager/dashboard", element: <ManagerDashboard /> },
-  { path: "/manager/profile", element: <ManagerProfilePage /> },
-  { path: "/manager/menu", element: <ManagerMenuPage /> },
-  { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
-  { path: "/manager/orders", element: <ManagerOrdersPage /> },
-  { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
-  { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
-  { path: "/admin/managers", element: <AdminManagerManagementPage />,},
+  {
+    element: <ManagerLayout />,
+    children: [
+      { path: "/manager/dashboard", element: <ManagerDashboard /> },
+      { path: "/manager/profile", element: <ManagerProfilePage /> },
+      { path: "/manager/menu", element: <ManagerMenuPage /> },
+      { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
+      { path: "/manager/orders", element: <ManagerOrdersPage /> },
+      { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
+      { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
+    ]
+  },
    
    // All
   { path: "/", element: <LoginPage /> },
@@ -102,12 +114,10 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  // <React.StrictMode>  // <-- ZAKOMENTARIŠI OVO
-    <> 
+   <React.StrictMode> 
       <Toaster position="bottom-right" /> {/* Premesti na vrh, za svaki slučaj */}
       <CartProvider>
         <RouterProvider router={router} />
       </CartProvider>
-    </>
-  // </React.StrictMode> // <-- I OVO
+   </React.StrictMode> // <-- I OVO
 );

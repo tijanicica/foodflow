@@ -2,6 +2,7 @@ package com.iis.foodflow.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.iis.foodflow.repository.DriverRepository;
+import com.iis.foodflow.repository.OrderRepository;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,12 @@ import java.util.Map;
 public class DriverSimulationService {
 
     private static final Logger log = LoggerFactory.getLogger(DriverSimulationService.class);
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private RealtimeNotificationService notificationService;
+
 
     @Autowired
     private RestTemplate restTemplate;

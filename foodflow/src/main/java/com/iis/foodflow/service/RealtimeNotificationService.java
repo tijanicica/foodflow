@@ -3,6 +3,7 @@ package com.iis.foodflow.service;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.restaurant.Restaurant;
+import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.model.user.Manager;
 import lombok.RequiredArgsConstructor;
@@ -199,5 +200,77 @@ public class RealtimeNotificationService {
         }
         String cleanedEmail = email.replace("@", "-at-").replace(".", "-dot-");
         return "/topic/user/" + cleanedEmail;
+    }
+    public void notifyCustomerOfOrderStatusUpdate(Order order) {
+        if (order.getCustomer() == null) {
+            log.warn("Cannot notify customer for order #{}: Customer is not linked to the order.", order.getId());
+            return;
+        }
+
+        try {
+            Customer customer = order.getCustomer();
+            String destination = createDestinationFromEmail(customer.getEmail());
+            String message = createCustomerMessageFromStatus(order);
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("type", "CUSTOMER_ORDER_UPDATE");
+            payload.put("orderId", order.getId());
+            payload.put("status", order.getStatus().name());
+            payload.put("message", message);
+
+            log.info("Sending CUSTOMER_ORDER_UPDATE for order #{} to customer channel: {}", order.getId(), destination);
+            messagingTemplate.convertAndSend(destination, payload);
+
+        } catch (IllegalStateException e) {
+            log.error("Failed to send status update to customer for order #{}: {}", order.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Notifies the customer that the driver is arriving soon.
+     * @param order The relevant order.
+     */
+    public void notifyCustomerOfDriverArrival(Order order) {
+        if (order.getCustomer() == null) {
+            log.warn("Cannot notify customer of driver arrival for order #{}: Customer not linked.", order.getId());
+            return;
+        }
+
+        try {
+            Customer customer = order.getCustomer();
+            String destination = createDestinationFromEmail(customer.getEmail());
+
+            // Fiksna poruka za ovaj specifičan događaj
+            String message = "Your driver is about 3 minutes away with order #" + order.getId() + "!";
+
+            Map<String, Object> payload = Map.of(
+                    "type", "DRIVER_ARRIVING_SOON",
+                    "orderId", order.getId(),
+                    "message", message
+            );
+
+            log.info("Sending DRIVER_ARRIVING_SOON for order #{} to customer channel: {}", order.getId(), destination);
+            messagingTemplate.convertAndSend(destination, payload);
+
+        } catch (IllegalStateException e) {
+            log.error("Failed to send driver arrival notification for order #{}: {}", order.getId(), e.getMessage());
+        }
+    }
+
+    // --- DODAJTE I OVU POMOĆNU PRIVATNU METODU ---
+
+    private String createCustomerMessageFromStatus(Order order) {
+        Restaurant restaurant = getRestaurantFromOrder(order); // Pretpostavka da će ovo uvek raditi
+        switch (order.getStatus()) {
+            case PICKED_UP:
+                return "Your order #" + order.getId() + " has been picked up from " + restaurant.getName() + " and is on its way!";
+            case DELIVERED:
+                return "Your order #" + order.getId() + " has been delivered. Enjoy your meal!";
+            case CANCELED:
+                return "Unfortunately, the delivery for your order #" + order.getId() + " has been canceled.";
+            default:
+                // Generalna poruka ako status nije jedan od očekivanih
+                return "The status of your order #" + order.getId() + " has been updated to " + order.getStatus().name() + ".";
+        }
     }
 }
