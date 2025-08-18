@@ -184,7 +184,6 @@ public class DriverService {
         return mapOrderToDto(activeOrder, driver);
     }
 
-
     @Transactional(readOnly = true)
     public DriverPerformanceResponse getDriverPerformance(String driverEmail) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -204,20 +203,21 @@ public class DriverService {
                 driver, OfferStatus.REJECTED, thirtyDaysAgo
         );
 
-        double averageRating = driverRatingRepository.findAverageRatingByDriverId(driver.getId())
-                .orElse(0.0);
+        // === KLJUČNA ISPRAVKA: Pozovite ispravan query! ===
+        Double averageRatingResult = driverRatingRepository.calculateOverallAverageRatingForDriver(driver);
+        double averageRating = (averageRatingResult != null) ? averageRatingResult : 0.0;
+        // ===================================================
 
         return new DriverPerformanceResponse(
                 driver.getFirstName(),
                 driver.getLastName(),
                 driver.getVehicleType(),
-                totalDelivered != null ? totalDelivered.intValue() : 0, // Ukupno isporuka
-                onTimeRate,                                             // Procenat na vrijeme
-                (int) rejections,                                       // Broj odbijanja
-                averageRating                                           // Prosječna ocjena
+                totalDelivered != null ? totalDelivered.intValue() : 0,
+                onTimeRate,
+                (int) rejections,
+                averageRating
         );
     }
-
 
 
     @Transactional(readOnly = true)

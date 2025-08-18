@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { PackageOpen, Repeat, CalendarDays, Map, Star, Eye, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RateOrderModal } from '@/components/modals/RateOrderModal';
 
 // --- Pomoćne funkcije (ostaju iste) ---
 const formatStatus = (status) => status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
@@ -24,7 +25,9 @@ const getStatusBadgeClasses = (status) => {
 //================================================================================
 // REDIZAJNIRANA KARTICA (sa potamnjenom slikom)
 //================================================================================
-const OrderCard = ({ order, onUpdate, onOpenCancelDialog }) => {
+// FINALNA, AŽURIRANA ORDER CARD KOMPONENTA
+
+const OrderCard = ({ order, onUpdate, onOpenCancelDialog, onOpenRatingModal }) => {
     const isRepeatingTemplate = !!order.repeatType;
 
     const handleToggle = async () => {
@@ -101,7 +104,18 @@ const OrderCard = ({ order, onUpdate, onOpenCancelDialog }) => {
                     ) : (
                         <>
                             {order.status === 'PICKED_UP' && <Button asChild variant="outline" size="sm" className="flex-grow justify-center"><Link to={`/track/${order.id}`}><Map className="mr-2 h-4 w-4"/> Track</Link></Button>}
-                            {order.status === 'DELIVERED' && <Button size="sm" disabled={order.rated} className="flex-grow justify-center bg-brand-primary hover:bg-brand-primary/90 disabled:bg-gray-300"><Star className="mr-2 h-4 w-4"/> {order.rated ? 'Rated' : 'Rate'}</Button>}
+                            
+                            {/* === AŽURIRANO DUGME === */}
+                            {order.status === 'DELIVERED' && 
+                                <Button 
+                                    size="sm" 
+                                    disabled={order.rated} 
+                                    onClick={onOpenRatingModal} // Povezano sa funkcijom iz MyOrdersPage
+                                    className="flex-grow justify-center bg-brand-primary hover:bg-brand-primary/90 disabled:bg-gray-300">
+                                    <Star className="mr-2 h-4 w-4"/> {order.rated ? 'Rated' : 'Rate'}
+                                </Button>
+                            }
+                            {/* ======================= */}
                         </>
                     )}
                 </div>
@@ -152,12 +166,31 @@ const TABS = [
 //================================================================================
 
 export function MyOrdersPage() {
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [orderToRate, setOrderToRate] = useState(null);
     const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || TABS[0].value);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dialogState, setDialogState] = useState({ isOpen: false, itemToDelete: null });
     const [isDeleting, setIsDeleting] = useState(false);
+
+     const handleOpenRatingModal = (order) => {
+        setOrderToRate(order);
+        setIsRatingModalOpen(true);
+    };
+
+    const handleCloseRatingModal = () => {
+        setIsRatingModalOpen(false);
+        setOrderToRate(null);
+    };
+     const handleRatingSuccess = (ratedOrderId) => {
+        setData(prevData =>
+            prevData.map(order =>
+                order.id === ratedOrderId ? { ...order, rated: true } : order
+            )
+        );
+    };
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -221,6 +254,7 @@ export function MyOrdersPage() {
                                     order={item} 
                                     onUpdate={handleUpdate} 
                                     onOpenCancelDialog={handleOpenConfirmDialog}
+                                     onOpenRatingModal={() => handleOpenRatingModal(item)}
                                 />
                             ))
                         ) : (
@@ -238,6 +272,13 @@ export function MyOrdersPage() {
                 title="Cancel Repeating Order" 
                 description="This action cannot be undone. Are you sure?"
                 isLoading={isDeleting}
+            />
+
+            <RateOrderModal 
+                isOpen={isRatingModalOpen}
+                onClose={handleCloseRatingModal}
+                order={orderToRate}
+                onRatingSuccess={handleRatingSuccess}
             />
         </div>
     );

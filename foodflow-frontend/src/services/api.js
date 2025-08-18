@@ -636,8 +636,18 @@ export const updateManager = async (managerId, managerData) => {
     const response = await apiClient.put(`/admin/managers/${managerId}`, managerData);
     return response.data;
 };
+export const rateOrder = async (orderId, payload) => {
+    const response = await axiosInstance.put(`/orders/${orderId}/rate`, payload);
+    return response.data;
+};
 
 export const getRestaurantOptions = async () => {
     const response = await apiClient.get('/restaurants/options');
+    return response.data;
+};
+
+export const submitCombinedRating = async (orderId, payload) => {
+    // Rešenje je ovde: koristimo `apiClient` koji je definisan na vrhu fajla
+    const response = await apiClient.post(`/orders/${orderId}/rate`, payload); 
     return response.data;
 };
