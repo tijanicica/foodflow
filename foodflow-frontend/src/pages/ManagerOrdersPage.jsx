@@ -1,202 +1,219 @@
-import React, { useState, useEffect } from 'react';
-import { ManagerNavbar } from '@/components/ui/ManagerNavbar';
-import { Button } from '@/components/ui/button';
+// src/pages/ManagerOrdersPage.jsx - FINALNA SPOJENA VERZIJA
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { ManagerNavbar } from '@/components/ui/ManagerNavbar'; // Pretpostavka da je putanja ispravna
 import { getManagerActiveOrders, confirmManagerOrder, rejectManagerOrder, markOrderAsReady } from '@/services/api';
 import toast from 'react-hot-toast';
 
-// Vraćamo WebSocket biblioteke jer je ova stranica sada glavni kontroler
-import SockJS from 'sockjs-client';
-import { Stomp } from '@stomp/stompjs';
-import { jwtDecode } from 'jwt-decode';
+// Ikonice za bolji vizuelni doživljaj
+import { Bell, ChefHat, Check, Truck, X, UserCheck, UserX, XCircle, AlertTriangle } from 'lucide-react';
 
-// Importujemo ikonice potrebne za stilizovane tostere
-import { Bell, X, CheckCircle, AlertTriangle, Truck, XCircle } from 'lucide-react';
+// --- POMOĆNA FUNKCIJA ZA PRIKAZ TOASTA ---
+// Ova funkcija kombinuje logiku iz obe prethodne verzije
+const showCustomToast = (notification) => {
+  const getDetails = (notif) => {
+    let details = { title: 'Update', Icon: Bell, bgColor: 'bg-gray-100', textColor: 'text-gray-600' };
+    switch (notif.type) {
+      case 'OFFER_ACCEPTED':
+        return { title: 'Offer Accepted', Icon: UserCheck, bgColor: 'bg-green-100', textColor: 'text-green-600' };
+      case 'OFFER_REJECTED':
+        return { title: 'Offer Rejected', Icon: UserX, bgColor: 'bg-yellow-100', textColor: 'text-yellow-600' };
+      case 'ORDER_STATUS_UPDATE':
+        switch (notif.status) {
+          case 'PICKED_UP': return { title: 'Order Picked Up', Icon: Truck, bgColor: 'bg-sky-100', textColor: 'text-sky-600' };
+          case 'DELIVERED': return { title: 'Order Delivered', Icon: CheckCircle, bgColor: 'bg-indigo-100', textColor: 'text-indigo-600' };
+          case 'CANCELED': return { title: 'Delivery Canceled', Icon: XCircle, bgColor: 'bg-red-100', textColor: 'text-red-600' };
+        }
+        break;
+      // Možete dodati i druge tipove ovde ako postoje
+    }
+    return details;
+  };
 
-// --- POMOĆNE FUNKCIJE PREMEŠTENE OVDE ---
+  const { title, Icon, bgColor, textColor } = getDetails(notification);
 
-/**
- * Pomoćna funkcija koja određuje stil i sadržaj notifikacije na osnovu njenog tipa.
- */
-const getNotificationDetails = (notification) => {
-  let details = { title: 'New Update', Icon: Bell, bgColor: 'bg-blue-100', textColor: 'text-blue-600' };
-  switch (notification.type) {
-    case 'OFFER_ACCEPTED':
-      details = { title: 'Offer Accepted', Icon: CheckCircle, bgColor: 'bg-green-100', textColor: 'text-green-600' };
-      break;
-    case 'OFFER_REJECTED':
-      details = { title: 'Offer Rejected', Icon: AlertTriangle, bgColor: 'bg-yellow-100', textColor: 'text-yellow-600' };
-      break;
-    case 'ORDER_STATUS_UPDATE':
-      switch (notification.status) {
-        case 'PICKED_UP': details = { title: 'Order Picked Up', Icon: Truck, bgColor: 'bg-sky-100', textColor: 'text-sky-600' }; break;
-        case 'DELIVERED': details = { title: 'Order Delivered', Icon: CheckCircle, bgColor: 'bg-green-100', textColor: 'text-green-600' }; break;
-        case 'CANCELED': details = { title: 'Delivery Canceled', Icon: XCircle, bgColor: 'bg-red-100', textColor: 'text-red-600' }; break;
-        default: details.title = 'Order Status Updated';
-      }
-      break;
-    // Ovde možete dodati case za tip notifikacije koji je koleginica radila, ako je drugačiji
-    // Npr. case 'NEW_MANAGER_ORDER': details = { ... }; break;
-  }
-  return details;
+  toast.custom(
+    (t) => (
+      <div className={`max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5 relative z-50 ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
+        <div className="flex-1 w-0 p-4"><div className="flex items-start"><div className="flex-shrink-0 pt-0.5"><span className={`inline-flex items-center justify-center h-10 w-10 rounded-full ${bgColor}`}><Icon className={`h-6 w-6 ${textColor}`} /></span></div><div className="ml-3 flex-1"><p className="text-sm font-medium text-gray-900">{title}</p><p className="mt-1 text-sm text-gray-500">{notification.message}</p></div></div></div>
+        <div className="flex items-center p-2"><button onClick={() => toast.dismiss(t.id)} className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 relative z-10"><X className="h-5 w-5 text-gray-500" /></button></div>
+      </div>
+    ), { id: `notification-${Date.now()}`, duration: 10000, position: "top-right" }
+  );
 };
 
-/**
- * Funkcija koja renderuje stilizovani toster.
- */
-const showCustomToast = (notification) => {
-    const { title, Icon, bgColor, textColor } = getNotificationDetails(notification);
-    toast.custom(
-        (t) => (
-          <div className={`max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5 relative z-50 ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
-            <div className="flex-1 w-0 p-4"><div className="flex items-start"><div className="flex-shrink-0 pt-0.5"><span className={`inline-flex items-center justify-center h-10 w-10 rounded-full ${bgColor}`}><Icon className={`h-6 w-6 ${textColor}`} /></span></div><div className="ml-3 flex-1"><p className="text-sm font-medium text-gray-900">{title}</p><p className="mt-1 text-sm text-gray-500">{notification.message}</p></div></div></div>
-            <div className="flex items-center p-2"><button onClick={() => toast.dismiss(t.id)} className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 relative z-10"><X className="h-5 w-5 text-gray-500" /></button></div>
-          </div>
-        ), { id: `notification-${Date.now()}`, duration: 10000, position: "top-right" }
+// --- STILIZOVANE KOMPONENTE SA DEVELOP GRANE ---
+const OrderCard = ({ order, onConfirm, onReject, onMarkAsReady }) => {
+    const statusStyles = {
+        CREATED: 'border-l-pink-500',
+        CONFIRMED: 'border-l-purple-500',
+        READY_FOR_PICKUP: 'border-l-green-500',
+    };
+    return (
+        <div className={`bg-white rounded-lg shadow-md p-5 border-l-4 ${statusStyles[order.status]} transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5`}>
+            <div className="flex justify-between items-start">
+                <div>
+                    <p className="font-bold text-gray-800">{order.customerName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">#{order.orderNumber}</p>
+                </div>
+            </div>
+            <div className="text-sm text-gray-700 my-4 space-y-1.5 border-t border-b border-gray-100 py-3">
+                {order.items.map((item, index) => <div key={index}>- {item}</div>)}
+            </div>
+            {order.status === 'CREATED' && (
+                <div className="flex gap-2 mt-3">
+                    <button onClick={() => onConfirm(order.id)} className="flex-1 flex items-center justify-center gap-2 bg-pink-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-600 transition-colors duration-300 text-sm">
+                        <Check size={16} /> Potvrdi
+                    </button>
+                    <button onClick={() => onReject(order.id)} className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors duration-300 text-sm">
+                        <X size={16} /> Odbij
+                    </button>
+                </div>
+            )}
+            {order.status === 'CONFIRMED' && (
+                 <button onClick={() => onMarkAsReady(order.id)} className="w-full flex items-center justify-center gap-2 bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-600 transition-colors duration-300 text-sm">
+                     <ChefHat size={16} /> Označi kao spremno
+                 </button>
+            )}
+            {order.status === 'READY_FOR_PICKUP' && (
+                 <div className="flex items-center justify-center gap-2 text-sm text-green-800 font-semibold mt-2 bg-green-100 p-2 rounded-lg">
+                    <Truck size={16} />
+                    <span>Čeka vozača: {order.driverName || '...'}</span>
+                 </div>
+            )}
+        </div>
     );
 };
 
-
-// Komponenta za karticu porudžbine (bez izmena)
-const OrderCard = ({ order, onConfirm, onReject, onMarkAsReady }) => (
-    <div className={`p-4 rounded-lg shadow-md mb-4 ${order.status === 'READY_FOR_PICKUP' ? 'bg-green-100' : 'bg-white'}`}>
-        <p className="font-bold text-sm text-gray-800">{order.orderNumber} - {order.customerName}</p>
-        <div className="text-xs text-gray-600 my-2 space-y-1">
-            {order.items.map((item, index) => <div key={index}>{item}</div>)}
+const OrderColumn = ({ title, orders, count, icon, color, ...actions }) => (
+    <div className="flex-1 p-5 bg-white rounded-xl shadow-lg min-h-[300px]">
+        <div className="flex items-center mb-5">
+            <div className={`mr-3 p-2 rounded-full bg-${color}-100`}>{icon}</div>
+            <h2 className={`font-bold text-lg text-gray-700`}>{title}</h2>
+            <span className={`ml-2 text-sm font-semibold text-white bg-${color}-500 px-2.5 py-0.5 rounded-full`}>{count}</span>
         </div>
-        {order.status === 'CREATED' && (
-            <div className="flex gap-2 mt-3">
-                <Button onClick={() => onConfirm(order.id)} size="sm" className="flex-1">Confirm</Button>
-                <Button onClick={() => onReject(order.id)} size="sm" variant="outline" className="flex-1">Reject</Button>
-            </div>
-        )}
-        {order.status === 'CONFIRMED' && (
-             <Button onClick={() => onMarkAsReady(order.id)} size="sm" className="w-full mt-3 bg-yellow-600 hover:bg-yellow-700">Mark as Ready</Button>
-        )}
-        {order.status === 'READY_FOR_PICKUP' && (
-             <p className="text-xs text-center text-green-800 font-semibold mt-2">{order.driverName}</p>
-        )}
-    </div>
-);
-
-// Komponenta za kolonu (bez izmena)
-const OrderColumn = ({ title, orders, ...actions }) => (
-    <div className="flex-1 p-4 bg-gray-100/50 rounded-lg min-h-[200px]">
-        <h2 className="font-bold mb-4 text-gray-700">{title} ({orders.length})</h2>
-        <div>
+        <div className="space-y-4">
             {orders.length > 0 ? 
                 orders.map(order => <OrderCard key={order.id} order={order} {...actions} />) :
-                <p className="text-sm text-gray-400 text-center mt-8">No orders in this stage.</p>
+                <p className="text-sm text-gray-400 text-center pt-16">Nema porudžbina u ovoj fazi.</p>
             }
         </div>
     </div>
 );
 
-
-// Glavna komponenta stranice
+// --- GLAVNA KOMPONENTA STRANICE ---
 export function ManagerOrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             const data = await getManagerActiveOrders();
             setOrders(data);
         } catch (error) {
-            console.error("Failed to load active orders:", error);
-            // Ne prikazujemo toast ovde da ne bismo spamovali korisnika pri svakom osvežavanju
+            toast.error("Neuspešno učitavanje aktivnih porudžbina.");
         } finally {
-            if (loading) setLoading(false);
+            setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchOrders(); // Učitaj inicijalne podatke
-
-        const token = localStorage.getItem('jwtToken');
-        if (!token) return;
-        
-        let managerId, managerEmail;
-        try {
-            const decodedToken = jwtDecode(token); 
-            managerId = decodedToken.id;
-            managerEmail = decodedToken.sub;
-        } catch (e) {
-            console.error("Invalid token:", e);
-            return;
-        }
-
-        if (!managerId || !managerEmail) return;
-
-        const socket = new SockJS('http://localhost:8088/ws');
-        const stompClient = Stomp.over(socket);
-        stompClient.debug = () => {}; // Isključuje detaljne logove u konzoli
-
-        stompClient.connect({}, (frame) => {
-            console.log('WebSocket Connected. Setting up subscriptions...');
-            
-            // --- PRETPLATA #1: Globalni kanal (za notifikacije od vozača) ---
-            const globalTopic = `/topic/user/${managerEmail.replace("@", "-at-").replace(".", "-dot-")}`;
-            console.log("Subscribing to GLOBAL topic:", globalTopic);
-            stompClient.subscribe(globalTopic, (message) => {
-                const notification = JSON.parse(message.body);
-                console.log("Received GLOBAL notification:", notification);
-                showCustomToast(notification);
-                fetchOrders();
-            });
-
-            // --- PRETPLATA #2: Lokalni kanal (za notifikacije specifične za ovu stranicu) ---
-            const pageTopic = `/topic/manager/${managerId}/orders`;
-            console.log("Subscribing to PAGE-SPECIFIC topic:", pageTopic);
-            stompClient.subscribe(pageTopic, (message) => {
-                const notification = JSON.parse(message.body);
-                console.log("Received PAGE-SPECIFIC notification:", notification);
-                showCustomToast(notification); // Koristimo istu funkciju za prikaz
-                fetchOrders();
-            });
-        });
-
-        // Cleanup funkcija koja prekida vezu kada se napusti stranica
-        return () => {
-            if (stompClient && stompClient.connected) {
-                stompClient.disconnect(() => {
-                    console.log('WebSocket Disconnected');
-                });
-            }
-        };
     }, []);
 
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
+
+    useEffect(() => {
+        const handleWebSocketMessage = (event) => {
+            const notification = event.detail;
+            console.log("ManagerOrdersPage received event:", notification);
+
+            // Pokaži toster za relevantne notifikacije
+            const managerNotificationTypes = ['OFFER_ACCEPTED', 'OFFER_REJECTED', 'ORDER_STATUS_UPDATE'];
+            if (managerNotificationTypes.includes(notification.type)) {
+                showCustomToast(notification);
+            }
+
+            // Uvek osveži listu porudžbina da bi se videla promena
+            fetchOrders();
+        };
+
+        // Slušamo za GLOBALNI događaj koji emituje ManagerLayout
+        window.addEventListener('websocket-notification', handleWebSocketMessage);
+
+        return () => {
+            window.removeEventListener('websocket-notification', handleWebSocketMessage);
+        };
+    }, [fetchOrders]); // Dodajemo fetchOrders kao zavisnost
+
+
+    // Handler funkcije ostaju iste
     const handleConfirm = async (id) => {
-        await toast.promise(confirmManagerOrder(id), { loading: 'Confirming...', success: 'Order confirmed!', error: 'Failed to confirm.' });
+        await toast.promise(confirmManagerOrder(id), {
+            loading: 'Potvrđivanje...', success: 'Porudžbina potvrđena!', error: 'Greška pri potvrdi.'
+        });
         fetchOrders();
     };
 
     const handleReject = async (id) => {
-        const reason = window.prompt("Please enter the reason for rejection (optional):");
+        const reason = window.prompt("Unesite razlog odbijanja (opciono):");
         if (reason !== null) {
-             await toast.promise(rejectManagerOrder(id, reason), { loading: 'Rejecting...', success: 'Order rejected!', error: 'Failed to reject.' });
+             await toast.promise(rejectManagerOrder(id, reason), {
+                loading: 'Odbijanje...', success: 'Porudžbina odbijena!', error: 'Greška pri odbijanju.'
+            });
             fetchOrders();
         }
     };
 
     const handleMarkAsReady = async (id) => {
-        await toast.promise(markOrderAsReady(id), { loading: 'Updating...', success: 'Marked as ready!', error: 'Failed to update.' });
+        await toast.promise(markOrderAsReady(id), {
+            loading: 'Ažuriranje...', success: 'Označeno kao spremno!', error: 'Greška pri ažuriranju.'
+        });
         fetchOrders();
     };
 
+    // Filtriranje i renderovanje ostaju isti
     const newOrders = orders.filter(o => o.status === 'CREATED');
     const inProgressOrders = orders.filter(o => o.status === 'CONFIRMED');
     const readyForPickupOrders = orders.filter(o => o.status === 'READY_FOR_PICKUP');
 
+    const LoadingSpinner = () => (
+        <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-500"></div>
+        </div>
+    );
+
     return (
-        <div className="w-full min-h-screen bg-brand-background-light">
+        <div className="w-full min-h-screen bg-pink-50/50">
             <ManagerNavbar />
-            <main className="container mx-auto px-4 md:px-6 py-8">
-                <h1 className="text-4xl font-bold text-brand-primary mb-8">Active Orders</h1>
-                {loading ? <p>Loading orders...</p> : (
+            <main className="container mx-auto px-4 md:px-6 py-10">
+                <h1 className="text-4xl font-bold text-gray-800 mb-2">Aktivne Porudžbine</h1>
+                <p className="text-gray-500 mb-8">Pratite sve porudžbine u realnom vremenu.</p>
+                
+                {loading ? <LoadingSpinner /> : (
                     <div className="flex flex-col md:flex-row gap-8">
-                        <OrderColumn title="New" orders={newOrders} onConfirm={handleConfirm} onReject={handleReject} />
-                        <OrderColumn title="In Progress" orders={inProgressOrders} onMarkAsReady={handleMarkAsReady} />
-                        <OrderColumn title="Ready for Pickup" orders={readyForPickupOrders} />
+                        <OrderColumn 
+                            title="Nove"
+                            orders={newOrders} 
+                            count={newOrders.length}
+                            icon={<Bell size={20} className="text-pink-500"/>}
+                            color="pink"
+                            onConfirm={handleConfirm} 
+                            onReject={handleReject} 
+                        />
+                        <OrderColumn 
+                            title="U pripremi"
+                            orders={inProgressOrders}
+                            count={inProgressOrders.length}
+                            icon={<ChefHat size={20} className="text-purple-500"/>}
+                            color="purple"
+                            onMarkAsReady={handleMarkAsReady} 
+                        />
+                        <OrderColumn
+                            title="Spremno za preuzimanje"
+                            orders={readyForPickupOrders}
+                            count={readyForPickupOrders.length}
+                            icon={<Truck size={20} className="text-green-500"/>}
+                            color="green"
+                        />
                     </div>
                 )}
             </main>

@@ -10,6 +10,8 @@ import com.iis.foodflow.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +21,8 @@ public class DeliveryManagementService {
 
     private final OrderRepository orderRepository;
     private final DriverRatingRepository driverRatingRepository;
+    private final LocationSimulator locationSimulator; // <-- 1. DODAJTE SIMULATOR
+
 
     @Transactional(readOnly = true)
     public List<DeliveryDTO> getDeliveriesForManager(Manager manager) {
@@ -60,6 +64,17 @@ public class DeliveryManagementService {
                 .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant().getAddress())
                 .orElseThrow(() -> new IllegalStateException("Restaurant address not found."));
 
+        var startPoint = new TrackOrderManagerDTO.Point(restaurantAddress.getLatitude(), restaurantAddress.getLongitude());
+        var endPoint = new TrackOrderManagerDTO.Point(customerAddress.getLatitude(), customerAddress.getLongitude());
+
+        var simulatedDriverLocation = locationSimulator.simulateDriverLocation(
+                startPoint,
+                endPoint,
+                order.getCreationDate().toInstant(ZoneOffset.UTC),
+                order.getEta().toInstant(ZoneOffset.UTC)
+        );
+
+        // === OVDE JE ISPRAVKA ===
         return TrackOrderManagerDTO.builder()
                 .orderId(order.getId())
                 .orderNumber("Tracking Order #" + order.getId())
@@ -67,9 +82,12 @@ public class DeliveryManagementService {
                 .customerName(order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName())
                 .customerAddress(customerAddress.toString())
                 .eta(order.getEta())
-                .restaurantLocation(new TrackOrderManagerDTO.Point(restaurantAddress.getLatitude(), restaurantAddress.getLongitude()))
-                .driverLocation(new TrackOrderManagerDTO.Point(driver.getLatitude(), driver.getLongitude()))
-                .customerLocation(new TrackOrderManagerDTO.Point(customerAddress.getLatitude(), customerAddress.getLongitude()))
+                .restaurantLocation(startPoint) // Koristimo već kreirani startPoint
+
+                // ---> SADA KORISTIMO REZULTAT SIMULACIJE! <---
+                .driverLocation(simulatedDriverLocation)
+
+                .customerLocation(endPoint) // Koristimo već kreirani endPoint
                 .build();
     }
 

@@ -81,14 +81,24 @@ export default {
   				to: {
   					height: '0'
   				}
-  			}
+  			},
+            // === DODAJTE OVO ===
+            'modal-show': {
+                '0%': { opacity: '0', transform: 'scale(0.95) translateY(20px)' },
+                '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+            },
+            // ===================
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+            // === I OVO ===
+            'modal-show': 'modal-show 0.3s ease-out forwards',
+            // =============
   		}
   	},
-  	plugins: []
+  	// NAPOMENA: Ovaj 'plugins' blok je suvišan jer ga imate i na kraju fajla.
+    // Obrisao sam ga da bi kod bio čistiji.
   },
     plugins: [require("tailwindcss-animate")]
 }

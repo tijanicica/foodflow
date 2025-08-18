@@ -2,39 +2,43 @@
 
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react'; // Opciono: dodavanje ikonice za bolji izgled
 
-// Stilovi za aktivni i neaktivni link, da izbegnemo ponavljanje
-const commonLinkClasses = "py-2 transition-colors duration-200";
-const activeLinkClasses = "font-semibold text-brand-primary border-b-2 border-brand-primary";
-const inactiveLinkClasses = "text-gray-600 hover:text-brand-primary";
+// Ažurirani stilovi linkova koji se uklapaju u novu temu
+const commonLinkClasses = "py-2 px-1 transition-colors duration-300 font-medium";
+const activeLinkClasses = "text-pink-600 border-b-2 border-pink-500 font-bold";
+const inactiveLinkClasses = "text-gray-500 hover:text-pink-500";
 
 export function ManagerNavbar() {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        // Obriši token iz lokalne memorije
         localStorage.removeItem('jwtToken');
-        // Preusmeri na login stranicu
         navigate('/login');
     };
 
     return (
-        <header className="bg-brand-background-light border-b border-brand-accent/30 shadow-sm">
-            <nav className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16">
-                {/* Logo */}
-                <h1 className="text-2xl font-bold text-brand-primary italic">
-                    FoodFlow
-                </h1>
+        // Bela pozadina sa mekom senkom za čist i elegantan izgled
+        <header className="bg-white shadow-md sticky top-0 z-50">
+            <nav className="container mx-auto px-4 md:px-6 flex justify-between items-center h-20">
+                {/* Logo sa dodatkom "Manager" oznake */}
+                <div className="flex items-center">
+                    <h1 className="text-3xl font-bold text-gray-800 italic">
+                        FoodFlow
+                    </h1>
+                    <span className="ml-3 bg-pink-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                        Manager
+                    </span>
+                </div>
 
-                {/* Navigacioni linkovi */}
-                <div className="flex items-center gap-8 text-sm">
+                {/* Navigacioni linkovi sa ažuriranim stilovima */}
+                <div className="hidden md:flex items-center gap-10 text-sm">
                     <NavLink
                         to="/manager/dashboard"
                         className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
                     >
                         Dashboard
                     </NavLink>
-                    {/* Placeholder linkovi - možete ih kasnije povezati sa pravim stranicama */}
                     <NavLink to="/manager/orders" className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                         Orders
                     </NavLink>
@@ -49,12 +53,13 @@ export function ManagerNavbar() {
                     </NavLink>
                 </div>
                  
-                {/* Dugme za odjavu */}
+                {/* Redizajnirano dugme za odjavu */}
                 <button
                     onClick={handleLogout}
-                    className="text-sm text-gray-600 hover:text-brand-primary font-medium"
+                    className="flex items-center gap-2 text-sm text-gray-600 font-medium py-2 px-4 rounded-lg hover:bg-pink-50 hover:text-pink-600 transition-colors duration-300"
                 >
-                    LogOut
+                    <LogOut size={16} /> 
+                    <span>LogOut</span>
                 </button>
             </nav>
         </header>
