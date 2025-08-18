@@ -4,13 +4,14 @@ import { Navbar } from '@/components/Navbar';
 import { getOrderDetailsCustomer } from '@/services/api';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Home, CreditCard, CheckCircle, CookingPot, Bike, PackageCheck, Star, Map, FileText } from 'lucide-react';
+import { ArrowLeft, Home, FileText, CheckCircle, CookingPot, Bike, PackageCheck, Star, Map } from 'lucide-react';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { RateOrderModal } from '@/components/modals/RateOrderModal';
 
 //================================================================================
-// POMOĆNE KOMPONENTE (kompletne)
+// POMOĆNE KOMPONENTE (ostaju nepromenjene)
 //================================================================================
 
 const InfoBlock = ({ icon, title, children, className = '' }) => (
@@ -74,6 +75,7 @@ export function OrderDetailPage() {
     const { orderId } = useParams();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -86,6 +88,12 @@ export function OrderDetailPage() {
         };
         fetchDetails();
     }, [orderId]);
+
+    const handleOpenRatingModal = () => setIsRatingModalOpen(true);
+    const handleCloseRatingModal = () => setIsRatingModalOpen(false);
+    const handleRatingSuccess = () => {
+        setOrder(prevOrder => ({ ...prevOrder, rated: true }));
+    };
 
     const statusInfo = useMemo(() => {
         if (!order) return {};
@@ -123,7 +131,6 @@ export function OrderDetailPage() {
                     <ArrowLeft size={16} /> Back to My Orders
                 </Link>
 
-                {/* === KLJUČNA IZMENA OVDE === */}
                 <div className="text-center">
                     <p className={`font-bold text-lg ${statusInfo.color}`}>{statusInfo.text}</p>
                     <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mt-2">Order #{order.id}</h1>
@@ -173,13 +180,27 @@ export function OrderDetailPage() {
                             </div>
                             <div className="mt-6">
                                 {order.status === 'PICKED_UP' && <Button asChild className="w-full bg-brand-primary hover:bg-brand-primary/90"><Link to={`/track/${order.id}`}><Map className="mr-2 h-4 w-4"/> Track Live</Link></Button>}
-                                {order.status === 'DELIVERED' && <Button disabled={order.rated} className="w-full bg-brand-primary hover:bg-brand-primary/90 disabled:opacity-70"><Star className="mr-2 h-4 w-4"/> {order.rated ? 'Rated' : 'Rate Order'}</Button>}
+                                {order.status === 'DELIVERED' && 
+                                    <Button 
+                                        onClick={handleOpenRatingModal} 
+                                        disabled={order.rated} 
+                                        className="w-full bg-brand-primary hover:bg-brand-primary/90 disabled:opacity-70">
+                                        <Star className="mr-2 h-4 w-4"/> {order.rated ? 'Rated' : 'Rate Order'}
+                                    </Button>
+                                }
                             </div>
                          </div>
                     </motion.div>
                 </div>
             </main>
             <Footer />
+
+            <RateOrderModal
+                isOpen={isRatingModalOpen}
+                onClose={handleCloseRatingModal}
+                order={order}
+                onRatingSuccess={handleRatingSuccess}
+            />
         </div>
     );
 }
