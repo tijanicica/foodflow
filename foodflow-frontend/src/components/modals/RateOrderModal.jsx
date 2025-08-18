@@ -21,14 +21,14 @@ const StarRating = ({ label, rating, setRating }) => (
 );
 
 export const RateOrderModal = ({ isOpen, onClose, order, onRatingSuccess }) => {
-    const [ratings, setRatings] = useState({ onTimeArrival: 0, hygiene: 0, kindness: 0, quality: 0, taste: 0, portion: 0 });
+    const [ratings, setRatings] = useState({ onTimeArrival: 1, hygiene: 1, kindness: 1, quality: 1, taste: 1, portion: 1 });
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => { 
         console.log("[MODAL STATE] Modal is now:", isOpen ? "Open" : "Closed");
         if (isOpen) {
             console.log("[MODAL STATE] Resetting ratings for new session.");
-            setRatings({ onTimeArrival: 0, hygiene: 0, kindness: 0, quality: 0, taste: 0, portion: 0 });
+            setRatings({ onTimeArrival: 1, hygiene: 1, kindness: 1, quality: 1, taste: 1, portion: 1 });
         }
     }, [isOpen]);
 
