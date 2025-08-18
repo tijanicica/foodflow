@@ -14,7 +14,6 @@ import 'leaflet/dist/leaflet.css';
 import { AppLayout } from './components/AppLayout'; // <-- NOVI IMPORT
 import { MiniCart } from './components/MiniCart';   // <-- NOVI IMPORT
 import { DriverLayout } from './layouts/DriverLayout.jsx';
-
 import { ManagerLayout } from './layouts/ManagerLayout.jsx';
 import { CustomerLayout } from './layouts/CustomerLayout.jsx'; 
 
@@ -46,7 +45,7 @@ import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
 import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
 import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
 
-
+import { NotificationProvider } from './context/NotificationContext';
 
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
@@ -113,9 +112,14 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
    <React.StrictMode> 
-      <Toaster position="bottom-right" /> {/* Premesti na vrh, za svaki slučaj */}
-      <CartProvider>
-        <RouterProvider router={router} />
-      </CartProvider>
-   </React.StrictMode> // <-- I OVO
+      <Toaster position="bottom-right" />
+
+      {/* OVDE JE KLJUČNA PROMENA */}
+      <NotificationProvider>
+        <CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
+      </NotificationProvider>
+      
+   </React.StrictMode>
 );
