@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,59 +15,69 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Logika prijave ostaje ista
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
+    
     try {
       const response = await loginUser(email, password);
       const { token } = response;
+      
       localStorage.setItem('jwtToken', token);
       const decodedToken = jwtDecode(token);
-      const userRole = decodedToken.role;
 
-    switch (userRole) {
-        case 'ROLE_DRIVER':
-          navigate('/driver'); // Vozač ide na /driver
-          break;
-        case 'ROLE_CUSTOMER':
-          navigate('/home'); // Kupac ide na /home
-          break;
-        case 'ROLE_OPERATOR':
-          navigate('/operator/dashboard'); // Primjer rute za operatora
-          break;
-         // ===== ISPRAVKA JE OVDE =====
-        case 'ROLE_MANAGER':
-          navigate('/manager/dashboard'); // Bilo je '/manager/overview'
-          break;
-        // ============================
-       
-        case 'ROLE_SUPPORT_ADMINISTRATOR':
-          navigate('/support/tickets'); // Primjer rute za podršku
-          break;
+      // === KLJUČNA IZMENA: KREIRANJE STANDARDIZOVANOG USER OBJEKTA ===
+      // Kreiramo novi objekat koji uvek ima ista imena polja,
+      // bez obzira na to kako se zovu u sirovom tokenu.
+      const userToStore = {
+        id: decodedToken.id,
+        // Koristi 'sub' ako postoji, inače koristi 'email'.
+        sub: decodedToken.sub || decodedToken.email, 
+        // Koristi 'role' ako postoji, inače koristi 'authority' ili 'roles'.
+        role: decodedToken.role || decodedToken.authority || (Array.isArray(decodedToken.roles) ? decodedToken.roles[0] : null)
+      };
 
-        // ===== ISPRAVKA JE OVDE =====
-    case 'ROLE_ADMINISTRATOR':
-      navigate('/admin/managers'); // Umesto '/admin/panel'
-      break;
-    // ============================
-
-        default:
-          // Ako uloga nije prepoznata, vrati ga na login ili prikaži grešku
-          console.warn(`Unknown role: ${userRole}`);
-          navigate('/login');
-          break;
+      // Proveravamo da li smo uspeli da izvučemo ključne podatke
+      if (!userToStore.role || !userToStore.sub) {
+          throw new Error("User role or email could not be determined from the token.");
       }
+
+      // Sada čuvamo naš novi, čisti objekat.
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      // =================================================================
+
+      const userRole = userToStore.role; // Koristimo rolu iz našeg novog objekta
+
+      let destination = '/login';
+      switch (userRole) {
+        case 'ROLE_DRIVER': destination = '/driver'; break;
+        case 'ROLE_CUSTOMER': destination = '/home'; break;
+        case 'ROLE_OPERATOR': destination = '/operator/dashboard'; break;
+        case 'ROLE_MANAGER': destination = '/manager/dashboard'; break;
+        case 'ROLE_SUPPORT_ADMINISTRATOR': destination = '/support/tickets'; break;
+        case 'ROLE_ADMINISTRATOR': destination = '/admin/managers'; break;
+        default: console.warn(`Unknown role: ${userRole}`); break;
+      }
+      
+      navigate(destination);
+      
+      // Sa malom pauzom šaljemo događaj da se layout-i koji su se upravo učitali
+      // mogu povezati na WebSocket.
+      setTimeout(() => {
+        window.dispatchEvent(new Event("userLoggedIn"));
+      }, 50);
+
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      // Poboljšano rukovanje greškama
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-return (
+  return (
     <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
       
       {/* LEVA STRANA */}
@@ -117,10 +127,7 @@ return (
                 />
             </div>
             
-            {/* === OVDE JE KLJUČNA IZMENA === */}
-            {/* 1. Kreiramo kontejner fiksne visine (h-14) koji UVEK postoji */}
             <div className="h-14">
-              {/* 2. Poruka o grešci se sada prikazuje UNUTAR ovog kontejnera */}
               {error && (
                 <motion.div 
                   className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-md flex items-center gap-3 text-sm"
@@ -134,8 +141,6 @@ return (
 
             <Button
               type="submit"
-              // Koristimo negativnu gornju marginu (-mt-6) da vizuelno kompenzujemo prazan prostor
-              // kada greške nema, čime se održava isti vizuelni raspored.
               className="w-full h-12 text-lg font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary/90 transition-colors -mt-6"
               disabled={isLoading}
             >
@@ -152,7 +157,7 @@ return (
         </motion.div>
       </div>
 
-      {/* DESNA STRANA (ostaje ista) */}
+      {/* DESNA STRANA */}
       <div className="hidden lg:flex relative items-center justify-center bg-gray-900">
         <img
           src="foodflowlogin.png"

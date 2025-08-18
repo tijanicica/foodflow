@@ -2,12 +2,16 @@ package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.RegisterManagerRequestDTO;
 import com.iis.foodflow.dto.request.UpdateManagerRequestDTO;
+import com.iis.foodflow.dto.response.AdminDriverPerformanceResponse;
+import com.iis.foodflow.dto.response.DriverPerformanceResponse;
 import com.iis.foodflow.dto.response.ManagerDetailDTO;
 import com.iis.foodflow.dto.response.ManagerInfoDTO;
 import com.iis.foodflow.enums.Role;
 import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Administrator;
+import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.model.user.Manager;
+import com.iis.foodflow.repository.DriverRepository;
 import com.iis.foodflow.repository.ManagerRepository;
 import com.iis.foodflow.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,9 @@ public class AdminService {
     private final ManagerRepository managerRepository;
     private final PasswordEncoder passwordEncoder;
     private final RestaurantRepository restaurantRepository;
+    private final DriverService driverService;
+
+    private final DriverRepository driverRepository;
 
     public List<ManagerInfoDTO> getAllManagers() {
         return managerRepository.findAll().stream()
@@ -106,4 +113,33 @@ public class AdminService {
         Manager updatedManager = managerRepository.save(manager);
         return getManagerById(updatedManager.getId());
     }
+
+    @Transactional(readOnly = true) // Transakcija je samo za čitanje, radi optimizacije
+    public List<AdminDriverPerformanceResponse> getAllDriverPerformances() {
+        // 1. Dobavi sve entitete vozača iz baze podataka
+        List<Driver> allDrivers = driverRepository.findAll();
+
+        // 2. Koristeći stream, prođi kroz listu svih vozača
+        return allDrivers.stream()
+                .map(driver -> {
+                    // 3. Za svakog vozača, pozovi već postojeću metodu koju koristi i sam vozač
+                    DriverPerformanceResponse performance = driverService.getDriverPerformance(driver.getEmail());
+
+                    // 4. Mapiraj dobijene podatke u novi DTO (AdminDriverPerformanceResponse)
+                    return new AdminDriverPerformanceResponse(
+                            driver.getId(), // Dodajemo ID koji nam treba
+                            performance.getFirstName(),
+                            performance.getLastName(),
+                            performance.getVehicleType(),
+                            performance.getTotalDeliveries(),
+                            performance.getOnTimeRate(),
+                            performance.getRejections(),
+                            performance.getAverageRating()
+                    );
+                })
+                // 5. Sakupi sve kreirane DTO objekte u jednu listu
+                .collect(Collectors.toList());
+    }
+
+
 }

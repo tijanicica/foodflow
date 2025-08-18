@@ -12,6 +12,8 @@ import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.DriverRatingRepository;
 import com.iis.foodflow.repository.DriverRepository;
 import com.iis.foodflow.repository.OrderOfferRepository;
+// Na vrhu DriverService.java
+import lombok.extern.slf4j.Slf4j;
 import com.iis.foodflow.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DriverService {
 
     private final DriverRepository driverRepository;
@@ -42,6 +45,7 @@ public class DriverService {
     private final OrderOfferRepository orderOfferRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final RealtimeNotificationService realtimeNotificationService;
 
     @Autowired
     private RoutingService routingService;
@@ -271,8 +275,18 @@ public class DriverService {
 
         // Sačuvaj porudžbinu sa vozačem, ali bez menjanja statusa
         orderRepository.save(order);
+        OrderOffer savedOffer = orderOfferRepository.save(offer);
 
-        return orderOfferRepository.save(offer);
+        // 2. Tek NAKON što je sve uspešno sačuvano, pošalji notifikaciju.
+        try {
+            realtimeNotificationService.notifyManagerOfOfferAcceptance(order, driver);
+        } catch (Exception e) {
+            // Ako slanje notifikacije pukne, baci izuzetak da se transakcija poništi!
+            // I videćete jasnu grešku na frontendu.
+            throw new RuntimeException("Offer accepted, but failed to send notification: " + e.getMessage(), e);
+        }
+
+        return savedOffer;
     }
 
 
@@ -306,17 +320,18 @@ public class DriverService {
 
         // Spremamo ažuriranu ponudu. Važno je da ovo uradimo prije vraćanja.
         OrderOffer savedOffer = orderOfferRepository.save(offer);
-
-        // 3. === TODO JE RIJEŠEN: POKREĆEMO PONOVNU DODJELU ===
-        // Uzimamo porudžbinu iz ponude koju je vozač odbio
         Order orderToReassign = offer.getOrder();
-        System.out.println("Driver " + driver.getFirstName() + " REJECTED offer. Finding next driver for order " + orderToReassign.getId());
 
-        // Pozivamo OrderAssignmentService da pronađe sljedećeg kandidata
+        // 2. Tek ONDA pošalji notifikaciju i pokreni traženje novog vozača.
+        try {
+            realtimeNotificationService.notifyManagerOfOfferRejection(orderToReassign, driver);
+        } catch (Exception e) {
+            // Ako slanje pukne, baci izuzetak.
+            throw new RuntimeException("Offer rejected, but failed to send notification: " + e.getMessage(), e);
+        }
+
         orderAssignmentService.findAndAssignBestDriver(orderToReassign);
-        // ========================================================
 
-        // Vraćamo originalnu, sada odbačenu ponudu, kao što je i traženo.
         return savedOffer;
     }
 
@@ -326,12 +341,9 @@ public class DriverService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
-        // Provera da li je porudžbina dodijeljena ovom vozaču
+        // Provera da li je porudžbina dodeljena ovom vozaču
         if (order.getDriver() == null || !order.getDriver().equals(driver)) {
             throw new SecurityException("Forbidden: This order is not assigned to you.");
-        }
-        if (order.getStatus() == OrderStatus.CANCELED) {
-            throw new IllegalStateException("This order can no longer be canceled. Current status: " + order.getStatus());
         }
 
         // Provera statusa koji se može otkazati
@@ -348,7 +360,11 @@ public class DriverService {
         order.setCancellationReason(reason);
 
         Order savedOrder = orderRepository.save(order);
-        notificationService.notifyManagerOfOrderStatusUpdate(savedOrder);
+
+        // === KLJUČNA IZMENA #2: Koristimo novu servisnu promenljivu ===
+        // notificationService.notifyManagerOfOrderStatusUpdate(savedOrder); // Stari kod
+        realtimeNotificationService.notifyManagerOfOrderStatusUpdate(savedOrder); // NOVI KOD
+        realtimeNotificationService.notifyCustomerOfOrderStatusUpdate(savedOrder);
 
         // Vraćamo DTO, a ne entitet
         return new CancelDeliveryResponse(
@@ -402,6 +418,9 @@ public class DriverService {
 
         Order savedOrder = orderRepository.save(order);
 
+        realtimeNotificationService.notifyManagerOfOrderStatusUpdate(savedOrder);
+        realtimeNotificationService.notifyCustomerOfOrderStatusUpdate(savedOrder);
+
         // --- 4. POKRETANJE SIMULACIJE ---
         Address customerAddress = savedOrder.getAddress();
         RoutingService.RouteDetailsDTO toCustomerRoute = routingService.getRouteDetails(
@@ -432,7 +451,6 @@ public class DriverService {
         }
         return savedOrder;
     }
-
     @Transactional
     public Order reportDelay(String driverEmail, Long orderId, Integer delayMinutes) {
         Driver driver = findDriverByEmail(driverEmail);
@@ -591,7 +609,8 @@ public class DriverService {
         order.setDeliveredAt(LocalDateTime.now());
 
         Order updatedOrder = orderRepository.save(order);
-        notificationService.notifyManagerOfOrderStatusUpdate(updatedOrder);
+        realtimeNotificationService.notifyManagerOfOrderStatusUpdate(updatedOrder);
+        realtimeNotificationService.notifyCustomerOfOrderStatusUpdate(updatedOrder);
 
         // Kada je porudžbina dostavljena, vozač je ponovo slobodan
         driver.setStatus(DriverStatus.ONLINE);

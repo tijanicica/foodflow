@@ -9,11 +9,11 @@ import { motion } from 'framer-motion';
 // WebSocket i API
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
-import { getOrderDetails, cancelDelivery,getDriverInfo,reportDelay , startSimulation,markOrderAsDelivered   } from '../services/api'; 
+import { getOrderDetails , cancelDelivery,getDriverInfo,reportDelay , startSimulation,markOrderAsDelivered   } from '../services/api'; 
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
-import { FiEdit3,FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle,FiClock, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiEdit3,FiSend ,FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle,FiClock, FiMinus, FiPlus } from 'react-icons/fi';
 
 
 const predefinedReasons = [
@@ -265,6 +265,7 @@ export function PickedUpOrderPage() {
 
     // Stanja (State)
     const [order, setOrder] = useState(null);
+    const [isNotifying, setIsNotifying] = useState(false); 
     const [vehicleType, setVehicleType] = useState(null);
     const [driverLocation, setDriverLocation] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -281,6 +282,7 @@ export function PickedUpOrderPage() {
             toast.error("Could not refresh order details.");
         }
     };
+
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
        useEffect(() => {
@@ -432,7 +434,6 @@ if (newLocation.predictedTimeLeft !== undefined) {
     
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
-            <Toaster position="top-center" />
                         {/* OVERLAY I MODAL */}
             {isCancelModalOpen && (
                 <div style={{
@@ -537,6 +538,8 @@ if (newLocation.predictedTimeLeft !== undefined) {
 
                         {/* DUGMAD */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
+                            
+                            
                             <button
                                 onClick={handleMarkAsDelivered}
                                 style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}

@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderAssignmentService {
 
     private final DriverRepository driverRepository;
@@ -36,46 +38,79 @@ public class OrderAssignmentService {
     @Autowired
     private RoutingService routingService;
 
+    private final RealtimeNotificationService notificationService;
     /**
      * Glavna metoda koja pronalazi najboljeg vozača za porudžbinu i šalje mu ponudu.
      * Ova metoda se poziva kada menadžer potvrdi porudžbinu.
      */
     @Transactional
     public void findAndAssignBestDriver(Order order) {
+        log.info("Starting driver assignment for order #{}", order.getId());
 
-        // --- 1. DOBIJANJE SVIH ONLINE VOZAČA ---
         List<Driver> onlineDrivers = driverRepository.findByStatus(DriverStatus.ONLINE);
-
         if (onlineDrivers.isEmpty()) {
-            System.out.println("Nema online vozača za porudžbinu " + order.getId());
-            // TODO: Postaviti status porudžbine na AWAITING_DRIVER ili slično
+            log.warn("No online drivers found for order #{}. Aborting assignment.", order.getId());
             return;
         }
 
-        // --- 2. DOBIJANJE VOZAČA KOJIMA JE VEĆ POSLATA PONUDA ---
         Set<Long> driversWithExistingOffer = orderOfferRepository.findDriverIdsByOrder(order);
-
-        // --- 3. FILTRIRANJE KANDIDATA ---
-        // Iz liste online vozača, izbacujemo one koji već imaju ponudu
         List<Driver> candidateDrivers = onlineDrivers.stream()
                 .filter(driver -> !driversWithExistingOffer.contains(driver.getId()))
                 .collect(Collectors.toList());
 
         if (candidateDrivers.isEmpty()) {
-            System.out.println("Nema VIŠE dostupnih vozača za porudžbinu " + order.getId() + ". Svi su već dobili ponudu.");
+            log.warn("No new candidate drivers for order #{}. All online drivers have already received an offer.", order.getId());
             return;
         }
 
-        // --- 4. PRONALAŽENJE NAJBOLJEG VOZAČA MEĐU KANDIDATIMA ---
-        // Koristimo Java Stream API da nađemo vozača sa maksimalnim skorom
         Optional<Driver> bestDriverOptional = candidateDrivers.stream()
                 .max(Comparator.comparingDouble(driver -> calculateDriverScore(driver, order)));
 
-        // --- 5. KREIRANJE I SLANJE PONUDE NAJBOLJEM ---
-        bestDriverOptional.ifPresent(bestDriver -> {
-            System.out.printf("Najbolji vozač za porudžbinu %d je %s. Kreiranje ponude...%n", order.getId(), bestDriver.getFirstName());
-            createOffer(order, bestDriver);
-        });
+        if (bestDriverOptional.isPresent()) {
+            Driver bestDriver = bestDriverOptional.get();
+            log.info("Best driver found for order #{}: {} {} (ID: {}). Creating offer and sending notification.",
+                    order.getId(), bestDriver.getFirstName(), bestDriver.getLastName(), bestDriver.getId());
+
+            // =========================================================================
+            // 2. POZIVAMO IZMENJENU METODU KOJA ĆE URADITI SVE
+            assignOfferAndNotifyDriver(order, bestDriver);
+            // =========================================================================
+        } else {
+            log.warn("Could not determine a best driver for order #{} from available candidates.", order.getId());
+        }
+    }
+
+    /**
+     * Ključna metoda: Kreira ponudu, dodeljuje vozača porudžbini i šalje notifikaciju.
+     */
+    private void assignOfferAndNotifyDriver(Order order, Driver driver) {
+        // 3. Kreiramo i čuvamo ponudu
+        OrderOffer newOffer = OrderOffer.builder()
+                .order(order)
+                .driver(driver)
+                .status(OfferStatus.SENT)
+                .createdAt(LocalDateTime.now())
+                .build();
+        orderOfferRepository.save(newOffer);
+        log.info("Offer created for order #{} and driver #{}", order.getId(), driver.getId());
+
+        // =========================================================================
+        // 4. DODELJUJEMO VOZAČA PORUDŽBINI! (Ovo je nedostajalo)
+        // Ovo je privremena dodela dok vozač ne prihvati.
+        // AKO IMATE LOGIKU DA SE VOZAČ Dodeljuje tek nakon prihvatanja, ONDA OVO TREBA PREMESTITI.
+        // Ali za potrebe slanja notifikacije, ovo je neophodno.
+        order.setDriver(driver);
+        //=========================================================================
+
+        // =========================================================================
+        // 5. ŠALJEMO NOTIFIKACIJU! (Ovo je takođe nedostajalo)
+        try {
+            notificationService.notifyDriverOfNewOrder(order);
+            log.info("Notification for new order #{} successfully sent to driver #{}", order.getId(), driver.getId());
+        } catch (Exception e) {
+            log.error("Failed to send new order notification for order #{} to driver #{}.", order.getId(), driver.getId(), e);
+        }
+        //=========================================================================
     }
 
     /**
