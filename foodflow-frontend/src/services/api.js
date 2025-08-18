@@ -651,3 +651,11 @@ export const submitCombinedRating = async (orderId, payload) => {
     const response = await apiClient.post(`/orders/${orderId}/rate`, payload); 
     return response.data;
 };
+
+
+
+
+export const getAllDriverPerformances = async () => {
+    const response = await apiClient.get('/admin/managers/drivers-performance');
+    return response.data;
+};

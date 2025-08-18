@@ -44,6 +44,7 @@ import { ManagerOrdersPage } from './pages/ManagerOrdersPage.jsx';
 import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
 import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
 import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
+import { AdminDriverPerformancePage } from './pages/AdminDriverPerformancePage.jsx';
 
 import { NotificationProvider } from './context/NotificationContext';
 
@@ -102,6 +103,19 @@ const router = createBrowserRouter([
       { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
     ]
   },
+
+  { 
+        path: "/admin/dashboard", 
+        element: <AdminManagerManagementPage /> 
+    },
+    { 
+        path: "/admin/managers", 
+        element: <AdminManagerManagementPage /> 
+    },
+    { 
+                path: "/admin/driver-performance", 
+                element: <AdminDriverPerformancePage /> 
+            },
    
    // All
   { path: "/", element: <LoginPage /> },
