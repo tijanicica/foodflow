@@ -652,6 +652,12 @@ export const submitCombinedRating = async (orderId, payload) => {
     return response.data;
 };
 
+export const getLiveDriverLocations = async () => {
+    const response = await apiClient.get('/admin/managers/drivers/live-locations');
+    return response.data;
+};
+
+
 
 
 

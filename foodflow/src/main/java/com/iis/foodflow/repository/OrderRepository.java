@@ -93,6 +93,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY TO_CHAR(creation_date, 'YYYY-MM') ORDER BY month", nativeQuery = true)
     List<Object[]> findSpendingOverTime(@Param("customerId") Long customerId);
 
+    Optional<Order> findTopByDriverAndStatusInOrderByCreationDateDesc(Driver driver, List<OrderStatus> statuses);
+
 
 
     @Query("SELECT oi.menuItemVersion.menuVersion.menu.restaurant.name, SUM(oi.menuItemVersion.price * oi.quantity) " +

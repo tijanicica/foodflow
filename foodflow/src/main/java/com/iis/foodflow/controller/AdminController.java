@@ -3,6 +3,7 @@ package com.iis.foodflow.controller;
 import com.iis.foodflow.dto.request.RegisterManagerRequestDTO;
 import com.iis.foodflow.dto.request.UpdateManagerRequestDTO;
 import com.iis.foodflow.dto.response.AdminDriverPerformanceResponse;
+import com.iis.foodflow.dto.response.DriverLiveLocationDTO;
 import com.iis.foodflow.dto.response.ManagerDetailDTO;
 import com.iis.foodflow.dto.response.ManagerInfoDTO;
 import com.iis.foodflow.model.user.Administrator;
@@ -57,5 +58,13 @@ public class AdminController {
     public ResponseEntity<List<AdminDriverPerformanceResponse>> getAllDriverPerformances() {
         List<AdminDriverPerformanceResponse> performances = adminService.getAllDriverPerformances();
         return ResponseEntity.ok(performances);
+    }
+
+    @GetMapping("/drivers/live-locations")
+    public ResponseEntity<List<DriverLiveLocationDTO>> getLiveDriverLocations() {
+        // Pozivamo novu metodu iz AdminService
+        List<DriverLiveLocationDTO> liveLocations = adminService.getLiveDriverLocations();
+        // Vraćamo podatke sa HTTP statusom 200 OK
+        return ResponseEntity.ok(liveLocations);
     }
 }
