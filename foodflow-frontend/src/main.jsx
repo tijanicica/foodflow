@@ -54,8 +54,6 @@ import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.j
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
    {
-    // 1. KAŽEMO DA OVAJ BLOK VAŽI ZA SVE OSNOVNE PUTANJE
-    path: "/", 
     element: <CustomerLayout />,
     children: [
       {

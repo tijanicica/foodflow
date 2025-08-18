@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 // WebSocket i API
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
-import { getOrderDetails,notifyCustomerOfArrival , cancelDelivery,getDriverInfo,reportDelay , startSimulation,markOrderAsDelivered   } from '../services/api'; 
+import { getOrderDetails , cancelDelivery,getDriverInfo,reportDelay , startSimulation,markOrderAsDelivered   } from '../services/api'; 
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
@@ -282,27 +282,6 @@ export function PickedUpOrderPage() {
             toast.error("Could not refresh order details.");
         }
     };
-     const handleNotifyArrival = async () => {
-        console.log("handleNotifyArrival clicked. Current 'order' state:", order);
-
-        setIsNotifying(true);
-        const toastId = toast.loading('Sending notification to customer...');
-
-        try {
-            // Pozivamo čistu, refaktorisanu API funkciju
-            await notifyCustomerOfArrival(order.id);
-
-            toast.success('Notification sent successfully!', { id: toastId });
-
-        } catch (error) {
-            // Logika za rukovanje greškom ostaje ista
-            const errorMessage = error.response?.data?.message || "Failed to send notification. Please try again.";
-            toast.error(errorMessage, { id: toastId });
-        
-        } finally {
-            setIsNotifying(false);
-        }
-    };
 
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
@@ -559,17 +538,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
 
                         {/* DUGMAD */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
-                            <button
-                                onClick={handleNotifyArrival}
-                                disabled={isNotifying} // Onemogućeno tokom slanja
-                                style={{ 
-                                    ...primaryButtonStyle, 
-                                    backgroundColor: isNotifying ? '#BDBDBD' : '#1976D2', // Siva boja dok je onemogućeno
-                                    cursor: isNotifying ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                <FiSend /> {isNotifying ? 'Sending...' : 'Notify Customer of Arrival'}
-                            </button>
+                            
                             
                             <button
                                 onClick={handleMarkAsDelivered}

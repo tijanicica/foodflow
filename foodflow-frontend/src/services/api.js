@@ -348,14 +348,6 @@ export const cancelRepeatingOrder = async (templateId) => {
     }
 };
 
-
-export const notifyCustomerOfArrival = async (orderId) => {
-  // Ovde koristimo ispravnu URL adresu sa "drivers" (množina)
-  // i vraćamo obećanje koje Axios kreira.
-  // Komponenta će hvatati greške preko try-catch bloka.
-  return await api.post(`/drivers/orders/${orderId}/notify-arrival`);
-};
-
 export const getDriverInfo = async () => {
     try {
         const response = await apiClient.get('/drivers/info');

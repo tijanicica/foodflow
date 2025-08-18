@@ -451,22 +451,6 @@ public class DriverService {
         }
         return savedOrder;
     }
-    @Transactional(readOnly = true) // readOnly je bolji fit jer samo čitamo podatke
-    public void notifyCustomerOfArrival(String driverEmail, Long orderId) {
-
-        // Jedina preostala provera je da li porudžbina uopšte postoji u bazi.
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-
-        log.warn("Executing 'notifyCustomerOfArrival' for order #{} without any validation checks.", orderId);
-
-        // --- SLANJE NOTIFIKACIJE ---
-        // Direktno se poziva servis za slanje notifikacije.
-        realtimeNotificationService.notifyCustomerOfDriverArrival(order);
-
-        log.info("Arrival notification request processed successfully for order #{}", orderId);
-    }
-
     @Transactional
     public Order reportDelay(String driverEmail, Long orderId, Integer delayMinutes) {
         Driver driver = findDriverByEmail(driverEmail);

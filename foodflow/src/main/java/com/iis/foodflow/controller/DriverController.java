@@ -48,20 +48,6 @@ public class DriverController {
         return ResponseEntity.ok(locationData);
     }
 
-    // U klasi DriverController.java
-
-    @PostMapping("/orders/{orderId}/notify-arrival")
-    @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> notifyCustomerOfArrival(
-            @PathVariable Long orderId,
-            @AuthenticationPrincipal Driver driverPrincipal) {
-
-        // DODAJTE OVAJ LOG
-        System.out.println("!!!!!!!!!! DOSTIGAO ENDPOINT: notifyCustomerOfArrival za order #" + orderId + " !!!!!!!!!!");
-
-        driverService.notifyCustomerOfArrival(driverPrincipal.getEmail(), orderId);
-        return ResponseEntity.ok().build();
-    }
 
     @PutMapping("/location")
     @PreAuthorize("hasRole('DRIVER')")
