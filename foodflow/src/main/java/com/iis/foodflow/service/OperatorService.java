@@ -1,6 +1,8 @@
 package com.iis.foodflow.service;
 
 
+import com.iis.foodflow.dto.request.OperatorDTO;
+import com.iis.foodflow.dto.request.OperatorRatingDTO;
 import com.iis.foodflow.dto.request.OperatorRegistrationDTO;
 import com.iis.foodflow.enums.Role;
 import com.iis.foodflow.model.user.Operator;
@@ -11,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,5 +44,28 @@ public class OperatorService {
         newOperator.setCreatedBySupportAdmin(admin);
 
         return operatorRepository.save(newOperator);
-    }}
+    }
+
+    public List<OperatorRatingDTO> getRankedOperators() {
+        return operatorRepository.getOperatorRankings();
+    }
+
+    public List<OperatorDTO> getAllOperatorsAsDto() {
+        return operatorRepository.findAll()
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    private OperatorDTO convertToDto(Operator operator) {
+        OperatorDTO dto = new OperatorDTO();
+        dto.setId(operator.getId());
+        dto.setEmail(operator.getEmail());
+        dto.setFirstName(operator.getFirstName());
+        dto.setLastName(operator.getLastName());
+        dto.setPhone(operator.getPhone());
+        return dto;
+    }
+
+}
 

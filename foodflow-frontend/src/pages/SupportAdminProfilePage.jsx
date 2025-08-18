@@ -15,7 +15,6 @@ import { Edit, Save, X, User, KeyRound } from "lucide-react";
 import { ChangePasswordModalGeneric } from "@/components/modals/ChangePasswordModalGeneric";
 import { motion } from "framer-motion";
 
-// Pomoćna komponenta za sekcije, preuzeta iz MyProfilePage
 const ProfileSection = ({ title, icon, action, children }) => (
   <motion.div
     className="bg-white rounded-2xl shadow-sm border p-6 sm:p-8"
@@ -37,7 +36,6 @@ const ProfileSection = ({ title, icon, action, children }) => (
   </motion.div>
 );
 
-// Pomoćna komponenta za skeleton loading
 const ProfilePageSkeleton = () => (
   <div className="w-full min-h-screen bg-brand-background-light">
     <SupportAdminNavbar />
@@ -62,7 +60,6 @@ export const SupportAdminProfilePage = () => {
   const fetchProfile = useCallback(async () => {
     try {
       const data = await getSupportAdminProfile();
-      // Backend vraća firstName i lastName, spajamo ih za prikaz
       const fullName = `${data.firstName} ${data.lastName}`;
       setProfile({ ...data, fullName });
       setPhone(data.phone || "");
@@ -85,21 +82,19 @@ export const SupportAdminProfilePage = () => {
     try {
       await updateSupportAdminPhone(phone);
       toast.success("Phone number updated!");
-      await fetchProfile(); // Osveži podatke
+      await fetchProfile();
       setIsEditingPhone(false);
     } catch {
       toast.error("Failed to update phone number.");
     }
   };
 
-  // Pripremamo funkciju za promenu lozinke
   const handlePasswordChange = async (passwordData) => {
     try {
       await changeSupportAdminPassword(passwordData);
       toast.success("Password changed successfully!");
       setPasswordModalOpen(false);
     } catch (error) {
-      // Vraćamo error da ga modal prikaže
       throw new Error(
         error.response?.data?.message || "Failed to change password."
       );
@@ -125,7 +120,6 @@ export const SupportAdminProfilePage = () => {
           </div>
 
           <div className="max-w-4xl mx-auto space-y-8">
-            {/* SEKCIJA ZA LIČNE PODATKE */}
             <ProfileSection
               title="Personal Information"
               icon={<User size={24} />}
@@ -187,7 +181,6 @@ export const SupportAdminProfilePage = () => {
               </div>
             </ProfileSection>
 
-            {/* SEKCIJA ZA BEZBEDNOST */}
             <ProfileSection title="Security" icon={<KeyRound size={24} />}>
               <div className="border-t pt-4">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center py-2 gap-4">
@@ -215,7 +208,7 @@ export const SupportAdminProfilePage = () => {
       <ChangePasswordModalGeneric
         isOpen={isPasswordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
-        onSubmit={handlePasswordChange} // Prosleđujemo funkciju za promenu lozinke
+        onSubmit={handlePasswordChange}
       />
     </>
   );

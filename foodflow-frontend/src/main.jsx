@@ -43,6 +43,7 @@ import { ManagerTrackOrderPage } from "./pages/ManagerTrackOrderPage.jsx";
 import { AdminManagerManagementPage } from "./pages/AdminManagerManagementPage.jsx";
 import { OperatorManagementPage } from "./pages/OperatorManagementPage.jsx";
 import { SupportAdminProfilePage } from "./pages/SupportAdminProfilePage.jsx";
+import { AgentPerformancePage } from "./pages/AgentPerformancePage.jsx";
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
@@ -91,6 +92,7 @@ const router = createBrowserRouter([
   // Support Admin
   { path: "/support/agent-management", element: <OperatorManagementPage /> },
   { path: "/support/profile", element: <SupportAdminProfilePage /> },
+  { path: "/support/agent-performance", element: <AgentPerformancePage /> },
 
   // All
   { path: "/", element: <LoginPage /> },
