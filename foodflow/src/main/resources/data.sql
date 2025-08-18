@@ -13,10 +13,36 @@ INSERT INTO driver (id, email, password, first_name, last_name, phone, role, veh
 -- Drugi vozač je već ispravan
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
     (8, 'driver2@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '065111222', 'DRIVER', 'MOTORCYCLE', 'ONLINE', 0, 44.8040, 20.4651, NOW(), 0.0);
--- Operator
-INSERT INTO operator (id, email, password, first_name, last_name, phone, role) VALUES
-    (3, 'operator@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ana', 'Anić', '064555666', 'OPERATOR');
 
+
+-- Support Administrator
+INSERT INTO support_administrator (id, email, password, first_name, last_name, phone, role) VALUES
+    (6, 'supportadmin@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Support', 'Adminović', '064123456', 'SUPPORT_ADMINISTRATOR');
+
+
+-- Operator
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (3, 6, 'operator@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ana', 'Anić', '064555666', 'OPERATOR');
+INSERT INTO operator (id,support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (555,6,  'operatorlana@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Lana', 'Lanic', '064555661', 'OPERATOR');
+INSERT INTO operator (id,support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (551, 6, 'operatorena@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ena', 'Enic', '064555662', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (552,6, 'operatormia@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Mia', 'Miic', '064555663', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (553, 6,'operatorlela@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Lela', 'Lelic', '064553666', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (554, 6,'operatorina@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ina', 'Inic', '064555664', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (556, 6,'operatormare@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Marko', 'Markovic', '064525666', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (557, 6,'operatorzile@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Zile', 'Zilic', '064555669', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (558, 6,'operatorsteva@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Steva', 'Stevic', '064551666', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (559, 6,'operatorsrdjan@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Srdjan', 'Stanic', '064155666', 'OPERATOR');
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
+    (600, 6,'operatordejan@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Dejan', 'Dejanovic', '061555666', 'OPERATOR');
 -- Manager
 INSERT INTO manager (id, email, password, first_name, last_name, phone, role) VALUES
     (4, 'manager1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Olivia', 'Rhye', '064777888', 'MANAGER');
@@ -27,10 +53,6 @@ INSERT INTO manager (id, email, password, first_name, last_name, phone, role) VA
 -- Administrator
 INSERT INTO administrator (id, email, password, first_name, last_name, phone, role) VALUES
     (5, 'admin@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Admin', 'Adminović', '064999000', 'ADMINISTRATOR');
-
--- Support Administrator
-INSERT INTO support_administrator (id, email, password, first_name, last_name, phone, role) VALUES
-    (6, 'supportadmin@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Support', 'Adminović', '064123456', 'SUPPORT_ADMINISTRATOR');
 
 -- Adrese sa koordinatama
 INSERT INTO address (id, street, street_number, city, country, nickname, postal_code, latitude, longitude, customer_id) VALUES

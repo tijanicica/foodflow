@@ -112,7 +112,11 @@ export const ChangePasswordModalGeneric = ({ isOpen, onClose, onSubmit }) => {
     try {
       // ===== KLJUČNA PROMENA: Poziva se prosleđena 'onSubmit' funkcija =====
       // Prosleđujemo joj objekat sa podacima koje zahteva API
-      await onSubmit({ oldPassword, newPassword });
+         await onSubmit({ 
+                oldPassword: oldPassword, 
+                newPassword: newPassword,
+                confirmPassword: confirmPassword // DODATO OVO POLJE
+            });
 
       // Toast i zatvaranje modala se sada dešavaju u roditeljskoj komponenti
       // (SupportAdminProfilePage) nakon što onSubmit uspešno završi.
