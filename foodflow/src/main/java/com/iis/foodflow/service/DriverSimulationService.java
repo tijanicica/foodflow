@@ -36,8 +36,7 @@ public class DriverSimulationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    private final String OSRM_ROUTE_GEOMETRY_URL = "http://router.project-osrm.org/route/v1/driving/%s,%s;%s,%s?overview=full&geometries=geojson";
-
+    private final String OSRM_ROUTE_GEOMETRY_URL = "http://localhost:5000/route/v1/driving/%s,%s;%s,%s?overview=full&geometries=geojson";
     /**
      * Asinhrona metoda koja simulira kretanje vozača duž rute.
      * Brzina simulacije (pauza između tačaka) zavisi od prosleđenog 'totalDurationInSeconds'.
