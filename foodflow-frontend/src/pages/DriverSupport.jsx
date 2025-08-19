@@ -43,8 +43,8 @@ export function DriverSupport() {
                   <p>Follow the in-app instructions. You will be asked to try contacting the customer via phone. If you cannot reach them after a 5-minute timer, the app will guide you on how to proceed.</p>
                 </FaqItem>
                 <FaqItem question="How do I update my vehicle information?">
-                  <p>You can update your vehicle information directly in your driver profile settings. Go to Profile > Vehicle Information and submit the new details.</p>
-                </FaqItem>
+  <p>You can update your vehicle information directly in your driver profile settings. Go to Profile &gt; Vehicle Information and submit the new details.</p>
+</FaqItem>
               </div>
             </div>
 
