@@ -646,6 +646,46 @@ export const getRestaurantOptions = async () => {
     return response.data;
 };
 
+export const getOperators = async () => {
+    // Pretpostavljamo da će endpoint biti /api/admin/operators
+    // Prilagodite ako je drugačije na vašem backendu.
+    const response = await apiClient.get('/support-admin/operators'); 
+    return response.data;
+};
+
+/**
+ * Registruje novog operatora (agenta).
+ * @param {object} operatorData - Podaci o novom operatoru.
+ */
+export const registerOperator = async (operatorData) => {
+    // Koristimo endpoint koji smo definisali na backendu.
+    const response = await apiClient.post('/support-admin/register-operator', operatorData);
+    return response.data;
+};
+
+export const getSupportAdminProfile = async () => {
+    // Potreban je novi endpoint na backendu.
+    const response = await apiClient.get('/support-admin/profile');
+    return response.data;
+};
+
+/**
+ * Ažurira broj telefona support admina.
+ * @param {string} phone - Novi broj telefona.
+ */
+export const updateSupportAdminPhone = async (phone) => {
+    const response = await apiClient.patch('/support-admin/profile/phone', { phone });
+    return response.data;
+};
+
+/**
+ * Menja lozinku support admina.
+ * @param {object} passwordData - Objekat sa { oldPassword, newPassword }.
+ */
+export const changeSupportAdminPassword = async (passwordData) => {
+    await apiClient.post('/support-admin/profile/change-password', passwordData);
+};
+
 export const submitCombinedRating = async (orderId, payload) => {
     // Rešenje je ovde: koristimo `apiClient` koji je definisan na vrhu fajla
     const response = await apiClient.post(`/orders/${orderId}/rate`, payload); 
