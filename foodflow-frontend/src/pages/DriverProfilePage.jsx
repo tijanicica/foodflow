@@ -10,6 +10,7 @@ import { DriverFooter } from '@/components/DriverFooter';
 import { NavbarDriver } from '@/components/NavbarDriver';
 import toast from 'react-hot-toast';
 import { EditProfileModal } from '@/components/modals/EditDriverProfileModal';
+import { DriverCharts } from '../components/charts/DriverCharts';
 
 const VEHICLE_OPTIONS = [
     { value: 'CAR', label: 'Car', icon: <AiFillCar /> },
@@ -318,6 +319,7 @@ export function DriverProfilePage() {
                             <PerformanceCard label="Average Rating" value={(performance.averageRating ?? 0).toFixed(1)} icon={<FiStar />} />
                         </div>
                     </section>
+
 
                     {/* === GLAVNA IZMENA JE OVDE === */}
                     {/* Uklonjena je cela `isEditingProfile ? (...) : (...)` logika. */}
