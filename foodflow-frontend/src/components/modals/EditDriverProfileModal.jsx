@@ -55,7 +55,7 @@ export const EditProfileModal = ({ isOpen, onClose, initialData, onSave }) => {
 
     const secondaryButtonStyle = {
         ...buttonStyle('secondary'),
-        backgroundColor: isSecondaryHovered ? '#e5e5e5ff' : 'transparent', // Popunjava se bojom na hover
+        backgroundColor: isSecondaryHovered ? '#e9e9e9ff' : 'transparent', // Popunjava se bojom na hover
         color: isSecondaryHovered ? '#6c757d' : '#5c636aff' // Tekst postaje beo na hover
     };
 
