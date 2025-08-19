@@ -11,12 +11,36 @@ import { NavbarDriver } from '@/components/NavbarDriver';
 import toast from 'react-hot-toast';
 import { EditProfileModal } from '@/components/modals/EditDriverProfileModal';
 import { DriverCharts } from '../components/charts/DriverCharts';
+import { motion } from 'framer-motion';
 
 const VEHICLE_OPTIONS = [
     { value: 'CAR', label: 'Car', icon: <AiFillCar /> },
     { value: 'MOTORCYCLE', label: 'Motorcycle', icon: <FaMotorcycle /> },
     { value: 'BICYCLE', label: 'Bicycle', icon: <BsBicycle /> },
 ];
+
+const pageContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2 // Razmak od 0.2s između animacija svake sekcije
+        }
+    }
+};
+
+// Definišemo animaciju za svaku pojedinačnu sekciju (naslov, kartice, grafikoni...).
+const sectionVariants = {
+    hidden: { opacity: 0, y: 20 }, // Počinje providno i 20px ispod
+    visible: {
+        opacity: 1,
+        y: 0, // Animiraj na originalnu poziciju
+        transition: {
+            duration: 0.6,
+            ease: "easeOut"
+        }
+    }
+};
 
 // --- AŽURIRANA KOMPONENTA BEZ 'POINTER' CURSORA ---
 const PerformanceCard = ({ label, value, icon }) => {
@@ -289,71 +313,95 @@ export function DriverProfilePage() {
             <NavbarDriver />
 
             {/* Glavni Sadržaj */}
-           <main style={{ padding: '2rem 10rem', flex: 1 }}>
+                       <motion.main 
+                style={{ flex: 1 }}
+                // Ovaj kontejner "orkestrira" animaciju za sve elemente unutar njega
+                variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                        opacity: 1,
+                        transition: { staggerChildren: 0.2 } // Svaka sekcija će se pojaviti sa razmakom od 0.2s
+                    }
+                }}
+                initial="hidden"
+                animate="visible"
+            >
+                {/* 
+                  Ovaj div je isti kao vaš, samo je sada unutar `motion.main`
+                  i služi kao padding kontejner.
+                */}
                 <div style={{
                     maxWidth: '1400px',
                     margin: '0 auto',
-                    backgroundColor: '#fffff9ff',
-                    borderRadius: '24px',
-                    padding: '2.5rem',
-                    boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)',
-                    border: '1px solid #F3EAD9'
+                    padding: '2rem 10rem', // Vraćamo originalni padding ovde
                 }}>
                     
-                    {/* Ovaj deo ostaje isti - Prikaz naslova i Online/Offline statusa */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                        <div>
-                            <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: 0, color: '#333' }}>Driver Profile & Performance</h2>
-                            <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', color: '#6B7280' }}>{performance.firstName} {performance.lastName}</p>
-                        </div>
-                        <StatusToggle isOnline={isOnline} onToggle={handleToggleStatus} />
-                    </div>
-
-                    {/* Ovaj deo ostaje isti - Prikaz kartica sa performansama */}
-                    <section>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Performance Metrics</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-                            <PerformanceCard label="Total Deliveries" value={performance.totalDeliveries ?? 0} icon={<FiTruck />} />
-                            <PerformanceCard label="On-time Rate" value={`${((performance.onTimeRate ?? 0) * 100).toFixed(0)}%`} icon={<FiClock />} />
-                            <PerformanceCard label="Rejections" value={performance.rejections ?? 0} icon={<FiThumbsDown />} />
-                            <PerformanceCard label="Average Rating" value={(performance.averageRating ?? 0).toFixed(1)} icon={<FiStar />} />
-                        </div>
-                    </section>
-
-
-                    {/* === GLAVNA IZMENA JE OVDE === */}
-                    {/* Uklonjena je cela `isEditingProfile ? (...) : (...)` logika. */}
-                    <section style={{ marginTop: '3rem' }}>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Account Settings</h3>
-                        <div style={{ backgroundColor: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-                            
-                            {/* Sada se UVEK prikazuju samo podaci */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                                <ProfileInfoItem 
-                                    icon={<FiUser />} 
-                                    label="Full Name" 
-                                    value={`${performance.firstName} ${performance.lastName}`}
-                                />
-                                <ProfileInfoItem 
-                                    icon={<VehicleIcon vehicleType={performance.vehicleType} />} 
-                                    label="Vehicle Type" 
-                                    value={performance.vehicleType ? VEHICLE_OPTIONS.find(v => v.value === performance.vehicleType).label : 'Not set'} 
-                                />
+                    {/* Definišemo animaciju za svaku sekciju */}
+                    <motion.div 
+                        variants={{
+                            hidden: { opacity: 0, y: 20 },
+                            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+                        }}
+                        style={{
+                            backgroundColor: '#fffff9ff',
+                            borderRadius: '24px',
+                            padding: '2.5rem',
+                            boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)',
+                            border: '1px solid #F3EAD9'
+                        }}
+                    >
+                        
+                        {/* Naslov i Status Toggle */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                            <div>
+                                <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: 0, color: '#333' }}>Driver Profile & Performance</h2>
+                                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', color: '#6B7280' }}>{performance.firstName} {performance.lastName}</p>
                             </div>
-
-                            {/* Edit dugme sada samo otvara modal */}
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
-                                <button 
-                                    onClick={() => setIsModalOpen(true)} // <-- Jedina akcija
-                                    style={buttonStyle('edit')}
-                                >
-                                    <FiEdit2 /> Edit Profile & Settings
-                                </button>
-                            </div>
+                            <StatusToggle isOnline={isOnline} onToggle={handleToggleStatus} />
                         </div>
-                    </section>
+
+                        {/* Kartice sa Performansama */}
+                        <section>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Performance Metrics</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                                <PerformanceCard label="Total Deliveries" value={performance.totalDeliveries ?? 0} icon={<FiTruck />} />
+                                <PerformanceCard label="On-time Rate" value={`${((performance.onTimeRate ?? 0) * 100).toFixed(0)}%`} icon={<FiClock />} />
+                                <PerformanceCard label="Rejections" value={performance.rejections ?? 0} icon={<FiThumbsDown />} />
+                                <PerformanceCard label="Average Rating" value={(performance.averageRating ?? 0).toFixed(1)} icon={<FiStar />} />
+                            </div>
+                        </section>
+
+                        {/* Podešavanja Naloga */}
+                        <section style={{ marginTop: '3rem' }}>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Account Settings</h3>
+                            <div style={{ backgroundColor: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                                    <ProfileInfoItem 
+                                        icon={<FiUser />} 
+                                        label="Full Name" 
+                                        value={`${performance.firstName} ${performance.lastName}`}
+                                    />
+                                    <ProfileInfoItem 
+                                        icon={<VehicleIcon vehicleType={performance.vehicleType} />} 
+                                        label="Vehicle Type" 
+                                        value={performance.vehicleType ? VEHICLE_OPTIONS.find(v => v.value === performance.vehicleType).label : 'Not set'} 
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
+                                    <button 
+                                        onClick={() => setIsModalOpen(true)}
+                                        style={buttonStyle('edit')}
+                                    >
+                                        <FiEdit2 /> Edit Profile & Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                    </motion.div>
                 </div>
-            </main>
+            </motion.main>
 
 
             {/* === DODAT JE POZIV ZA MODAL OVDE (IZVAN MAINA) === */}
