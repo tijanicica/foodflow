@@ -40,9 +40,9 @@ public class Operator implements UserDetails {
 
     @OneToMany(mappedBy = "operator")
     private Set<SupportTicket> tickets = new HashSet<>();
-    @Enumerated(EnumType.STRING) // <-- JAKO VAŽNO!
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role; // <-- NOVO POLJE!
+    private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
