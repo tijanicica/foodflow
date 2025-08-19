@@ -1,66 +1,59 @@
 // FAJL: src/components/NavbarDriver.jsx
 
 import React from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
+import { LogOut, User, LayoutDashboard } from 'lucide-react';
+
+// Ažurirane klase za veća slova i jače boje
+const commonLinkClasses = "flex items-center gap-2 py-2 px-1 transition-colors duration-300 font-semibold text-base"; // Povećan font na text-base
+const activeLinkClasses = "text-yellow-600 border-b-2 border-yellow-600"; // Tamnija žuta
+const inactiveLinkClasses = "text-gray-600 hover:text-yellow-600"; // Jači hover
 
 export const NavbarDriver = () => {
     const navigate = useNavigate();
-    const location = useLocation(); // Hook za dobijanje trenutne putanje
 
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
-        // Ovdje možete obrisati i ostale podatke ako je potrebno
-        // localStorage.removeItem('driverStatus');
         navigate('/login', { replace: true });
     };
 
-    // Funkcija za provjeru da li je link aktivan
-    const isActive = (path) => location.pathname === path;
-
     return (
-        <header style={{ backgroundColor: 'white', borderBottom: '1px solid #EAEAEA', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-            <nav style={{
-                maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-            }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>FoodFlow Driver</h1>
-                
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                    <Link
-                        to="/driver"
-                        style={{
-                            fontWeight: isActive('/driver') ? 'bold' : 'normal',
-                            borderBottom: isActive('/driver') ? '2px solid #8A643B' : 'none',
-                            textDecoration: 'none',
-                            color: '#4A4A4A',
-                            paddingBottom: '4px' // Dodajemo malo prostora za donju liniju
-                        }}
-                    >
-                        Dashboard
-                    </Link>
-                    <Link
-                        to="/driver/profile"
-                        style={{
-                            fontWeight: isActive('/driver/profile') ? 'bold' : 'normal',
-                            borderBottom: isActive('/driver/profile') ? '2px solid #8A643B' : 'none',
-                            textDecoration: 'none',
-                            color: '#4A4A4A',
-                            paddingBottom: '4px'
-                        }}
-                    >
-                        My Profile
-                    </Link>
-                    <button
-                        onClick={handleLogout}
-                        style={{
-                            backgroundColor: '#8A643B', border: 'none', color: 'white',
-                            padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer',
-                            fontWeight: '600'
-                        }}
-                    >
-                        Logout
-                    </button>
+        <header className="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-[1001]">
+            <nav className="container mx-auto px-4 md:px-6 flex justify-between items-center h-20">
+                <div className="flex items-center">
+                    <h1 className="text-3xl font-bold text-gray-800 italic">
+                        FoodFlow
+                    </h1>
+                    <span className="ml-3 bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Driver
+                    </span>
                 </div>
+
+                <div className="hidden md:flex items-center gap-12"> {/* Povećan razmak */}
+                    <NavLink
+                        to="/driver"
+                        end
+                        className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                    >
+                        <LayoutDashboard size={18} />
+                        <span>Dashboard</span>
+                    </NavLink>
+                    <NavLink
+                        to="/driver/profile"
+                        className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                    >
+                        <User size={18} />
+                        <span>My Profile</span>
+                    </NavLink>
+                </div>
+                 
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 text-base font-bold text-gray-800 py-2 px-5 rounded-full hover:bg-yellow-500 hover:text-white transition-all duration-300 shadow-sm border border-transparent hover:border-yellow-600"
+                >
+                    <LogOut size={18} /> 
+                    <span>Logout</span>
+                </button>
             </nav>
         </header>
     );
