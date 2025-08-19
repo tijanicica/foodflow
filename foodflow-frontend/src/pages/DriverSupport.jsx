@@ -1,41 +1,90 @@
 // FAJL: src/pages/DriverSupport.jsx
 
 import React from 'react';
-import { NavbarDriver } from '../components/NavbarDriver'; // Prilagodite putanju
-import { DriverFooter } from '../components/DriverFooter'; // Prilagodite putanju
+import { NavbarDriver } from '../components/NavbarDriver';
+import { DriverFooter } from '../components/DriverFooter';
 import { HelpCircle, Phone, Mail } from 'lucide-react';
+import { motion } from 'framer-motion'; // <-- 1. UVOZ FRAMER MOTION
 
-// Mala komponenta za FAQ stavke radi čistijeg koda
+// --- DEFINICIJE ANIMACIJA ---
+// Iste varijante kao i na Profile stranici za konzistentan osećaj
+const pageContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2
+        }
+    }
+};
+
+const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.6,
+            ease: "easeOut"
+        }
+    }
+};
+
+// --- POMOĆNE KOMPONENTE ---
+
+// FaqItem sada takođe koristi `motion` za lepši efekat otvaranja
 const FaqItem = ({ question, children }) => (
-  <details style={{ border: '1px solid #EAEAEA', borderRadius: '8px', marginBottom: '1rem', backgroundColor: '#FDFDFD' }}>
-    <summary style={{ padding: '1rem', fontWeight: '600', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      {question}
-      <span className="faq-icon" style={{ transition: 'transform 0.2s' }}>+</span>
-    </summary>
-    <div style={{ padding: '0 1rem 1rem 1rem', borderTop: '1px solid #EAEAEA', color: '#6B7280' }}>
-      {children}
-    </div>
-  </details>
+    <motion.details 
+        variants={sectionVariants} // Svako pitanje se pojavljuje sa malim zakašnjenjem
+        style={{ border: '1px solid #EAEAEA', borderRadius: '8px', marginBottom: '1rem', backgroundColor: '#FDFDFD' }}
+    >
+        <summary style={{ padding: '1rem', fontWeight: '600', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {question}
+            <span className="faq-icon" style={{ transition: 'transform 0.2s' }}>+</span>
+        </summary>
+        <div style={{ padding: '0 1rem 1rem 1rem', borderTop: '1px solid #EAEAEA', color: '#6B7280' }}>
+            {children}
+        </div>
+    </motion.details>
 );
+
+// --- GLAVNA KOMPONENTA STRANICE ---
 
 export function DriverSupport() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#FFFBEB' }}>
       <NavbarDriver />
-      <main style={{ flex: 1, padding: '2rem 5%' }}>
+      {/* 2. GLAVNI SADRŽAJ JE SADA `motion.main` */}
+      <motion.main 
+        style={{ flex: 1, padding: '2rem 5%' }}
+        variants={pageContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#4A4A4A', marginBottom: '2rem', textAlign: 'center' }}>Support Center</h1>
-          <p style={{ textAlign: 'center', color: '#6B7280', marginBottom: '3rem', fontSize: '1.1rem' }}>
-            We're here to help. Find answers to common questions or get in touch with our support team.
-          </p>
+          
+          {/* Naslov i podnaslov takođe dobijaju animaciju */}
+          <motion.div variants={sectionVariants} style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#4A4A4A', marginBottom: '2rem' }}>
+              Support Center
+            </h1>
+            <p style={{ color: '#6B7280', marginBottom: '3rem', fontSize: '1.1rem' }}>
+              We're here to help. Find answers to common questions or get in touch with our support team.
+            </p>
+          </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '3rem' }}>
-            {/* FAQ Sekcija */}
-            <div>
+            
+            {/* FAQ Sekcija animirana kao jedan blok */}
+            <motion.div variants={sectionVariants}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <HelpCircle size={24} /> Frequently Asked Questions
               </h2>
               <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                {/* 
+                  Sada, umesto da se sva pitanja pojave odjednom, svako će imati svoju
+                  suptilnu animaciju zahvaljujući `staggerChildren` na `motion.main`
+                */}
                 <FaqItem question="How and when do I get paid?">
                   <p>Payments are processed weekly every Tuesday. You will receive a direct deposit to the bank account you have on file. You can track your earnings in the "My Earnings" section.</p>
                 </FaqItem>
@@ -43,13 +92,13 @@ export function DriverSupport() {
                   <p>Follow the in-app instructions. You will be asked to try contacting the customer via phone. If you cannot reach them after a 5-minute timer, the app will guide you on how to proceed.</p>
                 </FaqItem>
                 <FaqItem question="How do I update my vehicle information?">
-  <p>You can update your vehicle information directly in your driver profile settings. Go to Profile &gt; Vehicle Information and submit the new details.</p>
-</FaqItem>
+                    <p>You can update your vehicle information directly in your driver profile settings. Go to Profile &gt; Vehicle Information and submit the new details.</p>
+                </FaqItem>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Kontakt Sekcija */}
-            <div>
+            {/* Kontakt Sekcija animirana kao jedan blok */}
+            <motion.div variants={sectionVariants}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Contact Us</h2>
               <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -69,10 +118,10 @@ export function DriverSupport() {
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </main>
+      </motion.main>
       <DriverFooter />
     </div>
   );
