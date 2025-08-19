@@ -19,81 +19,64 @@ export function LoginPage() {
     event.preventDefault();
     setError("");
     setIsLoading(true);
-    
+
     try {
       const response = await loginUser(email, password);
       const { token } = response;
-      
+
       localStorage.setItem('jwtToken', token);
 
       const decodedToken = jwtDecode(token);
 
-      switch (userRole) {
-        case "ROLE_DRIVER":
-          navigate("/driver"); // Vozač ide na /driver
-          break;
-        case "ROLE_CUSTOMER":
-          navigate("/home"); // Kupac ide na /home
-          break;
-        case "ROLE_OPERATOR":
-          navigate("/operator/dashboard"); // Primjer rute za operatora
-          break;
-        // ===== ISPRAVKA JE OVDE =====
-        case "ROLE_MANAGER":
-          navigate("/manager/dashboard"); // Bilo je '/manager/overview'
-          break;
-        // ============================
-
-        case "ROLE_SUPPORT_ADMINISTRATOR":
-          navigate("/support/agent-management"); // Primjer rute za podršku
-          break;
-
-        // ===== ISPRAVKA JE OVDE =====
-        case "ROLE_ADMINISTRATOR":
-          navigate("/admin/managers"); // Umesto '/admin/panel'
-          break;
-        // ============================
-
-        default:
-          // Ako uloga nije prepoznata, vrati ga na login ili prikaži grešku
-          console.warn(`Unknown role: ${userRole}`);
-          navigate("/login");
-          break;
-      // === KLJUČNA IZMENA: KREIRANJE STANDARDIZOVANOG USER OBJEKTA ===
-      // Kreiramo novi objekat koji uvek ima ista imena polja,
+      // === STANDARDIZOVANI USER OBJEKAT ===
+      // Kreiramo objekat koji uvek ima ista imena polja,
       // bez obzira na to kako se zovu u sirovom tokenu.
       const userToStore = {
         id: decodedToken.id,
         // Koristi 'sub' ako postoji, inače koristi 'email'.
-        sub: decodedToken.sub || decodedToken.email, 
-        // Koristi 'role' ako postoji, inače koristi 'authority' ili 'roles'.
+        sub: decodedToken.sub || decodedToken.email,
+        // Koristi 'role' ako postoji, inače 'authority' ili 'roles'.
         role: decodedToken.role || decodedToken.authority || (Array.isArray(decodedToken.roles) ? decodedToken.roles[0] : null)
       };
 
       // Proveravamo da li smo uspeli da izvučemo ključne podatke
       if (!userToStore.role || !userToStore.sub) {
-          throw new Error("User role or email could not be determined from the token.");
+        throw new Error("User role or email could not be determined from the token.");
       }
 
-      // Sada čuvamo naš novi, čisti objekat.
+      // Čuvamo naš novi, čisti objekat.
       localStorage.setItem('user', JSON.stringify(userToStore));
-      // =================================================================
-
+      
       const userRole = userToStore.role; // Koristimo rolu iz našeg novog objekta
 
+      // Preusmeravanje na osnovu uloge
       let destination = '/login';
       switch (userRole) {
-        case 'ROLE_DRIVER': destination = '/driver'; break;
-        case 'ROLE_CUSTOMER': destination = '/home'; break;
-        case 'ROLE_OPERATOR': destination = '/operator/dashboard'; break;
-        case 'ROLE_MANAGER': destination = '/manager/dashboard'; break;
-        case 'ROLE_SUPPORT_ADMINISTRATOR': destination = '/support/tickets'; break;
-        case 'ROLE_ADMINISTRATOR': destination = '/admin/managers'; break;
-        default: console.warn(`Unknown role: ${userRole}`); break;
+        case 'ROLE_DRIVER':
+          destination = '/driver';
+          break;
+        case 'ROLE_CUSTOMER':
+          destination = '/home';
+          break;
+        case 'ROLE_OPERATOR':
+          destination = '/operator/dashboard';
+          break;
+        case 'ROLE_MANAGER':
+          destination = '/manager/dashboard';
+          break;
+        case 'ROLE_SUPPORT_ADMINISTRATOR':
+          destination = '/support/agent-management'; // Primer rute
+          break;
+        case 'ROLE_ADMINISTRATOR':
+          destination = '/admin/managers';
+          break;
+        default:
+          console.warn(`Unknown role: ${userRole}`);
+          break;
       }
-      
+
       navigate(destination);
-      
+
       // Sa malom pauzom šaljemo događaj da se layout-i koji su se upravo učitali
       // mogu povezati na WebSocket.
       setTimeout(() => {
@@ -101,7 +84,6 @@ export function LoginPage() {
       }, 50);
 
     } catch (err) {
-
       // Poboljšano rukovanje greškama
       const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
@@ -164,7 +146,7 @@ export function LoginPage() {
                 disabled={isLoading}
               />
             </div>
- 
+
             <div className="h-14">
               {error && (
                 <motion.div
@@ -202,7 +184,7 @@ export function LoginPage() {
       {/* DESNA STRANA */}
       <div className="hidden lg:flex relative items-center justify-center bg-gray-900">
         <img
-          src="foodflowlogin.png"
+          src="/foodflowlogin.png" // Preporučujem da putanja bude apsolutna od public foldera
           alt="A delicious display of food"
           className="absolute inset-0 h-full w-full object-cover opacity-30"
         />
