@@ -10,6 +10,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import {
+    FiFlag ,
     FiArchive ,
     FiShoppingBag ,
     FiHome ,
@@ -486,15 +487,65 @@ const handleMarkAsPickedUp = async () => {
     </div>
 </div>
 
-                        <div style={{ marginTop: '1.5rem' ,opacity: isPickedUp ? 1 : 0.6, transition: 'opacity 0.3s ease'}}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
-                                <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
-                            </p>
-                            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>
-                                {order.customerFirstName} {order.customerLastName}
-                            </p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
-                        </div>
+{/* === KORAK 2: DOSTAVA (Novi, konzistentan dizajn) === */}
+<div style={{
+    marginTop: '1.5rem',
+    
+    opacity: isPickedUp ? 1 : 0.6, // Zadržana postojeća opacity logika
+    transition: 'opacity 0.3s ease'
+}}>
+    {/* === Naslov koraka - sada je veći i uočljiviji === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1.2rem', // Isti font-size kao kod Step 1
+        color: '#2F855A', // Zadržana zelena boja za "Deliver"
+        margin: '0 0 1rem 0'
+    }}>
+        <FiFlag size={20} /> {/* Ikonica za cilj/dostavu */}
+        Step 2: Deliver
+    </p>
+
+    {/* === Detalji o dostavi - ista struktura kao kod Step 1 === */}
+    <div style={{ paddingLeft: '0.5rem' }}>
+        {/* Ime kupca sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#1F2937' }}><FiUser size={18} /></span>
+            <h4 style={{
+                fontSize: '1.2rem', // Isti font kao ime restorana
+                fontWeight: '600',
+                color: '#2e2e2eff', // Ista boja kao ime restorana
+                margin: 0
+            }}>
+                {order.customerFirstName} {order.customerLastName}
+            </h4>
+        </div>
+
+        {/* Adresa dostave */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#6B7280' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#646464ff', // Ista boja kao adresa restorana
+                fontSize: '0.95rem', // Isti font kao adresa restorana
+                margin: 0,
+            }}>
+                {order.deliveryAddress}
+            </p>
+        </div>
+    </div>
+</div>
 
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
     
@@ -515,7 +566,7 @@ const handleMarkAsPickedUp = async () => {
                                 <button
                                     onClick={handleMarkAsPickedUp}
                                     style={{ ...primaryButtonStyle, backgroundColor: '#1F2937' }}
-                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#111827'}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#000000ff'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1F2937'}
                                 >
                                     <FiCheckCircle /> Mark as Picked Up
