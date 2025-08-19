@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { EtaCountdown } from '../components/EtaCountdown';
 import { motion } from 'framer-motion';
+import { DriverFooter } from '../components/DriverFooter';
 
 // WebSocket i API
 import Stomp from 'stompjs';
@@ -13,7 +14,7 @@ import { getOrderDetails , cancelDelivery,getDriverInfo,reportDelay , startSimul
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
-import { FiEdit3,FiSend ,FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle,FiClock, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiEdit3,FiSend ,FiFlag ,FiShoppingBag ,FiArchive ,FiMapPin, FiUser, FiCheckCircle,FiPlayCircle , FiNavigation, FiAlertTriangle, FiXCircle,FiClock, FiMinus, FiPlus } from 'react-icons/fi';
 
 
 const predefinedReasons = [
@@ -460,7 +461,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
 
             <NavbarDriver />
             <main style={{  maxWidth: '1500px', margin: '20px 90px' }}>
-                <div style={{ backgroundColor: '#FDFDF5', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
+                <div style={{ backgroundColor: '#fffff9ff', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
                     
                     {/* LEVA KOLONA - MAPA */}
                     <div style={{ height: '95vh', borderRadius: '16px', overflow: 'hidden' }}>
@@ -477,64 +478,189 @@ if (newLocation.predictedTimeLeft !== undefined) {
 
                     {/* DESNA KOLONA - INFORMACIJE */}
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                               <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
-    <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>
-        START TIME
-    </p>
-    <p style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0.25rem 0', color: '#333' }}>
-        {order.startDeliveryTime ? new Date(order.startDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-    </p>
+                                               {/* === ETA I VREME (Novi, vertikalni dizajn) === */}
+<div style={{
+    paddingBottom: '1.25rem',
+    borderBottom: '1px solid #EAEAEA'
+}}>
+    {/* --- Vreme početka --- */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <FiPlayCircle size={24} color="#6B7280" /> {/* Ikonica za "start" */}
+        <div>
+            <p style={{
+                textTransform: 'uppercase',
+                color: '#6B7280',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                margin: 0
+            }}>
+                Start Time
+            </p>
+            <p style={{
+                fontSize: '1.2rem',
+                fontWeight: '600',
+                margin: '0.25rem 0',
+                color: '#333'
+            }}>
+                {order.startDeliveryTime ? new Date(order.startDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+            </p>
+        </div>
+    </div>
 
-    <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', marginTop: '1rem' }}>
-        ESTIMATED ARRIVAL (ETA)
-    </p>
-    <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
-        {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-    </p>
+    {/* --- Vreme dolaska (ETA) --- */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.25rem' /* Razmak između sekcija */ }}>
+        <FiClock size={24} color="#8A643B" /> {/* Ikonica za ETA */}
+        <div>
+            <p style={{
+                textTransform: 'uppercase',
+                color: '#8A643B', // Naglašena boja
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                margin: 0
+            }}>
+                Estimated Arrival (ETA)
+            </p>
+            <p style={{
+                fontSize: '1.8rem', // Veći font za važniju informaciju
+                fontWeight: '700', // Deblji font
+                margin: '0.25rem 0 0 0',
+                color: '#1F2937' // Tamnija boja za bolji kontrast
+            }}>
+                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+            </p>
+        </div>
+    </div>
     
-    {/* --- OVDE JE SVA LOGIKA --- */}
-    {order.eta 
-        ? <EtaCountdown eta={order.eta} /> 
-        : <p style={{color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>ETA is calculated upon pickup.</p>
-    }
+    {/* --- Komponenta za odbrojavanje, nepromenjena --- */}
+    <div style={{ marginTop: '0.5rem', paddingLeft: 'calc(24px + 1rem)' /* Poravnanje sa tekstom iznad */ }}>
+        {order.eta 
+            ? <EtaCountdown eta={order.eta} /> 
+            : <p style={{color: '#6B7280', fontSize: '0.9rem', margin: 0}}>ETA is calculated upon pickup.</p>
+        }
+    </div>
 </div>
 
 
-
                         {/* --- STEP 1: PICKUP (Neaktivan/Precrtan) --- */}
-                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA', opacity: 1 }}>
-                            <p style={{
-                                textTransform: 'uppercase', fontWeight: 'bold', margin: 0,
-                                color: '#A1A1AA', // Neutralna siva boja
-                                textDecoration: 'line-through', // Precrtavanje
-                                textDecorationColor: '#D4D4D8', // Svetlo siva linija
-                                display: 'flex', alignItems: 'center'
-                            }}>
-                                <FiMapPin style={{ marginRight: '0.5rem' }} /> Step 1: Pickup
-                            </p>
-                            <p style={{
-                                fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500',
-                                color: '#A1A1AA', textDecoration: 'line-through', textDecorationColor: '#D4D4D8'
-                            }}>
-                                {order.restaurantName}
-                            </p>
-                            <p style={{
-                                color: '#A1A1AA', margin: 0, textDecoration: 'line-through', textDecorationColor: '#D4D4D8'
-                            }}>
-                                {order.restaurantAddress}
-                            </p>
-                        </div>
-                        
-                        {/* --- STEP 2: DELIVER (Aktivan) --- */}
-                        <div style={{ marginTop: '1.5rem' }}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
-                                <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
-                            </p>
-                            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>
-                                {order.customerFirstName} {order.customerLastName}
-                            </p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
-                        </div>
+                     <div style={{
+    marginTop: '1.5rem',
+    paddingBottom: '1.5rem',
+    borderBottom: '1px solid #EAEAEA'
+}}>
+    {/* === Naslov koraka - veći, sa ikonicom, ali precrtan === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1rem', // Uvećan font kao na aktivnom koraku
+        color: '#8c8c8dff', // Neutralna siva boja
+        textDecoration: 'line-through',
+        textDecorationColor: '#D4D4D8',
+        margin: '0 0 1rem 0'
+    }}>
+        <FiShoppingBag size={20} />
+        Step 1: Pickup
+    </p>
+
+    {/* === Detalji o restoranu - ista struktura, ali precrtano === */}
+    <div style={{ paddingLeft: '0.5rem' }}>
+        {/* Ime restorana sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#A1A1AA' }}><FiArchive size={18} /></span>
+            <h4 style={{
+                fontSize: '1.2rem',
+                fontWeight: '600',
+                color: '#A1A1AA',
+                textDecoration: 'line-through',
+                textDecorationColor: '#D4D4D8',
+                margin: 0
+            }}>
+                {order.restaurantName}
+            </h4>
+        </div>
+
+        {/* Adresa restorana */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#A1A1AA' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#A1A1AA',
+                fontSize: '0.95rem',
+                textDecoration: 'line-through',
+                textDecorationColor: '#D4D4D8',
+                margin: 0,
+            }}>
+                {order.restaurantAddress}
+            </p>
+        </div>
+    </div>
+</div>
+{/* === KORAK 2: DOSTAVA (Aktivan, redizajniran) === */}
+<div style={{
+    marginTop: '1.5rem'
+}}>
+    {/* === Naslov koraka - veći i uočljiviji === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1rem', // Isti font-size kao kod Step 1
+        color: '#2F855A', // Zadržana zelena boja za "Deliver"
+        margin: '0 0 1rem 0'
+    }}>
+        <FiFlag size={20} /> {/* Ikonica koja simbolizuje cilj/destinaciju */}
+        Step 2: Deliver
+    </p>
+
+    {/* === Detalji o dostavi - konzistentna struktura === */}
+    <div style={{ paddingLeft: '0.5rem' }}>
+        {/* Ime kupca sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#1F2937' }}><FiUser size={18} /></span>
+            <h4 style={{
+                fontSize: '1.2rem', // Isti font kao ime restorana
+                fontWeight: '600',
+                color: '#2e2e2eff', // Ista tamna boja za tekst
+                margin: 0
+            }}>
+                {order.customerFirstName} {order.customerLastName}
+            </h4>
+        </div>
+
+        {/* Adresa dostave */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#6B7280' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#646464ff', // Ista siva boja za adresu
+                fontSize: '0.95rem',
+                margin: 0,
+            }}>
+                {order.deliveryAddress}
+            </p>
+        </div>
+    </div>
+</div>
 
                         {/* DUGMAD */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
@@ -568,6 +694,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
                     </div>
                 </div>
             </main>
+            <DriverFooter /> 
         </div>
     );
 }
