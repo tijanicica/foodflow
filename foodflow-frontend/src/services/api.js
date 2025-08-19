@@ -657,8 +657,10 @@ export const getLiveDriverLocations = async () => {
     return response.data;
 };
 
-
-
+export const registerDriver = async (driverData) => {
+    const response = await apiClient.post('/admin/managers/drivers', driverData);
+    return response.data;
+};
 
 
 export const getAllDriverPerformances = async () => {

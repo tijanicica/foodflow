@@ -1,10 +1,13 @@
 package com.iis.foodflow.service;
 
+import com.iis.foodflow.dto.request.RegisterDriverRequestDTO;
 import com.iis.foodflow.dto.request.RegisterManagerRequestDTO;
 import com.iis.foodflow.dto.request.UpdateManagerRequestDTO;
 import com.iis.foodflow.dto.response.*;
+import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.Role;
+import com.iis.foodflow.enums.VehicleType;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Administrator;
@@ -19,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -167,5 +171,49 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public DriverResponseDTO registerDriver(RegisterDriverRequestDTO request, Administrator admin) {
+        if (driverRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalStateException("Email is already in use.");
+        }
+
+        // --- PROMENA: Provera da li su koordinate poslate ---
+        if (request.getLatitude() == null || request.getLongitude() == null) {
+            throw new IllegalArgumentException("Location (latitude and longitude) must be provided.");
+        }
+
+        Driver newDriver = new Driver();
+        newDriver.setFirstName(request.getFirstName());
+        newDriver.setLastName(request.getLastName());
+        newDriver.setEmail(request.getEmail());
+        newDriver.setPhone(request.getPhone());
+        newDriver.setPassword(passwordEncoder.encode(request.getPassword()));
+        newDriver.setCreatedByAdmin(admin);
+
+        newDriver.setRole(Role.DRIVER);
+        newDriver.setStatus(DriverStatus.OFFLINE);
+        newDriver.setVehicleType(VehicleType.CAR);
+
+        // --- PROMENA: Direktno postavljanje koordinata ---
+        newDriver.setLatitude(request.getLatitude());
+        newDriver.setLongitude(request.getLongitude());
+        newDriver.setTimestamp(LocalDateTime.now());
+
+        Driver savedDriver = driverRepository.save(newDriver);
+        return mapToDriverResponseDTO(savedDriver);
+    }
+    private DriverResponseDTO mapToDriverResponseDTO(Driver driver) {
+        return DriverResponseDTO.builder()
+                .id(driver.getId())
+                .email(driver.getEmail())
+                .firstName(driver.getFirstName())
+                .lastName(driver.getLastName())
+                .phone(driver.getPhone())
+                .vehicleType(driver.getVehicleType())
+                .status(driver.getStatus())
+                .latitude(driver.getLatitude())
+                .longitude(driver.getLongitude())
+                .build();
+    }
 
 }
