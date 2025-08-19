@@ -153,6 +153,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Object[]> findSpendingOverTimeSince(@Param("customerId") Long customerId, @Param("since") LocalDateTime since, @Param("dateFormat") String dateFormat);
 // U OrderRepository.java
 
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m JOIN m.restaurant r " +
+            "WHERE r.manager.id = :managerId AND o.status = :status")
+    List<Order> findActiveOrdersForManagerByStatus(@Param("managerId") Long managerId, @Param("status") OrderStatus status);
+
     @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
             "WHERE m.restaurant.manager = :manager AND o.status IN :statuses " +
             "ORDER BY o.creationDate ASC")

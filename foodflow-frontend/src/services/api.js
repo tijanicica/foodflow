@@ -667,3 +667,8 @@ export const getAllDriverPerformances = async () => {
     const response = await apiClient.get('/admin/managers/drivers-performance');
     return response.data;
 };
+
+export const getManagerLiveTracking = async () => {
+    const response = await apiClient.get('/manager/live-tracking');
+    return response.data;
+};

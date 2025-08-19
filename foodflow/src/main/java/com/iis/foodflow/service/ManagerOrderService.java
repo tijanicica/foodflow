@@ -1,8 +1,11 @@
 package com.iis.foodflow.service;
 
+import com.iis.foodflow.dto.response.ManagerLiveTrackingDTO;
 import com.iis.foodflow.dto.response.ManagerOrderDTO;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.model.order.Order;
+import com.iis.foodflow.model.restaurant.Restaurant;
+import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.model.user.Manager;
 import com.iis.foodflow.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 @Service
@@ -164,5 +168,52 @@ public class ManagerOrderService {
             throw new SecurityException("Manager is not authorized for this order.");
         }
         return order;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ManagerLiveTrackingDTO> getLiveTrackingForManager(Long managerId) {
+        // 1. Pronađi sve porudžbine sa statusom PICKED_UP za datog menadžera
+        List<Order> activeOrders = orderRepository.findActiveOrdersForManagerByStatus(managerId, OrderStatus.PICKED_UP);
+
+        // 2. Mapiraj te porudžbine u DTO za praćenje
+        return activeOrders.stream()
+                .map(this::mapOrderToTrackingDTO)
+                .filter(Objects::nonNull) // Ukloni rezultate gde vozač ili lokacija ne postoje
+                .collect(Collectors.toList());
+    }
+
+    private ManagerLiveTrackingDTO mapOrderToTrackingDTO(Order order) {
+        Driver driver = order.getDriver();
+        if (driver == null || driver.getLatitude() == null || driver.getLongitude() == null || order.getAddress() == null) {
+            return null;
+        }
+
+        // === KLJUČNA IZMENA: DOBIJANJE PODATAKA O RESTORANU ===
+        // Pretpostavka je da svaka porudžbina ima bar jedan 'orderItem'
+        Restaurant restaurant = order.getOrderItems().stream()
+                .findFirst() // Uzimamo prvi artikal da bismo pronašli restoran
+                .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
+                .orElse(null);
+
+        // Ako ne možemo da nađemo restoran ili njegovu adresu, preskačemo ovu dostavu
+        if (restaurant == null || restaurant.getAddress() == null) {
+            return null;
+        }
+        // =======================================================
+
+        return ManagerLiveTrackingDTO.builder()
+                .driverId(driver.getId())
+                .driverFirstName(driver.getFirstName())
+                .driverLastName(driver.getLastName())
+                .driverLatitude(driver.getLatitude())
+                .driverLongitude(driver.getLongitude())
+                .vehicleType(driver.getVehicleType())
+                .orderId(order.getId())
+                .deliveryAddressLat(order.getAddress().getLatitude())
+                .deliveryAddressLng(order.getAddress().getLongitude())
+                // --- DODAJEMO NOVE PODATKE U ODGOVOR ---
+                .restaurantLat(restaurant.getAddress().getLatitude())
+                .restaurantLng(restaurant.getAddress().getLongitude())
+                .build();
     }
 }
