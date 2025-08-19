@@ -47,6 +47,8 @@ import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.j
 import { AdminDriverPerformancePage } from './pages/AdminDriverPerformancePage.jsx';
 import { AdminLiveTrackingPage } from './pages/AdminLiveTrackingPage.jsx';
 import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
+import { DriverSupport } from './pages/DriverSupport';
+
 
 import { NotificationProvider } from './context/NotificationContext';
 
@@ -89,6 +91,7 @@ const router = createBrowserRouter([
       { path: "/driver/profile", element: <DriverProfilePage /> }, // <-- PREMEŠTENO UNUTRA
       { path: "/driver/orders/:orderId", element: <ViewOrderPage /> }, // <-- PREMEŠTENO UNUTRA
       { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+        { path: "/driver/support", element: <DriverSupport /> },
     ]
   },
 

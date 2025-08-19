@@ -6,6 +6,7 @@ import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
+import { DriverFooter } from '@/components/DriverFooter';
 
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
@@ -425,6 +426,7 @@ export function DriverDashboard() {
                             Submit
                         </button>
                     </div>
+                
                 </div>
             );
         }, { duration: Infinity, position: "top-center" });
@@ -475,6 +477,7 @@ export function DriverDashboard() {
                     </div>
                 </div>
             </main>
+            <DriverFooter /> 
         </div>
     );
 } 
