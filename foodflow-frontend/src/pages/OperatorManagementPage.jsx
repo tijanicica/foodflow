@@ -10,7 +10,6 @@ import { RegisterAgentModal } from "@/components/modals/RegisterOperatorModal";
 import { PlusCircle, Users, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Pomoćna komponenta za sekcije, kao na MyProfilePage
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
     className="bg-white rounded-2xl shadow-sm border p-6 sm:p-8"
@@ -84,7 +83,6 @@ export const OperatorManagementPage = () => {
 
   const fetchAgents = useCallback(async () => {
     try {
-      // Ne postavljamo loading na true ako već imamo podatke, da izbegnemo treperenje
       if (agents.length === 0) setLoading(true);
       const data = await getOperators();
       setAgents(data);
@@ -97,7 +95,7 @@ export const OperatorManagementPage = () => {
 
   useEffect(() => {
     fetchAgents();
-  }, []); // Prazan niz, poziva se samo jednom na početku
+  }, []);
 
   const handleRegistrationSuccess = () => {
     fetchAgents();
@@ -109,15 +107,6 @@ export const OperatorManagementPage = () => {
         <SupportAdminNavbar />
 
         <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
-          {/* <div className="text-center mb-12">
-            <h1 className="text-5xl font-extrabold text-brand-primary">
-              Agent Management
-            </h1>
-            <p className="text-lg text-gray-500 mt-1">
-              Oversee, add, and manage support agents.
-            </p>
-          </div> */}
-
           <div className="max-w-5xl mx-auto">
             <AdminSection
               title="All Agents"

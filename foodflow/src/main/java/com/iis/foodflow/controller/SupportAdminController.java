@@ -1,8 +1,6 @@
 package com.iis.foodflow.controller;
 
-import com.iis.foodflow.dto.request.ChangePasswordRequestDTO;
-import com.iis.foodflow.dto.request.OperatorRegistrationDTO;
-import com.iis.foodflow.dto.request.UpdatePhoneRequestDTO;
+import com.iis.foodflow.dto.request.*;
 import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.OperatorRepository;
@@ -27,8 +25,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SupportAdminController {
     private final OperatorService operatorService;
-
-    private final OperatorRepository operatorRepository;
     private final SupportAdministratorRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -47,10 +43,11 @@ public class SupportAdminController {
 
     @GetMapping("/operators")
     @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
-    public ResponseEntity<List<Operator>> getAllOperators() {
-        List<Operator> operators = operatorRepository.findAll();
+    public ResponseEntity<List<OperatorDTO>> getAllOperators() {
+        List<OperatorDTO> operators = operatorService.getAllOperatorsAsDto();
         return ResponseEntity.ok(operators);
     }
+
     @GetMapping("/profile")
     @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
     public ResponseEntity<SupportAdministrator> getAdminProfile(Authentication authentication) {
@@ -100,6 +97,13 @@ public class SupportAdminController {
         adminRepository.save(admin);
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/operators/rankings")
+    @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
+    public ResponseEntity<List<OperatorRatingDTO>> getOperatorRankings() {
+        List<OperatorRatingDTO> rankings = operatorService.getRankedOperators();
+        return ResponseEntity.ok(rankings);
     }
 
 }

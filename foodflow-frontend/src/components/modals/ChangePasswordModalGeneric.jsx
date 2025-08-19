@@ -13,17 +13,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
-import toast from "react-hot-toast";
-// import { changePassword } from '@/services/api'; // <-- VIŠE NE UVOZIMO DIREKTNO
 import zxcvbn from "zxcvbn";
 import { motion } from "framer-motion";
 
-//================================================================================
-// POMOĆNE KOMPONENTE (ostaju iste)
-//================================================================================
-
 const PasswordInput = ({ id, value, onChange }) => {
-  // Uklonjen 'error' prop, nije se koristio
   const [showPass, setShowPass] = useState(false);
   return (
     <div className="relative">
@@ -46,7 +39,6 @@ const PasswordInput = ({ id, value, onChange }) => {
 };
 
 const PasswordStrengthIndicator = ({ password }) => {
-  // ... ova komponenta ostaje potpuno ista
   const result = zxcvbn(password);
   const score = result.score;
 
@@ -77,11 +69,6 @@ const PasswordStrengthIndicator = ({ password }) => {
   );
 };
 
-//================================================================================
-// GLAVNA KOMPONENTA MODALA
-//================================================================================
-
-// ===== KLJUČNA PROMENA: Prima 'onSubmit' funkciju kao prop =====
 export const ChangePasswordModalGeneric = ({ isOpen, onClose, onSubmit }) => {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -90,7 +77,6 @@ export const ChangePasswordModalGeneric = ({ isOpen, onClose, onSubmit }) => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Resetovanje stanja kada se modal zatvori (ovo je već dobro)
     if (!isOpen) {
       setOldPassword("");
       setNewPassword("");
@@ -100,26 +86,23 @@ export const ChangePasswordModalGeneric = ({ isOpen, onClose, onSubmit }) => {
   }, [isOpen]);
 
   const handleSave = async () => {
-    // Validacija
-    // if (newPassword !== confirmPassword) {
-    //   setErrors({ server: "New passwords do not match." });
-    //   return;
-    // }
+    //Validacija
+    if (newPassword !== confirmPassword) {
+      setErrors({ server: "New passwords do not match." });
+      return;
+    }
 
     setIsSaving(true);
     setErrors({});
 
     try {
-      // ===== KLJUČNA PROMENA: Poziva se prosleđena 'onSubmit' funkcija =====
-      // Prosleđujemo joj objekat sa podacima koje zahteva API
-      await onSubmit({ oldPassword, newPassword });
-
-      // Toast i zatvaranje modala se sada dešavaju u roditeljskoj komponenti
-      // (SupportAdminProfilePage) nakon što onSubmit uspešno završi.
-      // Ovo daje više kontrole roditelju.
-      onClose(); // Zatvaramo modal odavde
+      await onSubmit({
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      });
+      onClose();
     } catch (error) {
-      // Greška se sada hvata iz onSubmit funkcije
       const errorMessage = error.message || "An unknown error occurred.";
       setErrors({ server: errorMessage });
     } finally {

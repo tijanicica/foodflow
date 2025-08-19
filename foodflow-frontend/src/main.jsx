@@ -54,6 +54,14 @@ import { PickedUpOrderPage } from "./pages/PickedUpOrderPage";
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage.jsx";
 import { RegisterPage } from "./pages/RegisterPage.jsx";
 import { SupportAdminProfilePage } from "./pages/SupportAdminProfilePage.jsx";
+import { AgentPerformancePage } from "./pages/AgentPerformancePage.jsx";
+import { DriverLayout } from './layouts/DriverLayout.jsx';
+import { ManagerLayout } from './layouts/ManagerLayout.jsx';
+import { CustomerLayout } from './layouts/CustomerLayout.jsx'; 
+import { AdminDriverPerformancePage } from './pages/AdminDriverPerformancePage.jsx';
+import { AdminLiveTrackingPage } from './pages/AdminLiveTrackingPage.jsx';
+import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
+import { NotificationProvider } from './context/NotificationContext';
 import { TermsOfServicePage } from "./pages/TermsOfServicePage.jsx";
 import { TrackOrderPage } from "./pages/TrackOrderPage.jsx";
 import { ViewOrderPage } from "./pages/ViewOrderPage";
@@ -63,6 +71,53 @@ import { ViewOrderPage } from "./pages/ViewOrderPage";
 const router = createBrowserRouter([
   // Rute za kupce (Customer) unutar CustomerLayout-a i AppLayout-a
   {
+
+    // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
+    element: <AppLayout />,
+
+    //Customer
+    children: [
+      { path: "/home", element: <HomePage /> },
+      { path: "/restaurant/:restaurantId", element: <MenuPage /> },
+      { path: "/checkout", element: <CheckoutPage /> },
+      { path: "/orders", element: <MyOrdersPage /> },
+      { path: "/order/:orderId", element: <OrderDetailPage /> },
+      { path: "/track/:orderId", element: <TrackOrderPage /> },
+      { path: "/analytics", element: <AnalyticsPage /> },
+      { path: "/profile", element: <MyProfilePage /> },
+      { path: "/about", element: <AboutUsPage /> },
+      { path: "/faq", element: <FaqPage /> },
+      { path: "/contact", element: <ContactPage /> },
+      { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
+      { path: "/terms-of-service", element: <TermsOfServicePage /> },
+    ],
+  },
+  // Driver
+  { path: "/driver", element: <DriverDashboard /> },
+  { path: "/driver/profile", element: <DriverProfilePage /> },
+  { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
+  { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
+
+  // Manager
+  { path: "/manager/dashboard", element: <ManagerDashboard /> },
+  { path: "/manager/profile", element: <ManagerProfilePage /> },
+  { path: "/manager/menu", element: <ManagerMenuPage /> },
+  { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
+  { path: "/manager/orders", element: <ManagerOrdersPage /> },
+  { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
+  {
+    path: "/manager/deliveries/track/:orderId",
+    element: <ManagerTrackOrderPage />,
+  },
+  { path: "/admin/managers", element: <AdminManagerManagementPage /> },
+
+  // Support Admin
+  { path: "/support/agent-management", element: <OperatorManagementPage /> },
+  { path: "/support/profile", element: <SupportAdminProfilePage /> },
+  { path: "/support/agent-performance", element: <AgentPerformancePage /> },
+
+  // All
+   {
     element: <CustomerLayout />,
     children: [
       {

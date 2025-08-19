@@ -647,24 +647,20 @@ export const getRestaurantOptions = async () => {
 };
 
 export const getOperators = async () => {
-    // Pretpostavljamo da će endpoint biti /api/admin/operators
-    // Prilagodite ako je drugačije na vašem backendu.
     const response = await apiClient.get('/support-admin/operators'); 
     return response.data;
 };
 
 /**
  * Registruje novog operatora (agenta).
- * @param {object} operatorData - Podaci o novom operatoru.
+ * @param {object} operatorData 
  */
 export const registerOperator = async (operatorData) => {
-    // Koristimo endpoint koji smo definisali na backendu.
     const response = await apiClient.post('/support-admin/register-operator', operatorData);
     return response.data;
 };
 
 export const getSupportAdminProfile = async () => {
-    // Potreban je novi endpoint na backendu.
     const response = await apiClient.get('/support-admin/profile');
     return response.data;
 };
@@ -686,6 +682,12 @@ export const changeSupportAdminPassword = async (passwordData) => {
     await apiClient.post('/support-admin/profile/change-password', passwordData);
 };
 
+<<<<<<< HEAD
+export const getOperatorRankings = async () => {
+    const response = await apiClient.get('/support-admin/operators/rankings');
+    return response.data;
+};
+=======
 export const submitCombinedRating = async (orderId, payload) => {
     // Rešenje je ovde: koristimo `apiClient` koji je definisan na vrhu fajla
     const response = await apiClient.post(`/orders/${orderId}/rate`, payload); 
@@ -712,3 +714,4 @@ export const getManagerLiveTracking = async () => {
     const response = await apiClient.get('/manager/live-tracking');
     return response.data;
 };
+>>>>>>> 703e840a5d1d9cb51b0ac856aea8dfa464058f72
