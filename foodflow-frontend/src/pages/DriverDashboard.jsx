@@ -261,24 +261,29 @@ const AssignedDeliveryCard = ({ delivery }) => {
             )}
         </div>
     );
-};
+};// FAJL: src/pages/DriverDashboard.jsx
+// FAJL: src/pages/DriverDashboard.jsx
+
+/**
+ * Komponenta za elegantan prikaz praznog stanja.
+ */
 const EmptyState = ({ message, details }) => (
     <div style={{
         border: '2px dashed #D1D5DB', 
         borderRadius: '12px',
-        padding: '3rem 1.2rem', // <-- PROMIJENILI SMO PADDING DA BUDE USKLAĐEN
+        padding: '3rem 1.2rem',
         textAlign: 'center', 
         color: '#6B7280',
         backgroundColor: '#FDFDF5',
-        maxWidth: '440px', // Koristimo zajedničku širinu
+        maxWidth: '440px',
         margin: '0 6px',
-        // Da bi bio iste visine kao kartice, možemo dodati minHeight
-        boxSizing: 'border-box' // Važno da padding bude uračunat u širinu/visinu
+        boxSizing: 'border-box'
     }}>
         <p style={{ fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>{message}</p>
         <p style={{ marginTop: '0.5rem' }}>{details}</p>
     </div>
 );
+// FAJL: src/pages/DriverDashboard.jsx
 
 const OfferCarousel = ({ offers, onAccept, onReject }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -289,11 +294,12 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
     const goNext = () => { setCurrentIndex(prev => (prev < offers.length - 1 ? prev + 1 : 0)); };
 
     if (offers.length === 0) {
+        // Vraćen poziv na staru EmptyState komponentu
         return <EmptyState message="No new orders available." details="You will be notified..." />;
     }
 
     return (
-        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0px 0px', minHeight: '220px' /* Visina da spriječimo skakanje */ }}>
+        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0px auto', minHeight: '320px' /* Visina da sprečimo skakanje */ }}>
             {offers.length > 1 && (
                 <>
                     <button onClick={goPrev} style={{ ...navButtonStyle, left: '-35px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
@@ -307,7 +313,7 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
             
             <AnimatePresence mode="wait">
                 <motion.div
-                    key={currentIndex} // Animacija se pokreće kada se ovaj key promijeni
+                    key={currentIndex}
                     variants={slideVariants}
                     initial="initial"
                     animate="animate"
@@ -320,6 +326,7 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
         </div>
     );
 };
+// FAJL: src/pages/DriverDashboard.jsx
 
 const AssignedDeliveryCarousel = ({ deliveries }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -330,11 +337,12 @@ const AssignedDeliveryCarousel = ({ deliveries }) => {
     const goNext = () => { setCurrentIndex(prev => (prev < deliveries.length - 1 ? prev + 1 : 0)); };
 
     if (deliveries.length === 0) {
+        // Vraćen poziv na staru EmptyState komponentu
         return <EmptyState message="You have no active deliveries." details="Accepted orders will appear here." />;
     }
 
     return (
-        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0 0', minHeight: '220px' }}>
+        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0 auto', minHeight: '320px' }}>
             {deliveries.length > 1 && (
                 <>
                     <button onClick={goPrev} style={{ ...navButtonStyle, left: '-36px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
