@@ -41,6 +41,10 @@ import { ManagerDashboard } from "./pages/ManagerDashboard.jsx";
 import { ManagerDeliveriesPage } from "./pages/ManagerDeliveriesPage.jsx";
 import { ManagerEditMenuPage } from "./pages/ManagerEditMenuPage.jsx";
 import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
+import { DriverSupport } from './pages/DriverSupport';
+import { DriverEarnings } from './pages/DriverEarnings';
+
+
 import { ManagerMenuPage } from "./pages/ManagerMenuPage.jsx";
 import { ManagerOrdersPage } from "./pages/ManagerOrdersPage.jsx";
 import { ManagerProfilePage } from "./pages/ManagerProfilePage.jsx";
@@ -62,47 +66,6 @@ import { ViewOrderPage } from "./pages/ViewOrderPage";
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
-  // Rute za kupce (Customer) unutar CustomerLayout-a i AppLayout-a
-  {
-
-    // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
-    element: <AppLayout />,
-
-    //Customer
-    children: [
-      { path: "/home", element: <HomePage /> },
-      { path: "/restaurant/:restaurantId", element: <MenuPage /> },
-      { path: "/checkout", element: <CheckoutPage /> },
-      { path: "/orders", element: <MyOrdersPage /> },
-      { path: "/order/:orderId", element: <OrderDetailPage /> },
-      { path: "/track/:orderId", element: <TrackOrderPage /> },
-      { path: "/analytics", element: <AnalyticsPage /> },
-      { path: "/profile", element: <MyProfilePage /> },
-      { path: "/about", element: <AboutUsPage /> },
-      { path: "/faq", element: <FaqPage /> },
-      { path: "/contact", element: <ContactPage /> },
-      { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
-      { path: "/terms-of-service", element: <TermsOfServicePage /> },
-    ],
-  },
-  // Driver
-  { path: "/driver", element: <DriverDashboard /> },
-  { path: "/driver/profile", element: <DriverProfilePage /> },
-  { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
-  { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
-
-  // Manager
-  { path: "/manager/dashboard", element: <ManagerDashboard /> },
-  { path: "/manager/profile", element: <ManagerProfilePage /> },
-  { path: "/manager/menu", element: <ManagerMenuPage /> },
-  { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
-  { path: "/manager/orders", element: <ManagerOrdersPage /> },
-  { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
-  {
-    path: "/manager/deliveries/track/:orderId",
-    element: <ManagerTrackOrderPage />,
-  },
-  { path: "/admin/managers", element: <AdminManagerManagementPage /> },
 
   // Support Admin
   { path: "/support/agent-management", element: <OperatorManagementPage /> },
@@ -138,9 +101,11 @@ const router = createBrowserRouter([
     element: <DriverLayout />,
     children: [
       { path: "/driver", element: <DriverDashboard /> },
-      { path: "/driver/profile", element: <DriverProfilePage /> },
-      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
-      { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
+      { path: "/driver/profile", element: <DriverProfilePage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+        { path: "/driver/support", element: <DriverSupport /> },
+         { path: "/driver/earnings", element: <DriverEarnings /> },
     ]
   },
   // Rute za menadžere (Manager) unutar ManagerLayout-a
@@ -162,10 +127,6 @@ const router = createBrowserRouter([
   { path: "/admin/managers", element: <AdminManagerManagementPage /> },
   { path: "/admin/driver-performance", element: <AdminDriverPerformancePage /> },
   { path: "/admin/live-tracking", element: <AdminLiveTrackingPage /> },
-
-  // Rute za podršku (Support Admin)
-  { path: "/support/agent-management", element: <OperatorManagementPage /> },
-  { path: "/support/profile", element: <SupportAdminProfilePage /> },
 
   // Rute koje nemaju poseban layout (Login, Register)
   { path: "/", element: <LoginPage /> },
