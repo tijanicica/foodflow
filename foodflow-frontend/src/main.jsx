@@ -44,11 +44,20 @@ import { AdminManagerManagementPage } from "./pages/AdminManagerManagementPage.j
 import { OperatorManagementPage } from "./pages/OperatorManagementPage.jsx";
 import { SupportAdminProfilePage } from "./pages/SupportAdminProfilePage.jsx";
 import { AgentPerformancePage } from "./pages/AgentPerformancePage.jsx";
+import { DriverLayout } from './layouts/DriverLayout.jsx';
+import { ManagerLayout } from './layouts/ManagerLayout.jsx';
+import { CustomerLayout } from './layouts/CustomerLayout.jsx'; 
+import { AdminDriverPerformancePage } from './pages/AdminDriverPerformancePage.jsx';
+import { AdminLiveTrackingPage } from './pages/AdminLiveTrackingPage.jsx';
+import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
+import { NotificationProvider } from './context/NotificationContext';
+
 
 // Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
+
   {
     // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
     element: <AppLayout />,
@@ -95,16 +104,96 @@ const router = createBrowserRouter([
   { path: "/support/agent-performance", element: <AgentPerformancePage /> },
 
   // All
+   {
+    element: <CustomerLayout />,
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          // 2. PUTANJE SU SADA RELATIVNE U ODNOSU NA RODITELJSKI '/'
+          { path: "home", element: <HomePage /> }, // Nema više kose crte
+          { path: "restaurant/:restaurantId", element: <MenuPage /> },
+          { path: "checkout", element: <CheckoutPage /> },
+          { path: "orders", element: <MyOrdersPage /> },
+          { path: "order/:orderId", element: <OrderDetailPage /> },
+          { path: "track/:orderId", element: <TrackOrderPage /> },
+          { path: "analytics", element: <AnalyticsPage /> },
+          { path: "profile", element: <MyProfilePage /> },
+          { path: "about", element: <AboutUsPage /> },
+          { path: "faq", element: <FaqPage /> },
+          { path: "contact", element: <ContactPage /> },
+          { path: "privacy-policy", element: <PrivacyPolicyPage /> },
+          { path: "terms-of-service", element: <TermsOfServicePage /> },
+        ]
+      }
+    ]
+},
+ {
+    // Definišemo DriverLayout kao "ram"
+    element: <DriverLayout />, 
+    
+    // Sve stranice koje treba da budu unutar tog rama idu ovde, kao 'children'
+    children: [ 
+      { path: "/driver", element: <DriverDashboard /> },
+      { path: "/driver/profile", element: <DriverProfilePage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+    ]
+  },
+
+  // Manager
+   {
+    element: <ManagerLayout />,
+    children: [
+      { path: "/manager/dashboard", element: <ManagerDashboard /> },
+      { path: "/manager/profile", element: <ManagerProfilePage /> },
+      { path: "/manager/menu", element: <ManagerMenuPage /> },
+      { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
+      { path: "/manager/orders", element: <ManagerOrdersPage /> },
+      { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
+      { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
+
+      // === 2. KORAK: DODAJTE NOVU RUTU OVDE, UNUTAR 'children' OD ManagerLayout ===
+      { path: "/manager/live-tracking", element: <ManagerLiveTrackingPage /> },
+    ]
+  },
+
+
+  { 
+        path: "/admin/dashboard", 
+        element: <AdminManagerManagementPage /> 
+    },
+    { 
+        path: "/admin/managers", 
+        element: <AdminManagerManagementPage /> 
+    },
+    { 
+                path: "/admin/driver-performance", 
+                element: <AdminDriverPerformancePage /> 
+            },
+    {
+    path: "/admin/live-tracking",
+    element: <AdminLiveTrackingPage />
+  },
+   
+
   { path: "/", element: <LoginPage /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
 ]);
-
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <CartProvider>
-      <RouterProvider router={router} />
+   
+ReactDOM.createRoot(document.getElementById('root')).render(
+   <React.StrictMode> 
       <Toaster position="bottom-right" />
-    </CartProvider>
-  </React.StrictMode>
+
+      {/* OVDE JE KLJUČNA PROMENA */}
+      <NotificationProvider>
+        <CartProvider>
+          <RouterProvider router={router} />
+           <Toaster position="bottom-right" />
+        </CartProvider>
+      </NotificationProvider>
+      
+   </React.StrictMode>
 );
+

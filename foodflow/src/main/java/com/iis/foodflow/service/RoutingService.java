@@ -15,8 +15,8 @@ public class RoutingService {
     private RestTemplate restTemplate;
 
     // Podrazumevani OSRM demo server URL
-    private final String OSRM_API_URL = "http://router.project-osrm.org/route/v1/driving/%s,%s;%s,%s?overview=false";
-
+    // Novi kod (ispravan):
+    private final String OSRM_API_URL = "http://localhost:5000/route/v1/driving/%s,%s;%s,%s?overview=false";
     /**
      * Dobavlja detalje rute (distancu i vreme) između dve tačke.
      * @param startLat Početna latituda

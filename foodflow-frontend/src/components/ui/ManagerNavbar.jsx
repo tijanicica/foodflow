@@ -48,6 +48,13 @@ export function ManagerNavbar() {
                     <NavLink to="/manager/deliveries" className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                         Deliveries
                     </NavLink>
+                    
+                    {/* === DODAT NOVI LINK ZA LIVE TRACKING === */}
+                    <NavLink to="/manager/live-tracking" className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
+                        Live Tracking
+                    </NavLink>
+                    {/* ======================================= */}
+
                     <NavLink to="/manager/profile" className={({ isActive }) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                         My Profile
                     </NavLink>

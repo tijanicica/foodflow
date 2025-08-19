@@ -818,6 +818,11 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
     (1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
 
+-- OCJENE ZA DOSTAVLJAČE (DriverRating)
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (2, 2, 2, 1, 1, 3, 5, 4, null, 5, null);
+
+
 -- ===== PORUDŽBINA ZA TESTIRANJE "TRACK ON MAP" =====
 
 -- Porudžbina sa ID-jem 150, status je PICKED_UP

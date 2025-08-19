@@ -2,6 +2,7 @@ package com.iis.foodflow.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.iis.foodflow.repository.DriverRepository;
+import com.iis.foodflow.repository.OrderRepository;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,12 @@ import java.util.Map;
 public class DriverSimulationService {
 
     private static final Logger log = LoggerFactory.getLogger(DriverSimulationService.class);
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private RealtimeNotificationService notificationService;
+
 
     @Autowired
     private RestTemplate restTemplate;
@@ -29,8 +36,7 @@ public class DriverSimulationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    private final String OSRM_ROUTE_GEOMETRY_URL = "http://router.project-osrm.org/route/v1/driving/%s,%s;%s,%s?overview=full&geometries=geojson";
-
+    private final String OSRM_ROUTE_GEOMETRY_URL = "http://localhost:5000/route/v1/driving/%s,%s;%s,%s?overview=full&geometries=geojson";
     /**
      * Asinhrona metoda koja simulira kretanje vozača duž rute.
      * Brzina simulacije (pauza između tačaka) zavisi od prosleđenog 'totalDurationInSeconds'.
