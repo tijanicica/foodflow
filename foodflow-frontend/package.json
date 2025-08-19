@@ -28,6 +28,7 @@
     "framer-motion": "^12.23.12",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
+    "leaflet-geosearch": "^4.2.0",
     "leaflet-routing-machine": "^3.2.12",
     "lucide-react": "^0.539.0",
     "react": "^18.2.0",

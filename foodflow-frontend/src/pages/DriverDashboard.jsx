@@ -298,7 +298,6 @@ const AssignedDeliveryCarousel = ({ deliveries }) => {
 
 // --- GLAVNA KOMPONENTA ---
 export function DriverDashboard() {
-    
     // --- STANJA (STATE) ---
     const [dashboardData, setDashboardData] = useState({ newOffers: [], assignedDeliveries: [], driverCoordinates: null });
     const [loading, setLoading] = useState(true);
@@ -340,6 +339,7 @@ export function DriverDashboard() {
         return () => clearInterval(intervalId);
     }, []);
 
+
     // --- FUNKCIJE ZA UPRAVLJANJE PONUDAMA (HANDLERS) ---
     // 3. handleAccept sada poziva funkciju za osvežavanje
     const handleAccept = async (offerId) => {
@@ -351,6 +351,19 @@ export function DriverDashboard() {
             toast.error(err.response?.data?.message || 'Failed to accept offer.');
         }
     };
+
+    useEffect(() => {
+    const handleRefresh = (event) => {
+      console.log("Dashboard received refresh signal!", event.detail);
+      fetchDashboardUpdates(); // Pozovi funkciju za osvežavanje
+    };
+
+    window.addEventListener('new-notification', handleRefresh);
+
+    return () => {
+      window.removeEventListener('new-notification', handleRefresh);
+    };
+  }, []);
 
     // 4. handleReject sa svom tvojom logikom za modal
     const handleReject = (offerId) => {

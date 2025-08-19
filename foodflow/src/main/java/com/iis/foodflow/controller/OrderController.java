@@ -1,6 +1,7 @@
 package com.iis.foodflow.controller;
 
 import com.iis.foodflow.dto.request.OrderRequestDTO;
+import com.iis.foodflow.dto.request.RateOrderFoodRequest;
 import com.iis.foodflow.dto.request.RejectOfferRequest;
 import com.iis.foodflow.dto.response.OrderDetailDTO;
 import com.iis.foodflow.dto.response.OrderSummaryDTO;
@@ -134,5 +135,17 @@ public class OrderController {
             @AuthenticationPrincipal Customer customer
     ) {
         return ResponseEntity.ok(orderService.getTrackingInfo(id, customer));
+    }
+
+    @PutMapping("/{orderId}/rate-food")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<Void> rateOrderFood(
+            @PathVariable Long orderId,
+            @RequestBody RateOrderFoodRequest request,
+            @AuthenticationPrincipal Customer customer
+    ) {
+        orderService.rateOrderFood(orderId, request, customer);
+
+        return ResponseEntity.noContent().build();
     }
 }

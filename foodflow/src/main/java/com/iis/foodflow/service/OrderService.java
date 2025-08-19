@@ -2,6 +2,7 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.OrderRequestDTO;
+import com.iis.foodflow.dto.request.RateOrderFoodRequest;
 import com.iis.foodflow.dto.response.OrderDetailDTO;
 import com.iis.foodflow.dto.response.OrderSummaryDTO;
 import com.iis.foodflow.dto.response.RepeatingOrderTemplateDTO;
@@ -15,6 +16,7 @@ import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,7 @@ public class OrderService {
     private final RepeatingOrderRepository repeatingOrderRepository; 
 
     private final OrderAssignmentService orderAssignmentService;
+    private final OrderRatingRepository orderRatingRepository;
 
     @Transactional(readOnly = true)
     public Optional<Order> findActiveOrderByDriver(Driver driver) {
@@ -51,6 +54,43 @@ public class OrderService {
     }
 
     private final DriverRatingRepository driverRatingRepository;
+
+    @Transactional
+    public void rateOrderFood(Long orderId, RateOrderFoodRequest request, Customer customer) {
+        // 1. Pronađi porudžbinu
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order with ID " + orderId + " not found."));
+
+        // 2. Proveri da li je kupac vlasnik porudžbine
+        if (!order.getCustomer().getId().equals(customer.getId())) {
+            throw new AccessDeniedException("You can only rate your own orders.");
+        }
+
+        // 3. Proveri da li je porudžbina isporučena
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Order must be delivered before it can be rated.");
+        }
+
+        // 4. Proveri da li je hrana za ovu porudžbinu već ocenjena
+        if (orderRatingRepository.existsById(order.getId())) {
+            throw new IllegalStateException("The food for this order has already been rated.");
+        }
+
+        // 5. Kreiraj i sačuvaj ocenu ako je data barem jedna ocena
+        if (request.getQuality() != null || request.getTaste() != null || request.getPortionSize() != null) {
+            OrderRating newOrderRating = new OrderRating();
+
+            newOrderRating.setOrder(order); // Veoma važno za @MapsId
+            newOrderRating.setQuality(request.getQuality());
+            newOrderRating.setTaste(request.getTaste());
+            newOrderRating.setPortionSize(request.getPortionSize());
+
+            orderRatingRepository.save(newOrderRating);
+
+            // Ovde možete kasnije dodati poziv za ažuriranje prosečne ocene restorana,
+            // ako budete imali tu logiku.
+        }
+    }
 
     @Transactional
     public Order confirmOrder(Long orderId) {

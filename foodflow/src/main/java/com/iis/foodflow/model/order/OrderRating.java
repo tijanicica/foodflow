@@ -11,9 +11,15 @@ import lombok.*;
 public class OrderRating {
     @Id
     private Long id;
-    private int quality;
-    private int taste;
-    private int portionSize;
+
+    @Column(name = "quality") // Eksplicitno ime kolone
+    private Integer quality;
+
+    @Column(name = "taste")   // Eksplicitno ime kolone
+    private Integer taste;
+
+    @Column(name = "portion_size") // Eksplicitno ime kolone
+    private Integer portionSize;
 
     @OneToOne
     @MapsId

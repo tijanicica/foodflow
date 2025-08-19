@@ -1,9 +1,9 @@
 package com.iis.foodflow.controller;
 
+import com.iis.foodflow.dto.request.RegisterDriverRequestDTO;
 import com.iis.foodflow.dto.request.RegisterManagerRequestDTO;
 import com.iis.foodflow.dto.request.UpdateManagerRequestDTO;
-import com.iis.foodflow.dto.response.ManagerDetailDTO;
-import com.iis.foodflow.dto.response.ManagerInfoDTO;
+import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.model.user.Administrator;
 import com.iis.foodflow.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +49,30 @@ public class AdminController {
     @PreAuthorize("hasAuthority('ROLE_ADMINISTRATOR')")
     public ResponseEntity<ManagerDetailDTO> updateManager(@PathVariable Long id, @RequestBody UpdateManagerRequestDTO request) {
         return ResponseEntity.ok(adminService.updateManager(id, request));
+    }
+
+    @GetMapping("/drivers-performance")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    public ResponseEntity<List<AdminDriverPerformanceResponse>> getAllDriverPerformances() {
+        List<AdminDriverPerformanceResponse> performances = adminService.getAllDriverPerformances();
+        return ResponseEntity.ok(performances);
+    }
+
+    @GetMapping("/drivers/live-locations")
+    public ResponseEntity<List<DriverLiveLocationDTO>> getLiveDriverLocations() {
+        // Pozivamo novu metodu iz AdminService
+        List<DriverLiveLocationDTO> liveLocations = adminService.getLiveDriverLocations();
+        // Vraćamo podatke sa HTTP statusom 200 OK
+        return ResponseEntity.ok(liveLocations);
+    }
+    @PostMapping("/drivers")
+    public ResponseEntity<?> registerDriver(@RequestBody RegisterDriverRequestDTO request, @AuthenticationPrincipal Administrator admin) {
+        try {
+            DriverResponseDTO newDriver = adminService.registerDriver(request, admin);
+            return new ResponseEntity<>(newDriver, HttpStatus.CREATED);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            // Vraća grešku ako email postoji ili lokacija nije validna
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }
