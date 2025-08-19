@@ -133,19 +133,24 @@ const CancelOrderModal = ({ onConfirm, onCancel }) => {
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                 <button
-                    onClick={onCancel}
-                    style={{
-                        flex: 1,
-                        padding: '1rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid #D1D5DB',
-                        backgroundColor: 'white',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                    }}
-                >
-                    Cancel
-                </button>
+    onClick={onCancel}
+    style={{
+        flex: 1,
+        padding: '1rem',
+        borderRadius: '10px',
+        border: '1.5px solid #D1D5DB',
+        backgroundColor: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s ease-in-out' // Dodato za glatku promenu boje
+    }}
+    // Kada miš pređe preko dugmeta, pozadina postaje svetlo siva
+    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'} 
+    // Kada miš napusti dugme, pozadina se vraća u belu boju
+    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+>
+    Cancel
+</button>
                 <button
                     onClick={handleConfirm}
                     style={{
@@ -665,21 +670,36 @@ if (newLocation.predictedTimeLeft !== undefined) {
                         {/* DUGMAD */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
                             
-                            
-                            <button
-                                onClick={handleMarkAsDelivered}
-                                style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
-                            >
-                                <FiCheckCircle /> Mark as Delivered
-                            </button>
+                       <button
+    onClick={handleMarkAsDelivered}
+    style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
+    // Kada miš pređe preko dugmeta, boja postaje tamnije zelena
+    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#256627'}
+    // Kada miš napusti dugme, boja se vraća na originalnu
+    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2E7D32'}
+>
+    <FiCheckCircle /> Mark as Delivered
+</button>
                                                     
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <button
-                                    onClick={() => setIsReportDelayModalOpen(true)} // Klik sada otvara modal
-                                    style={secondaryButtonStyle}
-                                >
-                                    <FiAlertTriangle size={14} /> Report Delay
-                                </button>
+                            <button
+    onClick={() => setIsReportDelayModalOpen(true)}
+    style={secondaryButtonStyle}
+    // Kada miš pređe preko dugmeta, stilovi se menjaju u "warning" temu
+    onMouseEnter={e => {
+        e.currentTarget.style.borderColor = '#D97706'; // Tamno žuta ivica
+        e.currentTarget.style.backgroundColor = '#faf8e6ff'; // Svetlo žuta pozadina
+        e.currentTarget.style.color = '#B45309'; // Tamno žuti tekst i ikonica
+    }}
+    // Kada miš napusti dugme, stilovi se vraćaju na originalne
+    onMouseLeave={e => {
+        e.currentTarget.style.borderColor = '#D1D5DB'; // Originalna siva ivica
+        e.currentTarget.style.backgroundColor = 'white'; // Originalna bela pozadina
+        e.currentTarget.style.color = '#4A4A4A'; // Originalna boja teksta
+    }}
+>
+    <FiAlertTriangle size={14} /> Report Delay
+</button>
                                 
                                 <button
                                     onClick={() => setIsCancelModalOpen(true)}
