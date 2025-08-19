@@ -135,7 +135,7 @@ export const RateOrderModal = ({ isOpen, onClose, order, onRatingSuccess }) => {
 
                 <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2 pt-4">
                     <Button type="button" variant="outline" onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto">
-                        <AlertTriangle className="mr-2 h-4 w-4" /> Report a Problem
+                        <AlertTriangle className="mr-2 h-4 w-4" /> Save and Report a Problem
                     </Button>
                     <Button type="button" onClick={handleSubmit} disabled={isLoading} className="w-full sm:w-auto bg-[#4A4A4A] hover:bg-[#333]">
                         {isLoading ? 'Saving...' : 'Save'}

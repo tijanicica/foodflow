@@ -682,12 +682,12 @@ export const changeSupportAdminPassword = async (passwordData) => {
     await apiClient.post('/support-admin/profile/change-password', passwordData);
 };
 
-<<<<<<< HEAD
+
 export const getOperatorRankings = async () => {
     const response = await apiClient.get('/support-admin/operators/rankings');
     return response.data;
 };
-=======
+
 export const submitCombinedRating = async (orderId, payload) => {
     // Rešenje je ovde: koristimo `apiClient` koji je definisan na vrhu fajla
     const response = await apiClient.post(`/orders/${orderId}/rate`, payload); 
@@ -714,4 +714,3 @@ export const getManagerLiveTracking = async () => {
     const response = await apiClient.get('/manager/live-tracking');
     return response.data;
 };
->>>>>>> 703e840a5d1d9cb51b0ac856aea8dfa464058f72
