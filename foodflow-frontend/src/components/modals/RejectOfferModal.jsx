@@ -1,18 +1,21 @@
 // FAJL: src/components/modals/RejectOfferModal.jsx
 
+// FAJL: src/components/modals/RejectOfferModal.jsx
+
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheck } from 'react-icons/fi';
+import { FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi'; // Dodajemo ikonicu za header
 
 // --- GLAVNA KOMPONENTA ---
 export const RejectOfferModal = ({ isOpen, onClose, onConfirm }) => {
     const [reason, setReason] = useState('');
     const [customReason, setCustomReason] = useState('');
 
-    // Efekat koji resetuje stanje kada se modal zatvori
     useEffect(() => {
         if (!isOpen) {
-            setReason('');
-            setCustomReason('');
+            setTimeout(() => {
+                setReason('');
+                setCustomReason('');
+            }, 200); // Resetuj nakon animacije zatvaranja
         }
     }, [isOpen]);
 
@@ -38,11 +41,11 @@ export const RejectOfferModal = ({ isOpen, onClose, onConfirm }) => {
             style={{ 
                 position: 'fixed', top: 0, left: 0, 
                 width: '100%', height: '100%', 
-                backgroundColor: 'rgba(17, 24, 39, 0.6)', // Tamnija, profesionalnija pozadina
-                backdropFilter: 'blur(8px)', // Zadržavamo blur za eleganciju
+                backgroundColor: 'rgba(17, 24, 39, 0.6)',
+                backdropFilter: 'blur(8px)',
                 display: 'flex', justifyContent: 'center', alignItems: 'center', 
                 zIndex: 1000,
-                opacity: 1, transition: 'opacity 0.2s ease' // Suptilna tranzicija za pojavljivanje
+                opacity: 1, transition: 'opacity 0.2s ease'
             }}
         >
             {/* Sadržaj Modala */}
@@ -50,23 +53,28 @@ export const RejectOfferModal = ({ isOpen, onClose, onConfirm }) => {
                 onClick={e => e.stopPropagation()}
                 style={{ 
                     fontFamily: 'sans-serif', width: '100%', maxWidth: '440px', 
-                    padding: '2rem', backgroundColor: 'white', borderRadius: '16px', 
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' 
+                    backgroundColor: 'white', borderRadius: '16px', 
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    textAlign: 'center', // Centriramo sav tekst
+                    padding: '2rem'
                 }}
             >
-                {/* Header Modala */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1.5rem' }}>
-                    <div>
-                        <h4 style={{ margin: 0, fontWeight: '600', fontSize: '1.25rem', color: '#111827' }}>
-                            Reason for Rejection
-                        </h4>
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#6B7280' }}>
-                            Your feedback is valuable to us.
-                        </p>
+                {/* Header Modala - sada sa ikonicom */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{
+                        width: '48px', height: '48px', borderRadius: '50%',
+                        backgroundColor: '#FFFBEB', // Svetla bež pozadina
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#8A643B' // Brend boja
+                    }}>
+                        <FiAlertTriangle size={24} />
                     </div>
-                    <button onClick={onClose} style={{ background: '#F3F4F6', border: 'none', cursor: 'pointer', color: '#6B7280', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FiX size={20} />
-                    </button>
+                    <h4 style={{ margin: '1rem 0 0.25rem 0', fontWeight: '600', fontSize: '1.25rem', color: '#111827' }}>
+                        Reason for Rejection
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#6B7280' }}>
+                        Your feedback is valuable to us.
+                    </p>
                 </div>
                 
                 {/* Predefinisani Razlozi */}
@@ -101,14 +109,10 @@ export const RejectOfferModal = ({ isOpen, onClose, onConfirm }) => {
                     onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                 />
                 
-                {/* === HCI POBOLJŠANJE: Dugmad za Akcije === */}
+                {/* Dugmad za Akcije */}
                 <div style={{ 
-                    display: 'grid', // Koristimo grid za savršeno poravnanje
-                    gridTemplateColumns: '1fr 1fr', // Dve kolone jednake širine
-                    gap: '1rem', 
-                    marginTop: '2rem', 
-                    borderTop: '1px solid #F3F4F6', 
-                    paddingTop: '1.5rem' 
+                    display: 'grid', gridTemplateColumns: '1fr 1fr',
+                    gap: '1rem', marginTop: '2rem', 
                 }}>
                     <ActionButton label="Cancel" type="secondary" onClick={onClose} />
                     <ActionButton 
@@ -122,7 +126,6 @@ export const RejectOfferModal = ({ isOpen, onClose, onConfirm }) => {
         </div>
     );
 };
-
 
 // --- NOVE POMOĆNE KOMPONENTE ZA ČISTIJI KOD ---
 

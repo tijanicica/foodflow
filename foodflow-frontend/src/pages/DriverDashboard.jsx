@@ -238,19 +238,24 @@ const AssignedDeliveryCard = ({ delivery }) => {
                     </div>
                  </div>
             </div>
-            
-            {/* Donji dio sa statusom i gumbom */}
+
             {isReadyForPickup ? (
                 <>
                     <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', margin: '1rem 0', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>
                         {statusIcon} {statusMessage}
                     </p>
                     <Link to={`/driver/orders/${delivery.id}`} style={{ textDecoration: 'none' }}>
-                        <button style={{
-                            width: '100%', padding: '0.8rem', borderRadius: '8px',
-                            border: 'none', color: 'white', backgroundColor: '#1F2937',
-                            cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem'
-                        }}>
+                        <button 
+                            style={{
+                                width: '100%', padding: '0.8rem', borderRadius: '8px',
+                                border: 'none', color: 'white', backgroundColor: '#1F2937', // Originalna tamno siva/crna
+                                cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem',
+                                transition: 'background-color 0.2s ease-in-out' // Dodajemo tranziciju
+                            }}
+                            // === IZMENE SU OVDE ===
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#000000'} // Menja u potpunu crnu na hover
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1F2937'} // Vraća na originalnu boju
+                        >
                             View on Map & Start
                         </button>
                     </Link>
