@@ -4,10 +4,12 @@ package com.iis.foodflow.controller;
 import com.iis.foodflow.dto.request.ChangePasswordRequestDTO;
 import com.iis.foodflow.dto.request.UpdateManagerProfileRequestDTO;
 import com.iis.foodflow.dto.response.ManagerAnalyticsDTO;
+import com.iis.foodflow.dto.response.ManagerLiveTrackingDTO;
 import com.iis.foodflow.dto.response.ManagerProfileDTO;
 import com.iis.foodflow.model.user.Manager;
 import com.iis.foodflow.repository.ManagerRepository;
 import com.iis.foodflow.service.ManagerAnalyticsService;
+import com.iis.foodflow.service.ManagerOrderService;
 import com.iis.foodflow.service.ManagerProfileService; // Uvoz novog servisa
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,7 @@ import org.slf4j.Logger; // Dodaj import
 @RequiredArgsConstructor
 public class ManagerController {
     private final ManagerRepository managerRepository;
+    private  final ManagerOrderService managerOrderService;
     private final ManagerAnalyticsService managerAnalyticsService;
     private final ManagerProfileService managerProfileService; // Dodavanje novog servisa
     public record RestaurantOptionDTO(Long id, String name) {}
@@ -124,5 +127,11 @@ public class ManagerController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @GetMapping("/live-tracking")
+    public ResponseEntity<List<ManagerLiveTrackingDTO>> getLiveTrackingData(@AuthenticationPrincipal Manager manager) {
+        List<ManagerLiveTrackingDTO> trackingData = managerOrderService.getLiveTrackingForManager(manager.getId());
+        return ResponseEntity.ok(trackingData);
     }
 }

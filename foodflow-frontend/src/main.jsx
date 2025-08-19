@@ -44,6 +44,9 @@ import { ManagerOrdersPage } from './pages/ManagerOrdersPage.jsx';
 import { ManagerDeliveriesPage } from './pages/ManagerDeliveriesPage.jsx';
 import { ManagerTrackOrderPage } from './pages/ManagerTrackOrderPage.jsx';
 import { AdminManagerManagementPage } from './pages/AdminManagerManagementPage.jsx';
+import { AdminDriverPerformancePage } from './pages/AdminDriverPerformancePage.jsx';
+import { AdminLiveTrackingPage } from './pages/AdminLiveTrackingPage.jsx';
+import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
 
 import { NotificationProvider } from './context/NotificationContext';
 
@@ -90,7 +93,7 @@ const router = createBrowserRouter([
   },
 
   // Manager
-  {
+   {
     element: <ManagerLayout />,
     children: [
       { path: "/manager/dashboard", element: <ManagerDashboard /> },
@@ -100,7 +103,28 @@ const router = createBrowserRouter([
       { path: "/manager/orders", element: <ManagerOrdersPage /> },
       { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
       { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
+
+      // === 2. KORAK: DODAJTE NOVU RUTU OVDE, UNUTAR 'children' OD ManagerLayout ===
+      { path: "/manager/live-tracking", element: <ManagerLiveTrackingPage /> },
     ]
+  },
+
+
+  { 
+        path: "/admin/dashboard", 
+        element: <AdminManagerManagementPage /> 
+    },
+    { 
+        path: "/admin/managers", 
+        element: <AdminManagerManagementPage /> 
+    },
+    { 
+                path: "/admin/driver-performance", 
+                element: <AdminDriverPerformancePage /> 
+            },
+    {
+    path: "/admin/live-tracking",
+    element: <AdminLiveTrackingPage />
   },
    
    // All

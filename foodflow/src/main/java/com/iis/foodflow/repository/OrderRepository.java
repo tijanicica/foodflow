@@ -93,6 +93,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY TO_CHAR(creation_date, 'YYYY-MM') ORDER BY month", nativeQuery = true)
     List<Object[]> findSpendingOverTime(@Param("customerId") Long customerId);
 
+    Optional<Order> findTopByDriverAndStatusInOrderByCreationDateDesc(Driver driver, List<OrderStatus> statuses);
+
 
 
     @Query("SELECT oi.menuItemVersion.menuVersion.menu.restaurant.name, SUM(oi.menuItemVersion.price * oi.quantity) " +
@@ -150,6 +152,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY time_point ORDER BY MIN(creation_date)", nativeQuery = true)
     List<Object[]> findSpendingOverTimeSince(@Param("customerId") Long customerId, @Param("since") LocalDateTime since, @Param("dateFormat") String dateFormat);
 // U OrderRepository.java
+
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m JOIN m.restaurant r " +
+            "WHERE r.manager.id = :managerId AND o.status = :status")
+    List<Order> findActiveOrdersForManagerByStatus(@Param("managerId") Long managerId, @Param("status") OrderStatus status);
 
     @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
             "WHERE m.restaurant.manager = :manager AND o.status IN :statuses " +
