@@ -7,22 +7,13 @@ import { NavbarDriver } from '../components/NavbarDriver';
 import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { DriverFooter } from '@/components/DriverFooter';
-
-/**
- * Komponenta za prikaz jedne kartice sa ponudom.
- */
-/**
- * Komponenta za prikaz jedne kartice sa ponudom.
- */
 // FAJL: src/pages/DriverDashboard.jsx
 
-// Definiramo zajedničku širinu kao varijablu na vrhu
-const cardMaxWidth = '450px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
-
-
+import { MapPin, ArrowRight, Clock, CheckCircle } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
+// ...
+const cardMaxWidth = '450px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
+import { FiArrowLeft,FiChevronRight ,FiNavigation , FiArrowRight, FiTruck, FiCheckCircle, FiXCircle, FiClock, FiMapPin } from 'react-icons/fi';
 
 
 
@@ -69,43 +60,80 @@ const slideVariants = {
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
  * UVIJEK PRIKAZUJE OBJE DISTANCE.
- */
+ */// FAJL: src/pages/DriverDashboard.jsx
+
+// FAJL: src/pages/DriverDashboard.jsx
+
+// FAJL: src/pages/DriverDashboard.jsx
+
+// (Obavezno proverite da li je ikonica `FiNavigation` uvezena na vrhu fajla)
+// import { ..., FiNavigation } from 'react-icons/fi';
+
 const OfferCard = ({ offer, onAccept, onReject }) => {
-        if (!offer || !offer.order) {
-        return null; // Ili neki fallback prikaz
+    if (!offer || !offer.order) {
+        return null;
     }
-    // Definiramo stilove kao objekte da bi kod bio čitljiviji
-    const baseButtonStyle = {
-        flex: 1,
-        padding: '0.75rem',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: '600',
-        transition: 'all 0.2s ease-in-out'
-    };
+
+    const [isHovered, setIsHovered] = useState(false);
+
+    // Stilovi...
+    const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' };
+    const iconStyle = { color: '#8A643B', flexShrink: 0 };
+    const baseButtonStyle = { flex: 1, padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s ease-in-out', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' };
     const rejectButtonStyle = { ...baseButtonStyle, border: '2px solid #D1D5DB', color: '#4A4A4A', backgroundColor: 'transparent' };
     const acceptButtonStyle = { ...baseButtonStyle, border: '2px solid #8A643B', color: 'white', backgroundColor: '#8A643B' };
 
+    const cardStyle = {
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        border: '1px solid #EAEAEA',
+        maxWidth: cardMaxWidth,
+        margin: '0 auto',
+        boxShadow: isHovered ? '0 8px 25px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.08)',
+        transition: 'box-shadow 0.3s ease-in-out',
+    };
+
     return (
-        <div style={{
-            backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid #EAEAEA',
-            transition: 'transform 0.2s ease-in-out',
-            maxWidth: cardMaxWidth,
-            margin: '0 auto'
-        }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-            <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Pickup: {offer.order.restaurantName}</p>
-            <p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>From: {offer.order.restaurantAddress}</p>
-            <p style={{ marginTop: '0.75rem' }}>Deliver to: {offer.order.deliveryAddress}</p>
+        <div 
+            style={cardStyle}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div style={infoRowStyle}>
+                <FiMapPin size={20} style={iconStyle} />
+                <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Pickup From</p>
+                    <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: '0.1rem 0' }}>{offer.order.restaurantName}</p>
+                    <p style={{ color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>{offer.order.restaurantAddress}</p>
+                </div>
+            </div>
+
+            <div style={infoRowStyle}>
+                <FiChevronRight size={20} style={iconStyle} />
+                 <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Deliver To</p>
+                    <p style={{ fontWeight: '600', fontSize: '1rem', margin: '0.1rem 0' }}>{offer.order.deliveryAddress}</p>
+                </div>
+            </div>
             
-            {/* Prikaz obje distance */}
-            <div style={{ marginTop: '1rem', color: '#333', fontSize: '0.9rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
-                <p style={{ margin: '0 0 0.5rem 0' }}>
-                    Distance to Restaurant: <strong>{offer.order.distanceDriverToRestaurant.toFixed(1)} km</strong>
-                </p>
-                <p style={{ margin: 0 }}>
-                    Distance to Customer: <strong>{offer.order.distanceDriverToCustomer.toFixed(1)} km</strong>
-                </p>
+            {/* === IZMENJENI DEO ZA DISTANCU === */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    
+                    {/* 1. Ikonica za distancu */}
+                    <FiNavigation size={20} style={{ color: '#6B7280', flexShrink: 0 }} />
+
+                    {/* 2. Kontejner za obe distance, jedan ispod drugog */}
+                    <div style={{ color: '#333', fontSize: '0.9rem' }}>
+                        <p style={{ margin: 0 }}>
+                            To Restaurant: <strong>{offer.order.distanceDriverToRestaurant.toFixed(1)} km</strong>
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0 0' }}>
+                            To Customer: <strong>{offer.order.distanceDriverToCustomer.toFixed(1)} km</strong>
+                        </p>
+                    </div>
+                </div>
             </div>
             
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
@@ -115,7 +143,7 @@ const OfferCard = ({ offer, onAccept, onReject }) => {
                     onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.color = '#EF4444'; }}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.color = '#4A4A4A'; }}
                 >
-                    Reject
+                    <FiXCircle /> Reject
                 </button>
                 <button
                     onClick={() => onAccept(offer.id)}
@@ -123,79 +151,117 @@ const OfferCard = ({ offer, onAccept, onReject }) => {
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#71502f'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
                 >
-                    Accept
+                    <FiCheckCircle /> Accept
                 </button>
             </div>
         </div>
     );
 };
+// FAJL: src/pages/DriverDashboard.jsx
+// FAJL: src/pages/DriverDashboard.jsx
 
-/**
- * Komponenta za prikaz jedne prihvaćene porudžbine.
- * DINAMIČKI PRIKAZUJE DISTANCU.
- */
+// (Proverite da li su sve ikonice uvezene na vrhu: FiTruck, FiCheckCircle, FiClock, FiMapPin, FiChevronRight, FiNavigation)
+
 const AssignedDeliveryCard = ({ delivery }) => {
+    // Logika za status ostaje ista
     const isReadyForPickup = delivery.status === 'READY_FOR_PICKUP';
     const isPickedUp = delivery.status === 'PICKED_UP';
+    
     let statusMessage = "Waiting for Restaurant...";
-    if (isReadyForPickup) { statusMessage = "Order is Ready for Pickup!"; }
-    else if (isPickedUp) { statusMessage = "On your way to customer!"; }
+    let statusIcon = <FiClock size={18} />; // Koristimo FiClock
+    if (isReadyForPickup) { 
+        statusMessage = "Order is Ready for Pickup!";
+        statusIcon = <FiCheckCircle size={18} />; // Koristimo FiCheckCircle
+    } else if (isPickedUp) { 
+        statusMessage = "On your way to customer!";
+        statusIcon = <FiTruck size={18} />;
+    }
 
+    // State za praćenje hover stanja
+    const [isHovered, setIsHovered] = useState(false);
+
+    // Stilovi iz OfferCard
+    const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' };
+    const iconStyle = { color: '#8A643B', flexShrink: 0 };
+
+    // Dinamički stil za karticu sa hover efektom
+    const cardStyle = {
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        border: '1px solid #EAEAEA',
+        maxWidth: cardMaxWidth,
+        margin: '0 auto',
+        boxShadow: isHovered ? '0 8px 25px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.08)',
+        transition: 'box-shadow 0.3s ease-in-out',
+    };
+    
     return (
-        <div style={{
-            backgroundColor: 'white', 
-            padding: '1.5rem',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', 
-            border: '1px solid #EAEAEA',
-            maxWidth: cardMaxWidth,
-            margin: '0 auto'
-        }}>
-            <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Pickup: {delivery.restaurantName}</p>
-            <p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>From: {delivery.restaurantAddress}</p>
-            <p style={{ marginTop: '0.5rem' }}>Deliver to: {delivery.deliveryAddress}</p>
+        // `motion.div` je sada običan `div`
+        <div 
+            style={cardStyle}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div style={infoRowStyle}>
+                <FiMapPin size={20} style={iconStyle} />
+                <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Pickup From</p>
+                    <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: '0.1rem 0' }}>{delivery.restaurantName}</p>
+                    <p style={{ color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>{delivery.restaurantAddress}</p>
+                </div>
+            </div>
+
+            <div style={infoRowStyle}>
+                <FiChevronRight size={20} style={iconStyle} />
+                <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Deliver To</p>
+                    <p style={{ fontWeight: '600', fontSize: '1rem', margin: '0.1rem 0' }}>{delivery.deliveryAddress}</p>
+                </div>
+            </div>
             
-            {/* === VRAĆENA IF/ELSE LOGIKA ZA DISTANCU === */}
-            <div style={{ marginTop: '1rem', color: '#333', fontSize: '0.9rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
-                {isPickedUp ? (
-                    // Ako je preuzeo, prikaži distancu do kupca
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                        Distance to Customer: {delivery.distanceDriverToCustomer.toFixed(1)} km
-                    </p>
-                ) : (
-                    // Ako nije preuzeo, prikaži distancu do restorana
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                        Distance to Restaurant: {delivery.distanceDriverToRestaurant.toFixed(1)} km
-                    </p>
-                )}
+            {/* === IZMENJENI DEO ZA DISTANCU SA IKONICOM === */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <FiNavigation size={20} style={{ color: '#6B7280', flexShrink: 0 }} />
+                    <div style={{ color: '#333', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                        {isPickedUp ? (
+                            <p style={{ margin: 0 }}>
+                                Distance to Customer: {delivery.distanceDriverToCustomer.toFixed(1)} km
+                            </p>
+                        ) : (
+                            <p style={{ margin: 0 }}>
+                                Distance to Restaurant: {delivery.distanceDriverToRestaurant.toFixed(1)} km
+                            </p>
+                        )}
+                    </div>
+                 </div>
             </div>
             
             {/* Donji dio sa statusom i gumbom */}
             {isReadyForPickup ? (
                 <>
-                           <p style={{ margin: '1rem 0', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>{statusMessage}</p>
-                        {/* === 2. OMOTAJTE DUGME SA <Link> === */}
-                        <Link to={`/driver/orders/${delivery.id}`} style={{ textDecoration: 'none' }}>
-                            <button style={{
-                                width: '100%', padding: '0.8rem', borderRadius: '8px',
-                                border: 'none', color: 'white', backgroundColor: '#1F2937',
-                                cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem'
-                            }}>
-                                View on Map & Start
-                            </button>
-                        </Link>
+                    <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', margin: '1rem 0', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>
+                        {statusIcon} {statusMessage}
+                    </p>
+                    <Link to={`/driver/orders/${delivery.id}`} style={{ textDecoration: 'none' }}>
+                        <button style={{
+                            width: '100%', padding: '0.8rem', borderRadius: '8px',
+                            border: 'none', color: 'white', backgroundColor: '#1F2937',
+                            cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem'
+                        }}>
+                            View on Map & Start
+                        </button>
+                    </Link>
                 </>
             ) : (
-                <div style={{ marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', backgroundColor: '#F3EAD9', color: '#8A643B', textAlign: 'center', fontWeight: '600' }}>
-                    {statusMessage}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', backgroundColor: '#F3EAD9', color: '#8A643B', textAlign: 'center', fontWeight: '600' }}>
+                    {statusIcon} {statusMessage}
                 </div>
             )}
         </div>
     );
 };
-/**
- * Komponenta za elegantan prikaz praznog stanja.
- */
 const EmptyState = ({ message, details }) => (
     <div style={{
         border: '2px dashed #D1D5DB', 
