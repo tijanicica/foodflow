@@ -14,7 +14,7 @@ import { MapPin, ArrowRight, Clock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // ...
 const cardMaxWidth = '450px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
-import { FiArrowLeft,FiChevronRight ,FiNavigation , FiArrowRight, FiTruck, FiCheckCircle, FiXCircle, FiClock, FiMapPin } from 'react-icons/fi';
+import {FiGift,FiList , FiArrowLeft,FiChevronRight ,FiNavigation , FiArrowRight, FiTruck, FiCheckCircle, FiXCircle, FiClock, FiMapPin } from 'react-icons/fi';
 
 
 
@@ -472,11 +472,33 @@ export function DriverDashboard() {
             <Toaster />
             <NavbarDriver />
             <main style={{ padding: '2rem 5%' }}>
-                <div style={{ maxWidth: '1400px', margin: '0 auto', backgroundColor: '#FDFDF5', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)', border: '1px solid #F3EAD9' }}>
+                <div style={{ maxWidth: '2100px', margin: '0 0px', backgroundColor: '#fffff9ff', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)', border: '1px solid #F3EAD9' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '2.5rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                             <section>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid #F3EAD9', paddingBottom: '0.75rem' }}>New Order Opportunities</h2>
+                                <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    
+    // Isti stil kao za drugi naslov
+    paddingBottom: '1rem',
+    borderBottom: '2px solid #F3EAD9',
+}}>
+    <div style={{ color: '#8A643B' }}>
+        {/* Koristimo drugu ikonicu da vizuelno razlikujemo sekcije */}
+        <FiGift size={28} /> {/* Ikonica za "poklon" ili novu priliku */}
+    </div>
+    <h2 style={{
+        fontSize: '1.5rem',
+        fontWeight: '700',
+        margin: 0,
+        color: '#1F2937'
+    }}>
+        New Order Opportunities
+    </h2>
+</div>
                                 {loading ? <p>Loading...</p> : error ? <p style={{ color: 'red' }}>{error}</p> :
                                     <OfferCarousel
                                         offers={dashboardData.newOffers}
@@ -486,13 +508,35 @@ export function DriverDashboard() {
                                 }
                             </section>
                             <section>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid #F3EAD9', paddingBottom: '0.75rem' }}>My Assigned Deliveries</h2>
+                               
+<div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    
+    // === KLJUČNE IZMENE SU OVDE ===
+    paddingBottom: '1rem', // Ostavljamo padding samo na dnu za razmak
+    borderBottom: '2px solid #F3EAD9', // Deblja donja linija u boji pozadine
+}}>
+    <div style={{ color: '#8A643B' }}>
+        <FiList size={28} /> {/* Ikonica */}
+    </div>
+    <h2 style={{
+        fontSize: '1.5rem',
+        fontWeight: '700', // Jači font (bold)
+        margin: 0,
+        color: '#1F2937' // Malo tamnija boja za bolji kontrast
+    }}>
+        My Assigned Deliveries
+    </h2>
+</div>
                                 {loading ? <p>Loading...</p> :
                                     <AssignedDeliveryCarousel deliveries={dashboardData.assignedDeliveries} />
                                 }
                             </section>
                         </div>
-                        <div style={{ borderRadius: '16px', minHeight: '600px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #F3EAD9' }}>
+                        <div style={{ borderRadius: '16px', minHeight: '700px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #e4b152ff' }}>
                             {loading ? (
                                 <div style={{ backgroundColor: '#F3EAD9', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <p style={{ color: '#6B7280' }}>Loading Map...</p>
