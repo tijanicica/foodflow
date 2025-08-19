@@ -7,6 +7,7 @@ import { NavbarDriver } from '../components/NavbarDriver';
 import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { DriverFooter } from '@/components/DriverFooter';
+import { RejectOfferModal } from '../components/modals/RejectOfferModal'; 
 // FAJL: src/pages/DriverDashboard.jsx
 
 import { MapPin, ArrowRight, Clock, CheckCircle } from 'lucide-react'; 
@@ -378,11 +379,9 @@ export function DriverDashboard() {
     const [loading, setLoading] = useState(true);
     const [vehicleType, setVehicleType] = useState(null); 
     const [error, setError] = useState('');
-    // Ne vidim da koristiš `isRejectModalOpen`, pa sam ga zakomentarisao, ali ga ostavljam ako ti treba za neku drugu logiku.
-    // const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-
-    // --- FUNKCIJE ZA DOBAVLJANJE PODATAKA ---
-    // 1. Funkcija koja dobavlja SAMO podatke koji se često menjaju (porudžbine, lokacije)
+     // === 2. NOVI STATE ZA MODAL ===
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [offerToRejectId, setOfferToRejectId] = useState(null);
     const fetchDashboardUpdates = async () => {
         try {
             const data = await getDriverDashboard();
@@ -441,75 +440,34 @@ export function DriverDashboard() {
   }, []);
 
     // 4. handleReject sa svom tvojom logikom za modal
-    const handleReject = (offerId) => {
-        const performReject = async (reason) => {
-            try {
-                toast.loading('Rejecting offer...', { id: 'rejecting-toast' });
-                await rejectOffer(offerId, reason);
-                toast.dismiss('rejecting-toast');
-                toast.success('Offer rejected successfully.');
-                fetchDashboardUpdates();
-            } catch (err) {
-                toast.dismiss('rejecting-toast');
-                toast.error(err.response?.data?.message || 'Failed to reject offer.');
-            }
-            // `finally` blok sa `setIsRejectModalOpen(false)` nije potreban jer se modal zatvara preko `toast.dismiss(t.id)`
-        };
-        
-        toast((t) => {
-            const predefinedReasonStyle = {
-                padding: '0.5rem 1rem', borderRadius: '16px', border: '1px solid #D1D5DB',
-                backgroundColor: '#F9FAFB', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s ease',
-            };
+     const handleRejectClick = (offerId) => {
+        setOfferToRejectId(offerId);
+        setIsRejectModalOpen(true);
+    };
 
-            return (
-                 <div style={{ fontFamily: 'sans-serif', width: '300px', padding: '1.5rem', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #EAEAEA' }}>
-                    <h4 style={{ margin: '0 0 1.5rem 0', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                        Reason for Rejection
-                    </h4>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#6B7280' }}>
-                        Select a common reason or write your own:
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                        {['Too far', 'Too busy', 'Vehicle issue'].map(reason => (
-                            <button key={reason} style={predefinedReasonStyle}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3F4F6'}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
-                                onClick={() => {
-                                    performReject(reason);
-                                    toast.dismiss(t.id);
-                                }}>
-                                {reason}
-                            </button>
-                        ))}
-                    </div>
-                    <textarea id={`rejection-reason-${t.id}`} placeholder="Or write a custom reason here..."
-                        style={{ width: '100%', minHeight: '80px', border: '1px solid #ccc', borderRadius: '8px', padding: '0.75rem', resize: 'vertical', boxSizing: 'border-box' }}
-                    />
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                        <button onClick={() => toast.dismiss(t.id)}
-                            style={{ padding: '0.6rem 1.2rem', border: '1px solid #ccc', borderRadius: '8px', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}>
-                            Cancel
-                        </button>
-                        <button onClick={() => {
-                                const reasonInput = document.getElementById(`rejection-reason-${t.id}`);
-                                performReject(reasonInput.value);
-                                toast.dismiss(t.id);
-                            }}
-                            style={{ padding: '0.6rem 1.2rem', border: 'none', borderRadius: '8px', background: '#8A643B', color: 'white', cursor: 'pointer', fontWeight: '600' }}>
-                            Submit
-                        </button>
-                    </div>
-                
-                </div>
-            );
-        }, { duration: Infinity, position: "top-center" });
-    }; // <-- **OVO JE KRA_J `handleReject` FUNKCIJE**
-    
+    // Nova funkcija koja se poziva iz modala kada se potvrdi odbijanje
+    const performReject = async (reason) => {
+        if (!reason || !offerToRejectId) return;
+
+        try {
+            toast.loading('Rejecting offer...', { id: 'rejecting-toast' });
+            await rejectOffer(offerToRejectId, reason);
+            toast.dismiss('rejecting-toast');
+            toast.success('Offer rejected successfully.');
+            fetchDashboardUpdates();
+        } catch (err) {
+            toast.dismiss('rejecting-toast');
+            toast.error(err.response?.data?.message || 'Failed to reject offer.');
+        } finally {
+            // Zatvori modal i resetuj state
+            setIsRejectModalOpen(false);
+            setOfferToRejectId(null);
+        }
+    };
 
     // --- GLAVNI RETURN BLOK KOMPONENTE ---
     // Sve definicije stanja i funkcija moraju biti IZNAD ove `return` naredbe.
-    return (
+     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <Toaster />
             <NavbarDriver />
@@ -523,7 +481,7 @@ export function DriverDashboard() {
                                     <OfferCarousel
                                         offers={dashboardData.newOffers}
                                         onAccept={handleAccept}
-                                        onReject={handleReject}
+                                        onReject={handleRejectClick} // <-- Važna izmena: poziva se handleRejectClick
                                     />
                                 }
                             </section>
@@ -552,6 +510,17 @@ export function DriverDashboard() {
                 </div>
             </main>
             <DriverFooter /> 
+
+            {/* === DODAT JE POZIV ZA MODAL OVDE === */}
+            {/* Modal je "nevidljiv" dok se `isRejectModalOpen` ne postavi na `true` */}
+            <RejectOfferModal 
+                isOpen={isRejectModalOpen}
+                onClose={() => {
+                    setIsRejectModalOpen(false);
+                    setOfferToRejectId(null); // Resetuj ID kada se modal zatvori
+                }}
+                onConfirm={performReject}
+            />
         </div>
     );
-} 
+}
