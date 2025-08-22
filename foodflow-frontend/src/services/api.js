@@ -714,3 +714,40 @@ export const getManagerLiveTracking = async () => {
     const response = await apiClient.get('/manager/live-tracking');
     return response.data;
 };
+
+export const getSupportAnalytics = async () => {
+    
+    const response = await apiClient.get('/support-analytics'); 
+    return response.data;
+};
+
+export const getOperatorAnalytics = async () => {
+    const response = await apiClient.get('/operator/analytics'); 
+    return response.data;
+};
+
+/* getOperatorProfile,
+  updateOperatorPhone,
+  changeOperatorPassword,*/
+
+export const getOperatorProfile = async () => {
+    const response = await apiClient.get('operator/profile');
+    return response.data;
+}
+
+/**
+ * Ažurira broj telefona operatora.
+ * @param {string} phone - Novi broj telefona.
+ */
+export const updateOperatorPhone = async (phone) => {
+    const response = await apiClient.patch('/operator/profile/phone', { phone });
+    return response.data;
+};
+
+/**
+ * Menja lozinku support admina.
+ * @param {object} passwordData - Objekat sa { oldPassword, newPassword }.
+ */
+export const changeOperatorPassword = async (passwordData) => {
+    await apiClient.post('/operator/profile/change-password', passwordData);
+};
