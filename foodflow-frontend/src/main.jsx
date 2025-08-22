@@ -40,9 +40,9 @@ import { LoginPage } from "./pages/LoginPage.jsx";
 import { ManagerDashboard } from "./pages/ManagerDashboard.jsx";
 import { ManagerDeliveriesPage } from "./pages/ManagerDeliveriesPage.jsx";
 import { ManagerEditMenuPage } from "./pages/ManagerEditMenuPage.jsx";
-import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
-import { DriverSupport } from './pages/DriverSupport';
-import { DriverEarnings } from './pages/DriverEarnings';
+import { ManagerLiveTrackingPage } from "./pages/ManagerLiveTrackingPage";
+import { DriverSupport } from "./pages/DriverSupport";
+import { DriverEarnings } from "./pages/DriverEarnings";
 import { ManagerMenuPage } from "./pages/ManagerMenuPage.jsx";
 import { ManagerOrdersPage } from "./pages/ManagerOrdersPage.jsx";
 import { ManagerProfilePage } from "./pages/ManagerProfilePage.jsx";
@@ -144,15 +144,12 @@ const router = createBrowserRouter([
       { path: "/driver/profile", element: <DriverProfilePage /> },
       { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
       { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
-    ],
-
       { path: "/driver/profile", element: <DriverProfilePage /> }, // <-- PREMEŠTENO UNUTRA
       { path: "/driver/orders/:orderId", element: <ViewOrderPage /> }, // <-- PREMEŠTENO UNUTRA
-      { path: "/delivery/:orderId",  element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
-        { path: "/driver/support", element: <DriverSupport /> },
-         { path: "/driver/earnings", element: <DriverEarnings /> },
-    ]
-
+      { path: "/delivery/:orderId", element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/driver/support", element: <DriverSupport /> },
+      { path: "/driver/earnings", element: <DriverEarnings /> },
+    ],
   },
   // Rute za menadžere (Manager) unutar ManagerLayout-a
   {
@@ -190,8 +187,7 @@ const router = createBrowserRouter([
 
   // Support operator
   { path: "/operator/analytics", element: <OperatorAnalyticsPage /> },
-  { path: "operator/profile", element: <OperatorProfilePage />},
-
+  { path: "operator/profile", element: <OperatorProfilePage /> },
 
   // Rute koje nemaju poseban layout (Login, Register)
   { path: "/", element: <LoginPage /> },
