@@ -13,21 +13,21 @@ import "leaflet/dist/leaflet.css";
 
 // Context Providers
 import { CartProvider } from "./context/CartContext";
-import { NotificationProvider } from './context/NotificationContext';
+import { NotificationProvider } from "./context/NotificationContext";
 
 // Layouts
-import { AppLayout } from './components/AppLayout';
-import { DriverLayout } from './layouts/DriverLayout.jsx';
-import { ManagerLayout } from './layouts/ManagerLayout.jsx';
-import { CustomerLayout } from './layouts/CustomerLayout.jsx';
+import { AppLayout } from "./components/AppLayout";
+import { DriverLayout } from "./layouts/DriverLayout.jsx";
+import { ManagerLayout } from "./layouts/ManagerLayout.jsx";
+import { CustomerLayout } from "./layouts/CustomerLayout.jsx";
 
 // Components
-import { MiniCart } from './components/MiniCart';
+import { MiniCart } from "./components/MiniCart";
 
 // Pages
 import { AboutUsPage } from "./pages/AboutUsPage.jsx";
-import { AdminDriverPerformancePage } from './pages/AdminDriverPerformancePage.jsx';
-import { AdminLiveTrackingPage } from './pages/AdminLiveTrackingPage.jsx';
+import { AdminDriverPerformancePage } from "./pages/AdminDriverPerformancePage.jsx";
+import { AdminLiveTrackingPage } from "./pages/AdminLiveTrackingPage.jsx";
 import { AdminManagerManagementPage } from "./pages/AdminManagerManagementPage.jsx";
 import { AnalyticsPage } from "./pages/AnalyticsPage.jsx";
 import { CheckoutPage } from "./pages/CheckoutPage.jsx";
@@ -40,7 +40,7 @@ import { LoginPage } from "./pages/LoginPage.jsx";
 import { ManagerDashboard } from "./pages/ManagerDashboard.jsx";
 import { ManagerDeliveriesPage } from "./pages/ManagerDeliveriesPage.jsx";
 import { ManagerEditMenuPage } from "./pages/ManagerEditMenuPage.jsx";
-import { ManagerLiveTrackingPage } from './pages/ManagerLiveTrackingPage';
+import { ManagerLiveTrackingPage } from "./pages/ManagerLiveTrackingPage";
 import { ManagerMenuPage } from "./pages/ManagerMenuPage.jsx";
 import { ManagerOrdersPage } from "./pages/ManagerOrdersPage.jsx";
 import { ManagerProfilePage } from "./pages/ManagerProfilePage.jsx";
@@ -58,13 +58,14 @@ import { AgentPerformancePage } from "./pages/AgentPerformancePage.jsx";
 import { TermsOfServicePage } from "./pages/TermsOfServicePage.jsx";
 import { TrackOrderPage } from "./pages/TrackOrderPage.jsx";
 import { ViewOrderPage } from "./pages/ViewOrderPage";
-
+import { SupportAnalyticsPage } from "./pages/SupportAnalyticsPage";
+import { OperatorAnalyticsPage } from "./pages/OperatorAnalyticsPage.jsx";
+import { OperatorProfilePage } from "./pages/OperatorProfilePage";
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
   // Rute za kupce (Customer) unutar CustomerLayout-a i AppLayout-a
   {
-
     // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
     element: <AppLayout />,
 
@@ -110,7 +111,7 @@ const router = createBrowserRouter([
   { path: "/support/agent-performance", element: <AgentPerformancePage /> },
 
   // All
-   {
+  {
     element: <CustomerLayout />,
     children: [
       {
@@ -129,9 +130,9 @@ const router = createBrowserRouter([
           { path: "/contact", element: <ContactPage /> },
           { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
           { path: "/terms-of-service", element: <TermsOfServicePage /> },
-        ]
-      }
-    ]
+        ],
+      },
+    ],
   },
   // Rute za vozače (Driver) unutar DriverLayout-a
   {
@@ -141,7 +142,7 @@ const router = createBrowserRouter([
       { path: "/driver/profile", element: <DriverProfilePage /> },
       { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
       { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
-    ]
+    ],
   },
   // Rute za menadžere (Manager) unutar ManagerLayout-a
   {
@@ -150,22 +151,36 @@ const router = createBrowserRouter([
       { path: "/manager/dashboard", element: <ManagerDashboard /> },
       { path: "/manager/profile", element: <ManagerProfilePage /> },
       { path: "/manager/menu", element: <ManagerMenuPage /> },
-      { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
+      {
+        path: "/manager/menu/:menuVersionId",
+        element: <ManagerEditMenuPage />,
+      },
       { path: "/manager/orders", element: <ManagerOrdersPage /> },
       { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
-      { path: "/manager/deliveries/track/:orderId", element: <ManagerTrackOrderPage /> },
+      {
+        path: "/manager/deliveries/track/:orderId",
+        element: <ManagerTrackOrderPage />,
+      },
       { path: "/manager/live-tracking", element: <ManagerLiveTrackingPage /> },
-    ]
+    ],
   },
   // Rute za administratora (Admin)
   { path: "/admin/dashboard", element: <AdminManagerManagementPage /> },
   { path: "/admin/managers", element: <AdminManagerManagementPage /> },
-  { path: "/admin/driver-performance", element: <AdminDriverPerformancePage /> },
+  {
+    path: "/admin/driver-performance",
+    element: <AdminDriverPerformancePage />,
+  },
   { path: "/admin/live-tracking", element: <AdminLiveTrackingPage /> },
 
   // Rute za podršku (Support Admin)
   { path: "/support/agent-management", element: <OperatorManagementPage /> },
   { path: "/support/profile", element: <SupportAdminProfilePage /> },
+  { path: "/support/analytics", element: <SupportAnalyticsPage /> },
+
+  // Support operator
+  { path: "/operator/analytics", element: <OperatorAnalyticsPage /> },
+  { path: "operator/profile", element: <OperatorProfilePage />},
 
   // Rute koje nemaju poseban layout (Login, Register)
   { path: "/", element: <LoginPage /> },
@@ -173,7 +188,7 @@ const router = createBrowserRouter([
   { path: "/register", element: <RegisterPage /> },
 ]);
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {/* Context Provideri obmotavaju celu aplikaciju */}
     <NotificationProvider>

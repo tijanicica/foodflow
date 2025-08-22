@@ -1,4 +1,4 @@
-// src/components/SupportAdminNavbar.jsx
+// src/components/OperatorNavbar.jsx
 
 import React, { useState, useEffect } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
@@ -13,16 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User as UserIcon } from "lucide-react";
 
-const adminNavLinks = [
-  { href: "/support/analytics", label: "Analytics" },
-  { href: "/support/agent-performance", label: "Agent Performance" },
-  { href: "/support/agent-management", label: "Agent Management" },
+const operatorNavLinks = [
+  { href: "/operator/dashboard", label: "Dashboard" },
+  { href: "/operator/analytics", label: "Analytics" },
 ];
 
 const NavItem = ({ href, label }) => {
   const location = useLocation();
   const isActive = location.pathname === href;
-
   return (
     <NavLink
       to={href}
@@ -37,22 +35,19 @@ const NavItem = ({ href, label }) => {
   );
 };
 
-export const SupportAdminNavbar = () => {
+export const OperatorNavbar = () => {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState("Account"); // Inicijalno stanje
+  const [userName, setUserName] = useState("Account");
 
-  // EFEKAT ZA UČITAVANJE IMENA KORISNIKA IZ TOKENA (PREUZETO IZ Navbar.jsx)
   useEffect(() => {
     try {
       const token = localStorage.getItem("jwtToken");
       if (token) {
         const decodedToken = jwtDecode(token);
-        // Proveravamo polja 'name' ili 'fullName' iz tokena
         setUserName(decodedToken.name || decodedToken.fullName || "Account");
       }
     } catch (error) {
       console.error("Invalid token:", error);
-      setUserName("Account");
     }
   }, []);
 
@@ -65,27 +60,22 @@ export const SupportAdminNavbar = () => {
     <header className="flex items-center justify-between h-16 px-4 md:px-6 bg-white/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm border-b">
       <div className="flex items-center gap-3">
         <Link
-          to="/support/agent-management"
+          to="/operator/dashboard"
           className="text-3xl font-bold text-brand-primary italic"
         >
           foodFlow
         </Link>
         <span className="bg-brand-background text-brand-primary font-semibold text-xs px-2.5 py-1 rounded-full">
-          SUPPORT-ADMIN
+          SUPPORT-OPERATOR
         </span>
       </div>
-
       <div className="flex items-center gap-4">
-        {/* Glavni navigacioni linkovi za admina */}
         <nav className="hidden md:flex items-center gap-6">
-          {adminNavLinks.map((link) => (
+          {operatorNavLinks.map((link) => (
             <NavItem key={link.href} {...link} />
           ))}
         </nav>
-
-        {/* Separator i novi Dropdown Meni */}
         <div className="hidden md:block h-6 w-px bg-gray-200"></div>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -99,8 +89,7 @@ export const SupportAdminNavbar = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 mt-2">
-            {/* VAŽNA PROMENA: link vodi ka /support/profile */}
-            <DropdownMenuItem onClick={() => navigate("/support/profile")}>
+            <DropdownMenuItem onClick={() => navigate("/operator/profile")}>
               <UserIcon className="mr-2 h-4 w-4" /> My Profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />

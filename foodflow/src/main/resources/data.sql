@@ -803,14 +803,20 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 
 -- KATEGORIJE PROBLEMA ZA KORISNIČKU PODRŠKU
 INSERT INTO problem_category (id, name, parent_category_id) VALUES
-                                                                (1, 'Problem sa porudžbinom', NULL),
-                                                                (2, 'Problem sa dostavom', NULL),
-                                                                (3, 'Tehnički problem', NULL),
-                                                                (4, 'Ostalo', NULL),
-                                                                (5, 'Nepotpuna porudžbina', 1),
-                                                                (6, 'Pogrešna porudžbina', 1),
-                                                                (7, 'Kašnjenje isporuke', 2),
-                                                                (8, 'Problem sa sajtom', 3);
+                                                                (1, 'Order problem', NULL),
+                                                                (2, 'Delivery problem', NULL),
+                                                                (3, 'Technical problem', NULL),
+                                                                (4, 'Other', NULL),
+                                                                (5, 'Incomplete order', 1),
+                                                                (6, 'Wrong order', 1),
+                                                                (7, 'Damaged food/packaging', 1),
+                                                                (8, 'Cold/spoiled food', 1),
+                                                                (9, 'Undeclared allergens', 1),
+                                                                (10, 'Undeclared diet type', 1),
+                                                                (11, 'Delivery delay', 2),
+                                                                (12, 'Order not delivered', 2),
+                                                                (13, 'Problem with delivery person', 2),
+                                                                (14, 'Website problem', 3);
 
 
 
@@ -842,62 +848,64 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
 -- KORISNIČKA PODRŠKA (SUPPORT TICKETS) I OCENE OPERATERA
 -- ====================================================================
 
--- TIKET #1: Dodeljen operateru Ana Anić (ID=3), ocenjen sa 5
--- Povezan sa porudžbinom #3 (koja je kasnila)
+-- TIKETI VEZANI ZA PROBLEM SA PORUDŽBINOM (kategorije 5, 6, 7, 8)
+-- #1 (Ana, ID=3) - Very fast resolution (12 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (1, 'CLOSED', 'Moja porudžbina je kasnila više od 15 minuta. Želim da znam zašto.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '23 hour', 3, 3, 7);
-
--- Ocena za tiket #1
+    (1, 'CLOSED', 'U porudžbini je nedostajao prilog.', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day' + INTERVAL '12 minute', 3, 30, 5);
 INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (1, 5, 'Ana je bila izuzetno ljubazna i brzo mi je objasnila situaciju. Hvala!', NOW() - INTERVAL '22 hour');
+    (1, 5, 'Ana je odmah reagovala i organizovala slanje priloga. Svaka čast!', NOW() - INTERVAL '3 day' + INTERVAL '1 hour');
 
--- TIKET #2: Dodeljen operateru Lana Lanić (ID=555), ocenjen sa 4
--- Povezan sa porudžbinom #1 (koja je bila na vreme)
+-- #2 (Lana, ID=555) - Fast resolution (25 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (2, 'CLOSED', 'Da li mogu da dobijem račun za porudžbinu?', NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day' + INTERVAL '1 hour', 555, 1, 4);
-
--- Ocena za tiket #2
+    (2, 'CLOSED', 'Stigla mi je pogrešna pica.', NOW() - INTERVAL '5 day', NOW() - INTERVAL '5 day' + INTERVAL '25 minute', 555, 80, 6);
 INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (2, 4, 'Dobili smo odgovor, ali je trebalo malo duže vremena.', NOW() - INTERVAL '2 day' + INTERVAL '2 hour');
+    (2, 4, 'Problem je rešen, hvala.', NOW() - INTERVAL '5 day' + INTERVAL '1 hour');
 
--- TIKET #3: Dodeljen operateru Ana Anić (ID=3), ocenjen sa 4
--- Povezan sa porudžbinom #30 (koja je imala kupon)
+-- #3 (Ena, ID=551) - Slower resolution (1 hour 10 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (3, 'CLOSED', 'U porudžbini je nedostajao prilog koji sam naručio.', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day' + INTERVAL '30 minute', 3, 30, 5);
-
--- Ocena za tiket #3
+    (3, 'CLOSED', 'Pakovanje je bilo oštećeno i hrana se prosula.', NOW() - INTERVAL '10 day', NOW() - INTERVAL '10 day' + INTERVAL '70 minute', 551, 81, 7);
 INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (3, 4, 'Problem je rešen, ali bih volela da se nije ni desio.', NOW() - INTERVAL '3 day' + INTERVAL '1 hour');
+    (3, 3, 'Rešeno je, ali je moglo brže.', NOW() - INTERVAL '10 day' + INTERVAL '2 hours');
 
--- TIKET #4: Dodeljen operateru Ena Enić (ID=551), ocenjen sa 3
--- Povezan sa porudžbinom #82 (iz aprila)
+-- TIKETI VEZANI ZA PROBLEM SA DOSTAVOM (kategorije 11, 13)
+-- #4 (Ana, ID=3) - Average resolution (35 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (4, 'CLOSED', 'Hrana je stigla hladna.', '2025-04-18 20:30:00', '2025-04-18 21:00:00', 551, 82, 1);
-
--- Ocena za tiket #4
+    (4, 'CLOSED', 'Porudžbina kasni već 20 minuta.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '35 minute', 3, 3, 11);
 INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (4, 3, 'Operater nije delovao previše zainteresovano da reši problem.', '2025-04-18 21:15:00');
+    (4, 4, 'Dala mi je informaciju gde se vozač nalazi.', NOW() - INTERVAL '1 day' + INTERVAL '1 hour');
 
--- TIKET #5: Dodeljen operateru Mia Miić (ID=552), još uvek OTVOREN (nema ocenu)
--- Povezan sa porudžbinom #94 (iz jula)
+-- #5 (Zile, ID=557) - Very fast resolution (8 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (5, 'OPEN', 'Vozač je bio neljubazan.', '2025-07-30 19:20:00', NULL, 552, 94, 2);
-
--- TIKET #6: Dodeljen operateru Lana Lanić (ID=555), ocenjen sa 5
--- Povezan sa porudžbinom #90 (iz jula)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (6, 'CLOSED', 'Sve je bilo super, samo želim da pohvalim ceo tim!', '2025-07-02 20:00:00', '2025-07-02 20:10:00', 555, 90, 4);
-
--- Ocena za tiket #6
+    (5, 'CLOSED', 'Vozač je bio izuzetno neljubazan.', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day' + INTERVAL '8 minute', 557, 94, 13);
 INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (6, 5, 'Brz i efikasan odgovor. Svaka čast Lani!', '2025-07-02 20:15:00');
+    (5, 5, 'Zile se izvinio u ime kompanije i ponudio popust, profesionalno.', NOW() - INTERVAL '4 day' + INTERVAL '30 minute');
 
--- Još jedna ocena za Anu Anić (ID=3) da bismo imali više podataka za prosek
+-- TIKETI VEZANI ZA TEHNIČKE PROBLEME (kategorija 14)
+-- #6 (Ana, ID=3) - Fast resolution (18 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (7, 'CLOSED', 'Greška na sajtu prilikom plaćanja.', '2025-06-10 20:45:00', '2025-06-10 21:30:00', 3, 88, 8);
+    (6, 'CLOSED', 'Ne mogu da platim karticom, sajt izbacuje grešku.', '2025-06-10 20:45:00', '2025-06-10 21:03:00', 3, 88, 14);
 INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (7, 5, 'Ana je strpljivo prošla kroz korake sa mnom i rešili smo problem. Odlična podrška!', '2025-06-10 21:40:00');
+    (6, 5, 'Rešeno u roku od 20 minuta!', '2025-06-10 21:10:00');
 
+-- #7 (Lana, ID=555) - Slower resolution (1 hour 30 minutes)
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (7, 'CLOSED', 'Ne učitava mi se stranica za praćenje porudžbine.', NOW() - INTERVAL '6 day', NOW() - INTERVAL '6 day' + INTERVAL '90 minute', 555, 90, 14);
+INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
+    (7, 3, 'Odgovorili su posle sat i po.', NOW() - INTERVAL '5 day');
+
+
+-- TIKETI U KATEGORIJI "OSTALO" (kategorija 4)
+-- #8 (Marko, ID=556) - Very fast resolution (4 minutes)
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (8, 'CLOSED', 'Želim da pohvalim vozača Petra, bio je izuzetno brz i ljubazan!', NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day' + INTERVAL '4 minute', 556, 1, 4);
+INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
+    (8, 5, 'Hvala Marku što je prosledio pohvalu.', NOW() - INTERVAL '2 day' + INTERVAL '10 minute');
+
+
+-- OTVORENI TIKETI (NE ULAZE U STATISTIKU)
+-- #9 (Mia, ID=552) - Još uvek otvoren
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (9, 'OPEN', 'Ne mogu da se ulogujem na nalog.', NOW() - INTERVAL '1 hour', NULL, 552, 92, 14);
 
 ALTER SEQUENCE customer_id_seq RESTART WITH 200;
 ALTER SEQUENCE driver_id_seq RESTART WITH 200;

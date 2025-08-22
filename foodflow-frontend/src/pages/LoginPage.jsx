@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +24,7 @@ export function LoginPage() {
       const response = await loginUser(email, password);
       const { token } = response;
 
-      localStorage.setItem('jwtToken', token);
+      localStorage.setItem("jwtToken", token);
 
       const decodedToken = jwtDecode(token);
 
@@ -36,39 +36,44 @@ export function LoginPage() {
         // Koristi 'sub' ako postoji, inače koristi 'email'.
         sub: decodedToken.sub || decodedToken.email,
         // Koristi 'role' ako postoji, inače 'authority' ili 'roles'.
-        role: decodedToken.role || decodedToken.authority || (Array.isArray(decodedToken.roles) ? decodedToken.roles[0] : null)
+        role:
+          decodedToken.role ||
+          decodedToken.authority ||
+          (Array.isArray(decodedToken.roles) ? decodedToken.roles[0] : null),
       };
 
       // Proveravamo da li smo uspeli da izvučemo ključne podatke
       if (!userToStore.role || !userToStore.sub) {
-        throw new Error("User role or email could not be determined from the token.");
+        throw new Error(
+          "User role or email could not be determined from the token."
+        );
       }
 
       // Čuvamo naš novi, čisti objekat.
-      localStorage.setItem('user', JSON.stringify(userToStore));
-      
+      localStorage.setItem("user", JSON.stringify(userToStore));
+
       const userRole = userToStore.role; // Koristimo rolu iz našeg novog objekta
 
       // Preusmeravanje na osnovu uloge
-      let destination = '/login';
+      let destination = "/login";
       switch (userRole) {
-        case 'ROLE_DRIVER':
-          destination = '/driver';
+        case "ROLE_DRIVER":
+          destination = "/driver";
           break;
-        case 'ROLE_CUSTOMER':
-          destination = '/home';
+        case "ROLE_CUSTOMER":
+          destination = "/home";
           break;
-        case 'ROLE_OPERATOR':
-          destination = '/operator/dashboard';
+        case "ROLE_OPERATOR":
+          destination = "/operator/analytics";
           break;
-        case 'ROLE_MANAGER':
-          destination = '/manager/dashboard';
+        case "ROLE_MANAGER":
+          destination = "/manager/dashboard";
           break;
-        case 'ROLE_SUPPORT_ADMINISTRATOR':
-          destination = '/support/agent-management'; // Primer rute
+        case "ROLE_SUPPORT_ADMINISTRATOR":
+          destination = "/support/agent-management"; // Primer rute
           break;
-        case 'ROLE_ADMINISTRATOR':
-          destination = '/admin/managers';
+        case "ROLE_ADMINISTRATOR":
+          destination = "/admin/managers";
           break;
         default:
           console.warn(`Unknown role: ${userRole}`);
@@ -82,10 +87,12 @@ export function LoginPage() {
       setTimeout(() => {
         window.dispatchEvent(new Event("userLoggedIn"));
       }, 50);
-
     } catch (err) {
       // Poboljšano rukovanje greškama
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed. Please check your credentials.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
