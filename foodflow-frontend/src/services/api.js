@@ -751,3 +751,21 @@ export const updateOperatorPhone = async (phone) => {
 export const changeOperatorPassword = async (passwordData) => {
     await apiClient.post('/operator/profile/change-password', passwordData);
 };
+
+
+/**
+ * Dohvata sve kategorije problema za prikaz u modalu.
+ */
+export const getProblemCategories = async () => {
+    const response = await apiClient.get('/problem-categories');
+    return response.data;
+};
+
+/**
+ * Kreira novi support tiket.
+ * @param {object} ticketData - Podaci za tiket { orderId, preselectedCategoryId, description }.
+ */
+export const createSupportTicket = async (ticketData) => {
+    const response = await apiClient.post('/tickets', ticketData);
+    return response.data;
+};

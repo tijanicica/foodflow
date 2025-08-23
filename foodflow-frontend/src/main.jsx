@@ -63,6 +63,7 @@ import { ViewOrderPage } from "./pages/ViewOrderPage";
 import { SupportAnalyticsPage } from "./pages/SupportAnalyticsPage";
 import { OperatorAnalyticsPage } from "./pages/OperatorAnalyticsPage.jsx";
 import { OperatorProfilePage } from "./pages/OperatorProfilePage";
+import { SupportChatPage } from "./pages/SupportChatPage.jsx";
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
@@ -86,6 +87,7 @@ const router = createBrowserRouter([
       { path: "/contact", element: <ContactPage /> },
       { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
       { path: "/terms-of-service", element: <TermsOfServicePage /> },
+      { path: "/support/chat/:ticketId", element: <SupportChatPage /> },
     ],
   },
   // Driver

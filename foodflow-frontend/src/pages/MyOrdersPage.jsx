@@ -22,10 +22,7 @@ const getStatusBadgeClasses = (status) => {
     return 'bg-yellow-100 text-yellow-700';
 };
 
-//================================================================================
-// REDIZAJNIRANA KARTICA (sa potamnjenom slikom)
-//================================================================================
-// FINALNA, AŽURIRANA ORDER CARD KOMPONENTA
+
 
 const OrderCard = ({ order, onUpdate, onOpenCancelDialog, onOpenRatingModal }) => {
     const isRepeatingTemplate = !!order.repeatType;
