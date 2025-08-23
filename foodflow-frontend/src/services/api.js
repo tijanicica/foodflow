@@ -784,3 +784,7 @@ export const markTicketAsResolved = async (ticketId) => {
     // Pretpostavljamo endpoint
     await apiClient.post(`/operator/tickets/${ticketId}/resolve`);
 };
+
+export const rateSupportTicket = async (ticketId, ratingData) => {
+    await apiClient.post(`/tickets/${ticketId}/rate`, ratingData)
+}

@@ -1,5 +1,6 @@
 package com.iis.foodflow.controller;
 
+import com.iis.foodflow.dto.request.OperatorRatingRequestDTO;
 import com.iis.foodflow.dto.response.ProblemCategoryDTO;
 import com.iis.foodflow.dto.request.CreateTicketRequestDTO;
 import com.iis.foodflow.dto.response.SupportTicketResponseDTO;
@@ -46,6 +47,18 @@ public class SupportTicketController {
         UserDetails principal = (UserDetails) authentication.getPrincipal();
         TicketDetailsDTO details = ticketService.getTicketDetails(ticketId, principal);
         return ResponseEntity.ok(details);
+    }
+
+    @PostMapping("/tickets/{ticketId}/rate")
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    public ResponseEntity<Void> rateTicket(
+            @PathVariable Long ticketId,
+            @RequestBody OperatorRatingRequestDTO ratingDto,
+            Authentication authentication)
+    {
+        Customer customer = (Customer) authentication.getPrincipal();
+        ticketService.rateAndCloseTicket(ticketId, ratingDto.getRating(), ratingDto.getComment(), customer);
+        return ResponseEntity.ok().build();
     }
 
 

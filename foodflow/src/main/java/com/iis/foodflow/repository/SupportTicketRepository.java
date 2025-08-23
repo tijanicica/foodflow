@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SupportTicketRepository extends JpaRepository<SupportTicket, Long> {
 
@@ -46,4 +47,18 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
     List<CategoryTicketsDTO> countTicketsPerCategoryByOperator(@Param("operatorId") Long operatorId);
 
     List<SupportTicket> findByOperatorIdAndStatusIn(Long operatorId, List<TicketStatus> statuses);
+
+    @Query("SELECT t FROM SupportTicket t " +
+            "LEFT JOIN FETCH t.messages m " +
+            "LEFT JOIN FETCH t.order o " +
+            "LEFT JOIN FETCH o.customer c " +
+            "LEFT JOIN FETCH o.orderItems oi " +
+            "LEFT JOIN FETCH oi.menuItemVersion miv " +
+            "LEFT JOIN FETCH miv.menuItem mi " +
+            "LEFT JOIN FETCH miv.menuVersion mv " +
+            "LEFT JOIN FETCH mv.menu mn " +
+            "LEFT JOIN FETCH mn.restaurant r " +
+            "LEFT JOIN FETCH t.operator op " +
+            "WHERE t.id = :ticketId")
+    Optional<SupportTicket> findByIdWithAllDetails(@Param("ticketId") Long ticketId);
 }

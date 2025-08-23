@@ -2,12 +2,13 @@ package com.iis.foodflow.service;
 
 // u paketu com.iis.foodflow.service
 
-import com.iis.foodflow.dto.request.CreateTicketRequestDTO; // Koristimo vaš DTO
+import com.iis.foodflow.dto.request.CreateTicketRequestDTO;
 import com.iis.foodflow.dto.response.SupportTicketResponseDTO;
 import com.iis.foodflow.dto.response.TicketDetailsDTO;
 import com.iis.foodflow.dto.response.TicketSummaryDTO;
 import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.order.Order;
+import com.iis.foodflow.model.support.OperatorRating;
 import com.iis.foodflow.model.support.ProblemCategory;
 import com.iis.foodflow.model.support.SupportTicket;
 import com.iis.foodflow.model.user.Customer;
@@ -34,7 +35,8 @@ public class SupportTicketService {
     private final OperatorRepository operatorRepository;
     private final OrderRepository orderRepository;
     private final ProblemCategoryRepository categoryRepository;
-    private final NlpService nlpService; // Ubacujemo NlpService
+    private final NlpService nlpService;
+    private final ChatService chatService;
 
     @Transactional
     public SupportTicketResponseDTO createTicket(CreateTicketRequestDTO request, Customer customer) {
@@ -109,7 +111,7 @@ public class SupportTicketService {
 
     @Transactional(readOnly = true)
     public TicketDetailsDTO getTicketDetails(Long ticketId, UserDetails principal) {
-        SupportTicket ticket = ticketRepository.findById(ticketId)
+        SupportTicket ticket = ticketRepository.findByIdWithAllDetails(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
         if (principal instanceof Customer customer) {
@@ -141,6 +143,32 @@ public class SupportTicketService {
         ticket.setClosingTime(LocalDateTime.now());
         ticketRepository.save(ticket);
 
+        chatService.sendStatusUpdate(ticketId, TicketStatus.RESOLVED);
+
+    }
+
+    @Transactional
+    public void rateAndCloseTicket(Long ticketId, int rating, String comment, Customer customer) {
+        SupportTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        if (!ticket.getOrder().getCustomer().getId().equals(customer.getId())) {
+            throw new SecurityException("Cannot rate another user's ticket.");
+        }
+        if (ticket.getStatus() != TicketStatus.RESOLVED) {
+            throw new IllegalStateException("Can only rate a resolved ticket.");
+        }
+
+        OperatorRating operatorRating = new OperatorRating();
+        operatorRating.setSupportTicket(ticket);
+        operatorRating.setRating(rating);
+        operatorRating.setComment(comment);
+        operatorRating.setRatingDate(LocalDateTime.now());
+
+        ticket.setOperatorRating(operatorRating);
+        ticket.setStatus(TicketStatus.CLOSED);
+
+        ticketRepository.save(ticket);
     }
 
 
