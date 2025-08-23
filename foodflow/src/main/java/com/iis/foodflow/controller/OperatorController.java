@@ -4,10 +4,12 @@ import com.iis.foodflow.dto.request.ChangePasswordRequestDTO;
 import com.iis.foodflow.dto.request.UpdatePhoneRequestDTO;
 import com.iis.foodflow.dto.response.OperatorAnalyticsDTO;
 import com.iis.foodflow.dto.response.OperatorProfileDTO;
+import com.iis.foodflow.dto.response.TicketSummaryDTO;
 import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.OperatorRepository;
 import com.iis.foodflow.service.OperatorAnalyticsService;
+import com.iis.foodflow.service.SupportTicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,6 +30,7 @@ public class OperatorController {
     private final OperatorAnalyticsService analyticsService;
     private final OperatorRepository operatorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SupportTicketService supportTicketService;
 
     @GetMapping("/analytics")
     @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
@@ -97,4 +101,22 @@ public class OperatorController {
         dto.setPhone(operator.getPhone());
         return dto;
     }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<List<TicketSummaryDTO>> getDashboard(Authentication authentication) {
+        Operator operator = (Operator) authentication.getPrincipal();
+        List<TicketSummaryDTO> tickets = supportTicketService.getTicketsForOperatorDashboard(operator.getId());
+        return ResponseEntity.ok(tickets);
+    }
+
+
+    @PostMapping("/tickets/{ticketId}/resolve")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<Void> resolveTicket(@PathVariable Long ticketId, Authentication authentication) {
+        Operator operator = (Operator) authentication.getPrincipal();
+        supportTicketService.resolveTicket(ticketId, operator);
+        return ResponseEntity.ok().build();
+    }
+
 }

@@ -1,5 +1,8 @@
 package com.iis.foodflow.model.support;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.model.user.Operator;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -22,5 +25,14 @@ public class Message {
 
     @ManyToOne
     @JoinColumn(name = "ticket_id", nullable = false)
+    @JsonIgnore
     private SupportTicket supportTicket;
+
+    @ManyToOne
+    @JoinColumn(name = "sender_customer_id")
+    private Customer senderCustomer;
+
+    @ManyToOne
+    @JoinColumn(name = "sender_operator_id")
+    private Operator senderOperator;
 }

@@ -3,6 +3,7 @@ package com.iis.foodflow.controller;
 import com.iis.foodflow.dto.response.ProblemCategoryDTO;
 import com.iis.foodflow.dto.request.CreateTicketRequestDTO;
 import com.iis.foodflow.dto.response.SupportTicketResponseDTO;
+import com.iis.foodflow.dto.response.TicketDetailsDTO;
 import com.iis.foodflow.model.support.SupportTicket;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.service.ProblemCategoryService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,4 +39,14 @@ public class SupportTicketController {
         List<ProblemCategoryDTO> categoriesDto = categoryService.getAllCategoriesAsDto();
         return ResponseEntity.ok(categoriesDto);
     }
+
+    @GetMapping("/tickets/{ticketId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TicketDetailsDTO> getTicketDetails(@PathVariable Long ticketId, Authentication authentication) {
+        UserDetails principal = (UserDetails) authentication.getPrincipal();
+        TicketDetailsDTO details = ticketService.getTicketDetails(ticketId, principal);
+        return ResponseEntity.ok(details);
+    }
+
+
 }

@@ -1,6 +1,7 @@
 package com.iis.foodflow.repository;
 
 import com.iis.foodflow.dto.request.CategoryTicketsDTO;
+import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.support.SupportTicket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -43,4 +44,6 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "WHERE t.operator.id = :operatorId AND t.status = 'CLOSED' " +
             "GROUP BY pc.name ORDER BY COUNT(t.id) DESC")
     List<CategoryTicketsDTO> countTicketsPerCategoryByOperator(@Param("operatorId") Long operatorId);
+
+    List<SupportTicket> findByOperatorIdAndStatusIn(Long operatorId, List<TicketStatus> statuses);
 }

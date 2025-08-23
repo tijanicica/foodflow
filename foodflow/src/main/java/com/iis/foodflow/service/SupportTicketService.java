@@ -4,6 +4,8 @@ package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.CreateTicketRequestDTO; // Koristimo vaš DTO
 import com.iis.foodflow.dto.response.SupportTicketResponseDTO;
+import com.iis.foodflow.dto.response.TicketDetailsDTO;
+import com.iis.foodflow.dto.response.TicketSummaryDTO;
 import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.support.ProblemCategory;
@@ -15,12 +17,14 @@ import com.iis.foodflow.repository.OrderRepository;
 import com.iis.foodflow.repository.ProblemCategoryRepository;
 import com.iis.foodflow.repository.SupportTicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,33 +38,29 @@ public class SupportTicketService {
 
     @Transactional
     public SupportTicketResponseDTO createTicket(CreateTicketRequestDTO request, Customer customer) {
-        // 1. Provera porudžbine
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + request.getOrderId()));
 
-        // Bezbednosna provera - da li korisnik kreira tiket za svoju porudžbinu
         if (!order.getCustomer().getId().equals(customer.getId())) {
             throw new SecurityException("Forbidden: You can only create tickets for your own orders.");
         }
 
-        // 2. Dodeljivanje operatera
         Operator assignedOperator = findAvailableOperator();
 
-        // 3. Određivanje kategorije problema
         ProblemCategory category;
         if (request.getPreselectedCategoryId() != null) {
-            // Slučaj 1: Korisnik je izabrao predefinisanu kategoriju
+
             category = categoryRepository.findById(request.getPreselectedCategoryId())
                     .orElseThrow(() -> new RuntimeException("Problem category not found with ID: " + request.getPreselectedCategoryId()));
         } else {
-            // Slučaj 2: Korisnik je uneo tekst, pozivamo NLP servis
+
             if (request.getDescription() == null || request.getDescription().isBlank()) {
                 throw new IllegalArgumentException("Description cannot be empty when no category is selected.");
             }
             category = nlpService.categorizeProblem(request.getDescription());
         }
 
-        // 4. Kreiranje novog tiketa
+
         SupportTicket ticket = new SupportTicket();
         ticket.setOrder(order);
         ticket.setOperator(assignedOperator);
@@ -74,15 +74,15 @@ public class SupportTicketService {
     }
 
     private Operator findAvailableOperator() {
-        // 1. Pronađi ID najboljeg kandidata jednim upitom
+
         Long bestOperatorId = operatorRepository.findOperatorIdWithLeastOpenTickets();
 
         if (bestOperatorId == null) {
-            // Ovo se može desiti samo ako uopšte nema operatera u bazi
+
             throw new RuntimeException("No operators are available at the moment.");
         }
 
-        // 2. Dohvati samo tog jednog operatera iz baze
+
         return operatorRepository.findById(bestOperatorId)
                 .orElseThrow(() -> new RuntimeException("Could not find operator with ID: " + bestOperatorId));
     }
@@ -97,5 +97,52 @@ public class SupportTicketService {
         }
         return dto;
     }
+
+    public List<TicketSummaryDTO> getTicketsForOperatorDashboard(Long operatorId) {
+        List<TicketStatus> activeStatuses = List.of(TicketStatus.OPEN, TicketStatus.IN_PROGRESS);
+
+        return ticketRepository.findByOperatorIdAndStatusIn(operatorId, activeStatuses)
+                .stream()
+                .map(TicketSummaryDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public TicketDetailsDTO getTicketDetails(Long ticketId, UserDetails principal) {
+        SupportTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        if (principal instanceof Customer customer) {
+            if (!ticket.getOrder().getCustomer().getId().equals(customer.getId())) {
+                throw new SecurityException("Customer can only view their own tickets.");
+            }
+        } else if (principal instanceof Operator operator) {
+            if (!ticket.getOperator().getId().equals(operator.getId())) {
+                throw new SecurityException("Operator can only view their assigned tickets.");
+            }
+        } else {
+            throw new SecurityException("User does not have permission to view this ticket.");
+        }
+
+        return new TicketDetailsDTO(ticket);
+    }
+
+
+    @Transactional
+    public void resolveTicket(Long ticketId, Operator operator) {
+        SupportTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        if (!ticket.getOperator().getId().equals(operator.getId())) {
+            throw new SecurityException("Operator can only resolve their assigned tickets.");
+        }
+
+        ticket.setStatus(TicketStatus.RESOLVED);
+        ticket.setClosingTime(LocalDateTime.now());
+        ticketRepository.save(ticket);
+
+    }
+
+
 
 }

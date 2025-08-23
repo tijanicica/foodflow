@@ -769,3 +769,18 @@ export const createSupportTicket = async (ticketData) => {
     const response = await apiClient.post('/tickets', ticketData);
     return response.data;
 };
+
+export const getOperatorDashboard = async () => {
+    const response = await apiClient.get('/operator/dashboard');
+    return response.data;
+};
+
+export const getTicketDetails = async (ticketId) => {
+    const response = await apiClient.get(`/tickets/${ticketId}`);
+    return response.data;
+};
+
+export const markTicketAsResolved = async (ticketId) => {
+    // Pretpostavljamo endpoint
+    await apiClient.post(`/operator/tickets/${ticketId}/resolve`);
+};
