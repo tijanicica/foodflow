@@ -19,4 +19,6 @@ public class UpdateMenuItemRequestDTO {
     private boolean availableAllDay;
     private LocalTime timeFrom;
     private LocalTime timeTo;
+
+   
 }

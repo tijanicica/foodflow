@@ -36,8 +36,8 @@ public class ManagerController {
     private  final ManagerOrderService managerOrderService;
     private final ManagerAnalyticsService managerAnalyticsService;
     private final ManagerProfileService managerProfileService; // Dodavanje novog servisa
-    public record RestaurantOptionDTO(Long id, String name) {}
-    private static final Logger log = LoggerFactory.getLogger(ManagerController.class);
+    // NOVA, ISPRAVLJENA VERZIJA
+    public record RestaurantOptionDTO(Long id, String name, String imageUrl) {}    private static final Logger log = LoggerFactory.getLogger(ManagerController.class);
 
 
     // ===== NOVI ENDPOINT ZA DOBIJANJE LISTE RESTORANA =====
@@ -51,7 +51,7 @@ public class ManagerController {
                 .orElseThrow(() -> new IllegalStateException("Manager not found"));
 
         List<RestaurantOptionDTO> restaurants = managerWithRestaurants.getManagedRestaurants().stream()
-                .map(r -> new RestaurantOptionDTO(r.getId(), r.getName()))
+                .map(r -> new RestaurantOptionDTO(r.getId(), r.getName(), r.getImageUrl()))
                 .sorted(Comparator.comparing(RestaurantOptionDTO::name))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(restaurants);

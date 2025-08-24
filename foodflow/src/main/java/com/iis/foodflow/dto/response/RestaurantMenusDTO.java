@@ -14,5 +14,6 @@ import java.util.List;
 public class RestaurantMenusDTO {
     private Long restaurantId;
     private String restaurantName;
+    private String restaurantImageUrl;
     private List<ManagerMenuDTO> menus;
 }

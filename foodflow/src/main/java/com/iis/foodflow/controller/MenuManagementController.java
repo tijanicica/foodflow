@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/manager/menus")
@@ -23,23 +24,27 @@ import java.util.List;
 public class MenuManagementController {
 
     private final MenuManagementService menuManagementService;
+    // V V V  KLJUČNA IZMENA - Uklonjen try-catch  V V V
+    // V V V  ISPRAVLJENA METODA  V V V
     @PostMapping("/{menuVersionId}/items")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> addItemToMenu(
-            @PathVariable("menuVersionId") Long menuVersionId,
-            @RequestBody CreateMenuItemRequestDTO request,
-            @AuthenticationPrincipal Manager manager) {
+    public ResponseEntity<?> addItemToMenu( // promenjeno u ResponseEntity<?> da može da vrati i grešku
+                                            @PathVariable("menuVersionId") Long menuVersionId,
+                                            @RequestBody CreateMenuItemRequestDTO request,
+                                            @AuthenticationPrincipal Manager manager) {
         try {
             menuManagementService.addItemToMenu(menuVersionId, request, manager);
             return new ResponseEntity<>(HttpStatus.CREATED);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // Hvatamo specifične greške i vraćamo 400 sa porukom
+            Map<String, String> errorResponse = Map.of("message", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         } catch (SecurityException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (Exception e) {
-            // Loguj grešku za debagovanje
-            // e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            Map<String, String> errorResponse = Map.of("message", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
         }
     }
+    // A A A  KRAJ IZMENE  A A A
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<MenuVersionDetailDTO> getMenuVersionDetails(
@@ -97,15 +102,25 @@ public class MenuManagementController {
 
     // ...
 
+    // V V V  KLJUČNA IZMENA - Uklonjen try-catch  V V V
     @PutMapping("/items/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")
-    public ResponseEntity<Void> updateMenuItem(
-            @PathVariable("id") Long id,
-            @RequestBody UpdateMenuItemRequestDTO request,
-            @AuthenticationPrincipal Manager manager) {
-        menuManagementService.updateMenuItem(id, request, manager);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> updateMenuItem( // promenjeno u ResponseEntity<?>
+                                             @PathVariable("id") Long id,
+                                             @RequestBody UpdateMenuItemRequestDTO request,
+                                             @AuthenticationPrincipal Manager manager) {
+        try {
+            menuManagementService.updateMenuItem(id, request, manager);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            Map<String, String> errorResponse = Map.of("message", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        } catch (SecurityException e) {
+            Map<String, String> errorResponse = Map.of("message", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+        }
     }
+    // A A A  KRAJ IZMENE  A A A
 
     @DeleteMapping("/items/{id}")
     @PreAuthorize("hasAuthority('ROLE_MANAGER')")

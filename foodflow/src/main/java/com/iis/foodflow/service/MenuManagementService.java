@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,7 @@ public class MenuManagementService {
                             .sorted(Comparator.comparing(ManagerMenuDTO::isActive).reversed()
                                     .thenComparing(ManagerMenuDTO::getCreationDate, Comparator.nullsLast(Comparator.reverseOrder())))
                             .collect(Collectors.toList());
-                    return new RestaurantMenusDTO(restaurant.getId(), restaurant.getName(), menuDTOs);
+                    return new RestaurantMenusDTO(restaurant.getId(), restaurant.getName(), restaurant.getImageUrl(), menuDTOs);
                 })
                 .sorted(Comparator.comparing(RestaurantMenusDTO::getRestaurantName))
                 .collect(Collectors.toList());
@@ -113,7 +114,8 @@ public class MenuManagementService {
                         .id(miv.getId())
                         .name(miv.getMenuItem().getName())
                         .price(miv.getPrice())
-                        .imageUrl(miv.getMenuItem().getImageUrl()) // <-- DODAJ OVAJ RED
+                        .imageUrl(miv.getMenuItem().getImageUrl())
+                        .description(miv.getMenuItem().getDescription()) // <-- DODAJTE OVAJ RED
                         .build())
                 .collect(Collectors.toList());
 
@@ -189,13 +191,30 @@ public class MenuManagementService {
         return mapToManagerMenuDTO(menuVersion);
     }
 
+// U fajlu MenuManagementService.java
+
+// ...
+
+    // --- KONAČNA, ISPRAVLJENA VERZIJA addItemToMenu ---
+// U fajlu MenuManagementService.java
+
+    // --- KONAČNA, ISPRAVLJENA VERZIJA addItemToMenu ---
+// U fajlu MenuManagementService.java
+
     @Transactional
-    public void addItemToMenu(Long menuVersionId, CreateMenuItemRequestDTO request, Manager manager) {
+    public void addItemToMenu(Long menuVersionId, CreateMenuItemRequestDTO request, Manager currentManager) {
+        Manager manager = managerRepository.findById(currentManager.getId())
+                .orElseThrow(() -> new IllegalStateException("Manager not found"));
+
         MenuVersion menuVersion = menuVersionRepository.findById(menuVersionId)
                 .orElseThrow(() -> new RuntimeException("Menu version not found"));
 
         if (!menuVersion.getMenu().getRestaurant().getManager().getId().equals(manager.getId())) {
             throw new SecurityException("You are not authorized to add items to this menu.");
+        }
+
+        if (Boolean.FALSE.equals(request.isAvailableAllDay())) {
+            validateItemAvailability(menuVersion.getMenu().getRestaurant(), request.getTimeFrom(), request.getTimeTo());
         }
 
         Set<Allergen> allergens = request.getAllergenIds() != null ? new HashSet<>(allergenRepository.findAllById(request.getAllergenIds())) : new HashSet<>();
@@ -207,15 +226,9 @@ public class MenuManagementService {
         newItem.setType(request.getType());
         newItem.setAllergens(allergens);
         newItem.setDietTypes(dietTypes);
-        newItem.setImageUrl("/images/placeholder.jpg");
-
-        // ===== KORISTIMO URL IZ ZAHTEVA =====
-        // Ako URL nije poslat, koristimo podrazumevanu vrednost
         newItem.setImageUrl(request.getImageUrl() != null && !request.getImageUrl().isEmpty()
                 ? request.getImageUrl()
                 : "/images/placeholder.jpg");
-        // ===================================
-
 
         MenuItem savedMenuItem = menuItemRepository.save(newItem);
 
@@ -225,28 +238,31 @@ public class MenuManagementService {
         newMenuItemVersion.setPrice(request.getPrice());
         newMenuItemVersion.setAvailable(true);
 
-        if (!request.isAvailableAllDay()) {
+        if (Boolean.FALSE.equals(request.isAvailableAllDay())) {
             newMenuItemVersion.setTimeFrom(request.getTimeFrom());
             newMenuItemVersion.setTimeTo(request.getTimeTo());
         }
 
         menuItemVersionRepository.save(newMenuItemVersion);
     }
-    // U MenuManagementService.java
 
     @Transactional
-    public void updateMenuItem(Long menuItemVersionId, UpdateMenuItemRequestDTO request, Manager manager) {
+    public void updateMenuItem(Long menuItemVersionId, UpdateMenuItemRequestDTO request, Manager currentManager) {
+        Manager manager = managerRepository.findById(currentManager.getId())
+                .orElseThrow(() -> new IllegalStateException("Manager not found"));
+
         MenuItemVersion miv = menuItemVersionRepository.findById(menuItemVersionId)
                 .orElseThrow(() -> new RuntimeException("Menu item version not found"));
 
-        // Sigurnosna provera
         if (!miv.getMenuVersion().getMenu().getRestaurant().getManager().getId().equals(manager.getId())) {
             throw new SecurityException("Not authorized to edit this item.");
         }
 
-        MenuItem menuItem = miv.getMenuItem();
+        if (Boolean.FALSE.equals(request.isAvailableAllDay())) {
+            validateItemAvailability(miv.getMenuVersion().getMenu().getRestaurant(), request.getTimeFrom(), request.getTimeTo());
+        }
 
-        // Ažuriranje MenuItem entiteta
+        MenuItem menuItem = miv.getMenuItem();
         menuItem.setName(request.getName());
         menuItem.setDescription(request.getDescription());
         menuItem.setImageUrl(request.getImageUrl());
@@ -254,9 +270,8 @@ public class MenuManagementService {
         menuItem.setAllergens(new HashSet<>(allergenRepository.findAllById(request.getAllergenIds())));
         menuItem.setDietTypes(new HashSet<>(dietTypeRepository.findAllById(request.getDietTypeIds())));
 
-        // Ažuriranje MenuItemVersion entiteta
         miv.setPrice(request.getPrice());
-        if (request.isAvailableAllDay()) {
+        if (Boolean.TRUE.equals(request.isAvailableAllDay())) {
             miv.setTimeFrom(null);
             miv.setTimeTo(null);
         } else {
@@ -267,6 +282,49 @@ public class MenuManagementService {
         menuItemRepository.save(menuItem);
         menuItemVersionRepository.save(miv);
     }
+
+    // U fajlu MenuManagementService.java
+
+    // --- NOVA, JEDNOSTAVNIJA I ISPRAVNA VERZIJA ---
+    private void validateItemAvailability(Restaurant restaurant, LocalTime itemTimeFrom, LocalTime itemTimeTo) {
+        LocalTime restaurantOpens = restaurant.getOpeningTime();
+        LocalTime restaurantCloses = restaurant.getClosingTime();
+
+        if (restaurantOpens == null || restaurantCloses == null) {
+            throw new IllegalStateException("Radno vreme restorana nije podešeno.");
+        }
+        if (itemTimeFrom == null || itemTimeTo == null) {
+            throw new IllegalArgumentException("Morate uneti početno i krajnje vreme dostupnosti.");
+        }
+
+        // Provera da li je krajnje vreme pre početnog (npr. od 18:00 do 17:00)
+        if (itemTimeFrom.isAfter(itemTimeTo)) {
+            throw new IllegalArgumentException("Vreme 'do' ne može biti pre vremena 'od'.");
+        }
+
+        boolean isValid;
+
+        // Slučaj 1: Normalno radno vreme (npr. 09:00 - 23:00)
+        if (restaurantOpens.isBefore(restaurantCloses)) {
+            isValid = !itemTimeFrom.isBefore(restaurantOpens) && !itemTimeTo.isAfter(restaurantCloses);
+        }
+        // Slučaj 2: Rad preko ponoći (npr. 18:00 - 02:00)
+        else {
+            // Da bi bilo validno, vreme artikla mora biti ili:
+            // a) Između otvaranja i ponoći (npr. 19:00 - 22:00)
+            // b) Između ponoći i zatvaranja (npr. 00:30 - 01:30)
+            isValid = (!itemTimeFrom.isBefore(restaurantOpens) && !itemTimeTo.isBefore(restaurantOpens)) ||
+                    (!itemTimeFrom.isAfter(restaurantCloses) && !itemTimeTo.isAfter(restaurantCloses));
+        }
+
+        if (!isValid) {
+            throw new IllegalArgumentException(
+                    String.format("Dostupnost (%s - %s) je van radnog vremena (%s - %s).",
+                            itemTimeFrom, itemTimeTo, restaurantOpens, restaurantCloses)
+            );
+        }
+    }
+
 
     @Transactional
     public void deleteMenuItem(Long menuItemVersionId, Manager manager) {
