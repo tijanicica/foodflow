@@ -155,4 +155,51 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "WHERE m.restaurant.manager = :manager AND o.status IN :statuses " +
             "ORDER BY o.creationDate ASC")
     List<Order> findOrdersByManagerAndStatuses(@Param("manager") Manager manager, @Param("statuses") List<OrderStatus> statuses);
+
+// U fajlu OrderRepository.java
+
+// ...
+
+
+
+  
+
+    @Query("SELECT o FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "JOIN m.restaurant r " +
+            "WHERE r.manager = :manager AND o.creationDate >= :startDate AND o.creationDate < :endDate " +
+            "GROUP BY o.id")
+    List<Order> findOrdersByManagerAndDateRange(@Param("manager") Manager manager,
+                                                @Param("startDate") LocalDateTime startDate,
+                                                @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT o FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "JOIN m.restaurant r " +
+            "WHERE r.manager = :manager AND r.id = :restaurantId AND o.creationDate >= :startDate AND o.creationDate < :endDate " +
+            "GROUP BY o.id")
+    List<Order> findOrdersByManagerAndDateRangeAndRestaurant(@Param("manager") Manager manager,
+                                                             @Param("startDate") LocalDateTime startDate,
+                                                             @Param("endDate") LocalDateTime endDate,
+                                                             @Param("restaurantId") Long restaurantId);
+
+    @Query("SELECT miv.menuItem.name, COUNT(oi.id) as orderCount FROM OrderItem oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion.menu.restaurant r " +
+            "WHERE r.manager = :manager AND oi.order.creationDate >= :startDate " +
+            "GROUP BY miv.menuItem.name ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItemsSince(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT miv.menuItem.name, COUNT(oi.id) as orderCount FROM OrderItem oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion.menu.restaurant r " +
+            "WHERE r.manager = :manager AND r.id = :restaurantId AND oi.order.creationDate >= :startDate " +
+            "GROUP BY miv.menuItem.name ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItemsByRestaurantSince(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
 }

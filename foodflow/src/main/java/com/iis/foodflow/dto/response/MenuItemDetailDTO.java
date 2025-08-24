@@ -17,5 +17,6 @@ public class MenuItemDetailDTO {
     private String name;
     private BigDecimal price;
     private String imageUrl; // <-- KLJUČNO POLJE
+    private String description; // <-- DODAJTE OVO POLJE
 
 }

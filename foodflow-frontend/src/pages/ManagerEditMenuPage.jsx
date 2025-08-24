@@ -1,5 +1,3 @@
-// src/pages/ManagerEditMenuPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ManagerNavbar } from '@/components/ui/ManagerNavbar';
@@ -7,14 +5,11 @@ import { getMenuVersionDetails, addMenuItem, getAllergens, getDietTypes, updateM
 import toast from 'react-hot-toast';
 import { AddMenuItemModal } from '@/components/modals/AddMenuItemModal';
 import { EditMenuItemModal } from '@/components/modals/EditMenuItemModal';
-
-// Ikonice za akcije
 import { PlusCircle, Pencil, Trash2, ArrowLeft, UtensilsCrossed } from 'lucide-react';
 
-// === POTPUNO REDIZAJNIRANA KARTICA ZA STAVKU MENIJA ===
+// === KARTICA ZA STAVKU MENIJA (ostaje ista) ===
 const MenuItemCard = ({ item, onEdit, onDelete }) => (
     <div className="group relative bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-        {/* Akcije koje se pojavljuju na hover */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button onClick={() => onEdit(item)} className="bg-white/80 backdrop-blur-sm text-purple-600 p-2 rounded-full shadow-md hover:bg-white" title="Izmeni stavku">
                 <Pencil size={18} />
@@ -23,25 +18,22 @@ const MenuItemCard = ({ item, onEdit, onDelete }) => (
                 <Trash2 size={18} />
             </button>
         </div>
-
         <div className="w-full">
             <img 
                 src={item.imageUrl || "/images/placeholder.jpg"} 
                 alt={item.name}
-                // Aspect ratio osigurava da su sve slike iste visine
                 className="w-full h-auto aspect-[4/3] object-cover bg-gray-100"
             />
         </div>
         <div className="p-5">
             <h3 className="text-xl font-bold text-gray-800 truncate">{item.name}</h3>
-            <p className="text-sm text-gray-500 mt-1 h-10 overflow-hidden">{item.description}</p>
+            <p className="text-sm text-gray-500 mt-1 h-10 overflow-hidden">{item.description || 'Nema opisa.'}</p>
             <p className="text-2xl font-extrabold text-pink-600 mt-4 text-right">
                 {item.price ? `${item.price.toFixed(2)} RSD` : 'N/A'}
             </p>
         </div>
     </div>
 );
-
 
 // === GLAVNA KOMPONENTA STRANICE ===
 export function ManagerEditMenuPage() {
@@ -80,30 +72,43 @@ export function ManagerEditMenuPage() {
         fetchDetails();
     }, [menuVersionId]);
 
+
+    // V V V  IZMENJENA FUNKCIJA ZA DODAVANJE  V V V
     const handleAddItem = async (itemData) => {
-        await toast.promise(addMenuItem(menuVersionId, itemData), {
-            loading: 'Dodavanje stavke...',
-            success: 'Stavka uspešno dodata!',
-            error: 'Greška pri dodavanju stavke.'
-        });
-        setAddModalOpen(false);
-        fetchDetails();
+        const toastId = toast.loading('Dodavanje stavke...');
+        try {
+            await addMenuItem(menuVersionId, itemData);
+            toast.success('Stavka uspešno dodata!', { id: toastId });
+            setAddModalOpen(false);
+            fetchDetails();
+        } catch (error) {
+            // Proveravamo da li greška ima specifičnu poruku sa servera
+            const errorMessage = error.response?.data?.message || 'Greška pri dodavanju stavke.';
+            toast.error(errorMessage, { id: toastId });
+        }
     };
+    // A A A  KRAJ IZMENE  A A A
 
     const handleEditClick = (item) => {
         setSelectedItem(item);
         setEditModalOpen(true);
     };
 
+    // V V V  IZMENJENA FUNKCIJA ZA AŽURIRANJE  V V V
     const handleUpdateItem = async (id, itemData) => {
-        await toast.promise(updateMenuItem(id, itemData), {
-            loading: 'Ažuriranje stavke...',
-            success: 'Stavka uspešno ažurirana!',
-            error: 'Greška pri ažuriranju.'
-        });
-        setEditModalOpen(false);
-        fetchDetails();
+        const toastId = toast.loading('Ažuriranje stavke...');
+        try {
+            await updateMenuItem(id, itemData);
+            toast.success('Stavka uspešno ažurirana!', { id: toastId });
+            setEditModalOpen(false);
+            fetchDetails();
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Greška pri ažuriranju.';
+            toast.error(errorMessage, { id: toastId });
+        }
     };
+    // A A A  KRAJ IZMENE  A A A
+
 
     const handleDeleteItem = async (id) => {
         if (window.confirm("Da li ste sigurni da želite da obrišete ovu stavku?")) {
@@ -123,7 +128,7 @@ export function ManagerEditMenuPage() {
     );
     
     const EmptyState = () => (
-        <div className="col-span-1 md:col-span-2 text-center py-20 bg-white rounded-xl shadow-lg">
+        <div className="col-span-full text-center py-20 bg-white rounded-xl shadow-lg">
             <UtensilsCrossed size={48} className="mx-auto text-gray-300" />
             <p className="mt-4 text-gray-500">Ovaj meni još uvek nema nijednu stavku.</p>
             <p className="text-sm text-gray-400">Dodajte prvu klikom na dugme iznad!</p>
@@ -133,7 +138,7 @@ export function ManagerEditMenuPage() {
     return (
         <div className="w-full min-h-screen bg-pink-50/50">
             <ManagerNavbar />
-            <main className="container mx-auto max-w-6xl px-4 md:px-6 py-12">
+            <main className="container mx-auto max-w-7xl px-4 md:px-6 py-12">
                 <div className="flex flex-wrap justify-between items-center gap-4 mb-10">
                     <div>
                         <Link to="/manager/menu" className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-pink-600 mb-2 transition-colors">
@@ -152,7 +157,7 @@ export function ManagerEditMenuPage() {
                 </div>
                 
                 {loading ? <LoadingSpinner /> : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {menuDetails && menuDetails.items.length > 0 ? (
                             menuDetails.items.map(item => <MenuItemCard key={item.id} item={item} onEdit={handleEditClick} onDelete={handleDeleteItem} />)
                         ) : (
