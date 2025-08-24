@@ -46,7 +46,12 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "GROUP BY pc.name ORDER BY COUNT(t.id) DESC")
     List<CategoryTicketsDTO> countTicketsPerCategoryByOperator(@Param("operatorId") Long operatorId);
 
-    List<SupportTicket> findByOperatorIdAndStatusIn(Long operatorId, List<TicketStatus> statuses);
+    @Query("SELECT t FROM SupportTicket t " +
+            "JOIN FETCH t.problemCategory " +
+            "JOIN FETCH t.order o " +
+            "JOIN FETCH o.customer " +
+            "WHERE t.operator.id = :operatorId AND t.status IN :statuses")
+    List<SupportTicket> findSummariesByOperatorIdAndStatusIn(@Param("operatorId") Long operatorId, @Param("statuses") List<TicketStatus> statuses);
 
     @Query("SELECT t FROM SupportTicket t " +
             "LEFT JOIN FETCH t.messages m " +

@@ -103,7 +103,7 @@ public class SupportTicketService {
     public List<TicketSummaryDTO> getTicketsForOperatorDashboard(Long operatorId) {
         List<TicketStatus> activeStatuses = List.of(TicketStatus.OPEN, TicketStatus.IN_PROGRESS);
 
-        return ticketRepository.findByOperatorIdAndStatusIn(operatorId, activeStatuses)
+        return ticketRepository.findSummariesByOperatorIdAndStatusIn(operatorId, activeStatuses)
                 .stream()
                 .map(TicketSummaryDTO::new)
                 .collect(Collectors.toList());

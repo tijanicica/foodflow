@@ -106,6 +106,7 @@ public class ChatService {
             messageRepository.markMessagesAsReadByCustomer(ticket.getId());
         }
 
-        messagingTemplate.convertAndSend("/topic/ticket/" + ticket.getId(), new ReadNotificationDTO(readerId));
+        ReadNotificationDTO notification = new ReadNotificationDTO(readerId);
+        messagingTemplate.convertAndSend("/topic/ticket/" + ticket.getId(), notification);
     }
 }

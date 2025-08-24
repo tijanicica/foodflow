@@ -27,14 +27,18 @@ export const ChatInterface = ({ userRole }) => {
   // Refs
   const stompClientRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Podaci iz tokena
   const tokenPayload = jwtDecode(localStorage.getItem("jwtToken"));
   const userId = tokenPayload.id;
   const userName = tokenPayload.name;
 
-  const scrollToBottom = (behavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
   };
 
   // Glavni useEffect za dohvatanje podataka i WebSocket konekciju
@@ -44,7 +48,15 @@ export const ChatInterface = ({ userRole }) => {
         const data = await getTicketDetails(ticketId);
         setTicket(data);
         setMessages(data.messages);
-        setTimeout(() => scrollToBottom("auto"), 100);
+        //setTimeout(() => scrollToBottom("auto"), 100);
+        const lastMessage = data.messages[data.messages.length - 1];
+        if (
+          lastMessage &&
+          lastMessage.senderId === userId &&
+          lastMessage.read
+        ) {
+          setLastReadByOther(true);
+        }
       } catch (error) {
         toast.error("Failed to load ticket details.");
         console.error(error);
@@ -67,26 +79,36 @@ export const ChatInterface = ({ userRole }) => {
       client.subscribe(`/topic/ticket/${ticketId}`, (message) => {
         const receivedMessage = JSON.parse(message.body);
 
-        if (receivedMessage.type === "STATUS_UPDATE") {
-          setTicket((prev) => ({ ...prev, status: receivedMessage.newStatus }));
-          if (
-            receivedMessage.newStatus === "RESOLVED" &&
-            userRole === "customer"
-          ) {
-            setRatingModalOpen(true);
-          }
-        } else if (receivedMessage.type === "READ_RECEIPT") {
+        if (receivedMessage.type === "READ_RECEIPT") {
+          // Ako druga osoba pošalje "read" potvrdu, ažuriraj UI
           if (receivedMessage.readerId !== userId) {
             setLastReadByOther(true);
           }
+        } else if (receivedMessage.type === "STATUS_UPDATE") {
+          setTicket((prev) => ({ ...prev, status: receivedMessage.newStatus }));
         } else {
+          // CHAT poruka
           setMessages((prev) => [...prev, receivedMessage]);
+          // Kada stigne nova poruka od druge osobe, ona još nije pročitana
+          if (receivedMessage.senderId !== userId) {
+            setLastReadByOther(false);
+            // Odmah pošalji potvrdu da si je video/la
+            const readReceipt = { ticketId, readerId: userId };
+            stompClientRef.current.send(
+              "/app/chat.markAsRead",
+              {},
+              JSON.stringify(readReceipt)
+            );
+          }
         }
       });
 
-      // Pošalji "read" status odmah nakon konekcije
-      const readReceipt = { ticketId, readerId: userId };
-      client.send("/app/chat.markAsRead", {}, JSON.stringify(readReceipt));
+      const initialReadReceipt = { ticketId, readerId: userId };
+      client.send(
+        "/app/chat.markAsRead",
+        {},
+        JSON.stringify(initialReadReceipt)
+      );
     });
 
     return () => {
@@ -98,7 +120,7 @@ export const ChatInterface = ({ userRole }) => {
     };
   }, [ticketId, userRole, userId]);
 
-  // Efekat za skrolovanje
+  //Efekat za skrolovanje
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -146,15 +168,21 @@ export const ChatInterface = ({ userRole }) => {
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Leva kolona - Chat interfejs */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border flex flex-col">
-          <h2 className="text-xl font-bold mb-4">
+        <div
+          className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border flex flex-col"
+          style={{ height: "calc(100vh - 12rem)" }}
+        >
+          <h2 className="text-xl font-bold mb-4  flex-shrink-0">
             Chat with{" "}
             {userRole === "customer"
               ? ticket.operatorName
               : ticket.customerName}
           </h2>
 
-          <div className="flex-grow h-96 overflow-y-auto mb-4 p-2 bg-gray-50/50 rounded-lg">
+          <div
+            ref={messagesContainerRef}
+            className="flex-grow overflow-y-auto mb-4 p-2 bg-gray-50/50 rounded-lg"
+          >
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -195,12 +223,12 @@ export const ChatInterface = ({ userRole }) => {
                 )}
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            {/* <div ref={messagesEndRef} /> */}
           </div>
 
           <form
             onSubmit={handleSendMessage}
-            className="flex gap-2 items-center"
+            className="flex gap-2 items-center flex-shrink-0"
           >
             <Textarea
               value={newMessage}
