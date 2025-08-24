@@ -79,26 +79,26 @@ export const ChatInterface = ({ userRole }) => {
       client.subscribe(`/topic/ticket/${ticketId}`, (message) => {
         const receivedMessage = JSON.parse(message.body);
 
-        if (receivedMessage.type === "READ_RECEIPT") {
-          // Ako druga osoba pošalje "read" potvrdu, ažuriraj UI
+        if (receivedMessage.type === "STATUS_UPDATE") {
+          console.log("Received status update:", receivedMessage.newStatus);
+          setTicket((prev) => ({ ...prev, status: receivedMessage.newStatus }));
+        } else if (receivedMessage.type === "READ_RECEIPT") {
           if (receivedMessage.readerId !== userId) {
             setLastReadByOther(true);
           }
-        } else if (receivedMessage.type === "STATUS_UPDATE") {
-          setTicket((prev) => ({ ...prev, status: receivedMessage.newStatus }));
         } else {
-          // CHAT poruka
+          // Pretpostavljamo da je tip 'CHAT'
           setMessages((prev) => [...prev, receivedMessage]);
-          // Kada stigne nova poruka od druge osobe, ona još nije pročitana
           if (receivedMessage.senderId !== userId) {
             setLastReadByOther(false);
-            // Odmah pošalji potvrdu da si je video/la
             const readReceipt = { ticketId, readerId: userId };
-            stompClientRef.current.send(
-              "/app/chat.markAsRead",
-              {},
-              JSON.stringify(readReceipt)
-            );
+            if (stompClientRef.current?.connected) {
+              stompClientRef.current.send(
+                "/app/chat.markAsRead",
+                {},
+                JSON.stringify(readReceipt)
+              );
+            }
           }
         }
       });
@@ -124,6 +124,13 @@ export const ChatInterface = ({ userRole }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Ako je status tiketa promenjen na RESOLVED i ja sam customer, otvori modal
+    if (ticket?.status === "RESOLVED" && userRole === "customer") {
+      setRatingModalOpen(true);
+    }
+  }, [ticket, userRole]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();

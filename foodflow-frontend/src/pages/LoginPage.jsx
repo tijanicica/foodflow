@@ -64,7 +64,7 @@ export function LoginPage() {
           destination = "/home";
           break;
         case "ROLE_OPERATOR":
-          destination = "/operator/analytics";
+          destination = "/operator/dashboard";
           break;
         case "ROLE_MANAGER":
           destination = "/manager/dashboard";

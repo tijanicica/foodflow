@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import toast from "react-hot-toast";
-import { rateSupportTicket } from "@/services/api"; // Nova API funkcija
+import { closeSupportTicket, rateSupportTicket } from "@/services/api"; // Nova API funkcija
+import { useNavigate } from "react-router-dom";
 
 const StarRating = ({ rating, setRating }) => (
   <div className="flex items-center justify-center space-x-2">
@@ -31,6 +32,7 @@ export const RateOperatorModal = ({ isOpen, onClose, ticketId }) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -41,9 +43,24 @@ export const RateOperatorModal = ({ isOpen, onClose, ticketId }) => {
     try {
       await rateSupportTicket(ticketId, { rating, comment });
       toast.success("Thank you for your feedback!");
+      navigate("/orders?tab=Past");
       onClose();
+      //navigate("/orders?tab=Past");
     } catch (error) {
       toast.error("Failed to submit rating.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setIsLoading(true);
+    try {
+      await closeSupportTicket(ticketId);
+      onClose();
+      navigate("/orders?tab=Past");
+    } catch (error) {
+      toast.error("Failed to skip rating.");
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +81,7 @@ export const RateOperatorModal = ({ isOpen, onClose, ticketId }) => {
           />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={handleSkip} disabled={isLoading}>
             Skip
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading}>

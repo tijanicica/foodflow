@@ -61,5 +61,17 @@ public class SupportTicketController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/tickets/{ticketId}/close")
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    public ResponseEntity<Void> closeTicket(
+            @PathVariable Long ticketId
+             )
+    {
+        ticketService.closeTicket(ticketId);
+        return ResponseEntity.ok().build();
+    }
+
+
+
 
 }

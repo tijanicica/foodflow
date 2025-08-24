@@ -171,6 +171,15 @@ public class SupportTicketService {
         ticketRepository.save(ticket);
     }
 
+    public void closeTicket(Long ticketId) {
+        SupportTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+        ticket.setStatus(TicketStatus.CLOSED);
+
+        ticketRepository.save(ticket);
+
+    }
+
 
 
 }

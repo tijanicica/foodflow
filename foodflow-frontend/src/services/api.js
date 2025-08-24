@@ -788,3 +788,7 @@ export const markTicketAsResolved = async (ticketId) => {
 export const rateSupportTicket = async (ticketId, ratingData) => {
     await apiClient.post(`/tickets/${ticketId}/rate`, ratingData)
 }
+
+export const closeSupportTicket = async (ticketId) => {
+    await apiClient.patch(`/tickets/${ticketId}/close`)
+}
