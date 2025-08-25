@@ -26,20 +26,13 @@ export const ChatInterface = ({ userRole }) => {
 
   // Refs
   const stompClientRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);
+  const messagesEndRef = useRef(null); // Ref za skrolovanje
+  const messagesContainerRef = useRef(null); // Ref za chat kontejner
 
   // Podaci iz tokena
   const tokenPayload = jwtDecode(localStorage.getItem("jwtToken"));
   const userId = tokenPayload.id;
   const userName = tokenPayload.name;
-
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
-    }
-  };
 
   // Glavni useEffect za dohvatanje podataka i WebSocket konekciju
   useEffect(() => {
@@ -48,7 +41,8 @@ export const ChatInterface = ({ userRole }) => {
         const data = await getTicketDetails(ticketId);
         setTicket(data);
         setMessages(data.messages);
-        //setTimeout(() => scrollToBottom("auto"), 100);
+
+        // Provera da li je poslednja poruka pročitana pri inicijalnom učitavanju
         const lastMessage = data.messages[data.messages.length - 1];
         if (
           lastMessage &&
@@ -80,7 +74,6 @@ export const ChatInterface = ({ userRole }) => {
         const receivedMessage = JSON.parse(message.body);
 
         if (receivedMessage.type === "STATUS_UPDATE") {
-          console.log("Received status update:", receivedMessage.newStatus);
           setTicket((prev) => ({ ...prev, status: receivedMessage.newStatus }));
         } else if (receivedMessage.type === "READ_RECEIPT") {
           if (receivedMessage.readerId !== userId) {
@@ -91,8 +84,9 @@ export const ChatInterface = ({ userRole }) => {
           setMessages((prev) => [...prev, receivedMessage]);
           if (receivedMessage.senderId !== userId) {
             setLastReadByOther(false);
-            const readReceipt = { ticketId, readerId: userId };
-            if (stompClientRef.current?.connected) {
+            // Šaljemo "read" samo ako je prozor u fokusu
+            if (document.visibilityState === "visible") {
+              const readReceipt = { ticketId, readerId: userId };
               stompClientRef.current.send(
                 "/app/chat.markAsRead",
                 {},
@@ -103,12 +97,15 @@ export const ChatInterface = ({ userRole }) => {
         }
       });
 
-      const initialReadReceipt = { ticketId, readerId: userId };
-      client.send(
-        "/app/chat.markAsRead",
-        {},
-        JSON.stringify(initialReadReceipt)
-      );
+      // Šaljemo "read" na početku samo ako je stranica već vidljiva
+      if (document.visibilityState === "visible") {
+        const initialReadReceipt = { ticketId, readerId: userId };
+        client.send(
+          "/app/chat.markAsRead",
+          {},
+          JSON.stringify(initialReadReceipt)
+        );
+      }
     });
 
     return () => {
@@ -120,17 +117,34 @@ export const ChatInterface = ({ userRole }) => {
     };
   }, [ticketId, userRole, userId]);
 
-  //Efekat za skrolovanje
+  // Efekat koji reaguje na promenu statusa za otvaranje modala
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Ako je status tiketa promenjen na RESOLVED i ja sam customer, otvori modal
     if (ticket?.status === "RESOLVED" && userRole === "customer") {
       setRatingModalOpen(true);
     }
   }, [ticket, userRole]);
+
+  // Efekat za praćenje fokusa stranice ("Seen" status)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        stompClientRef.current?.connected
+      ) {
+        console.log("Tab is in focus. Sending read receipt.");
+        const readReceipt = { ticketId, readerId: userId };
+        stompClientRef.current.send(
+          "/app/chat.markAsRead",
+          {},
+          JSON.stringify(readReceipt)
+        );
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [ticketId, userId]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -173,13 +187,9 @@ export const ChatInterface = ({ userRole }) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Leva kolona - Chat interfejs */}
-        <div
-          className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border flex flex-col"
-          style={{ height: "calc(100vh - 12rem)" }}
-        >
-          <h2 className="text-xl font-bold mb-4  flex-shrink-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border flex flex-col h-full">
+          <h2 className="text-xl font-bold mb-4 flex-shrink-0">
             Chat with{" "}
             {userRole === "customer"
               ? ticket.operatorName
@@ -230,7 +240,7 @@ export const ChatInterface = ({ userRole }) => {
                 )}
               </div>
             ))}
-            {/* <div ref={messagesEndRef} /> */}
+            <div ref={messagesEndRef} />
           </div>
 
           <form
@@ -263,8 +273,7 @@ export const ChatInterface = ({ userRole }) => {
           </form>
         </div>
 
-        {/* Desna kolona - Detalji o tiketu */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border">
+        <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border overflow-y-auto h-full">
           <h3 className="font-bold text-lg mb-4 flex items-center">
             <Info className="mr-2" /> Ticket Details
           </h3>
