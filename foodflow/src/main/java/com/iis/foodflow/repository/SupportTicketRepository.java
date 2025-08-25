@@ -66,4 +66,6 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "LEFT JOIN FETCH t.operator op " +
             "WHERE t.id = :ticketId")
     Optional<SupportTicket> findByIdWithAllDetails(@Param("ticketId") Long ticketId);
+
+    boolean existsByOperatorIdAndStatusIn(Long operatorId, List<TicketStatus> statuses);
 }

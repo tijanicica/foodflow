@@ -669,8 +669,9 @@ export const getSupportAdminProfile = async () => {
  * Ažurira broj telefona support admina.
  * @param {string} phone - Novi broj telefona.
  */
-export const updateSupportAdminPhone = async (phone) => {
-    const response = await apiClient.patch('/support-admin/profile/phone', { phone });
+export const updateSupportAdminPhone = async (phoneData) => {
+    
+    const response = await apiClient.patch('/support-admin/profile/phone', phoneData);
     return response.data;
 };
 
@@ -735,12 +736,9 @@ export const getOperatorProfile = async () => {
     return response.data;
 }
 
-/**
- * Ažurira broj telefona operatora.
- * @param {string} phone - Novi broj telefona.
- */
-export const updateOperatorPhone = async (phone) => {
-    const response = await apiClient.patch('/operator/profile/phone', { phone });
+
+export const updateOperatorPhone = async (phoneData) => {
+    const response = await apiClient.patch('/operator/profile/phone', phoneData);
     return response.data;
 };
 
@@ -792,3 +790,18 @@ export const rateSupportTicket = async (ticketId, ratingData) => {
 export const closeSupportTicket = async (ticketId) => {
     await apiClient.patch(`/tickets/${ticketId}/close`)
 }
+
+export const updateSupportAdminName = async (nameData) => {
+    const response = await apiClient.patch('/support-admin/profile/name', nameData);
+    return response.data;
+}
+
+export const updateOperatorName = async (nameData) => {
+    // Novi PATCH zahtev na endpoint koji ste kreirali
+    const response = await apiClient.patch('/operator/profile/name', nameData);
+    return response.data;
+};
+
+export const deleteOperator = async (operatorId) => {
+    await apiClient.delete(`/support-admin/operators/${operatorId}`);
+};

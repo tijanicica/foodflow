@@ -1,6 +1,8 @@
 package com.iis.foodflow.controller;
 
 import com.iis.foodflow.dto.request.ChangePasswordRequestDTO;
+import com.iis.foodflow.dto.request.OperatorDTO;
+import com.iis.foodflow.dto.request.UpdateNameDTO;
 import com.iis.foodflow.dto.request.UpdatePhoneRequestDTO;
 import com.iis.foodflow.dto.response.OperatorAnalyticsDTO;
 import com.iis.foodflow.dto.response.OperatorProfileDTO;
@@ -60,6 +62,23 @@ public class OperatorController {
                 .orElseThrow(() -> new UsernameNotFoundException("Operator not found with email: " + operatorEmail));
 
         operator.setPhone(phoneDto.getPhone());
+        Operator updatedOperator = operatorRepository.save(operator);
+
+        return ResponseEntity.ok(convertToProfileDto(updatedOperator));
+    }
+
+    @PatchMapping("/profile/name")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<OperatorProfileDTO> updateOperatorName(
+            @Valid @RequestBody UpdateNameDTO nameDto,
+            Authentication authentication
+    ) {
+        String operatorEmail = authentication.getName();
+        Operator operator = operatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Operator not found with email: " + operatorEmail));
+
+        operator.setFirstName(nameDto.getFirstName());
+        operator.setLastName(nameDto.getLastName());
         Operator updatedOperator = operatorRepository.save(operator);
 
         return ResponseEntity.ok(convertToProfileDto(updatedOperator));
