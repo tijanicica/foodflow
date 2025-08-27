@@ -27,7 +27,7 @@ public class SupportAnalyticsService {
         );
     }
 
-    // Pomoćna metoda za formatiranje sekundi u čitljiv format
+
     private String formatSeconds(Double totalSeconds) {
         if (totalSeconds == null || totalSeconds.isNaN()) {
             return "N/A";

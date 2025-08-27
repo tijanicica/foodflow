@@ -17,11 +17,11 @@ public class MenuItemVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private BigDecimal price;
-    private LocalTime timeFrom; // Bilo je dateFrom (LocalDateTime)
-    private LocalTime timeTo;   // Bilo je dateTo (LocalDateTime)
+    private LocalTime timeFrom;
+    private LocalTime timeTo;
     private boolean available;
     private boolean popular;
-    // NOVO POLJE
+
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 

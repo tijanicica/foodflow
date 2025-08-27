@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { SupportAdminNavbar } from "@/components/SupportAdminNavbar";
-import { Footer } from "@/components/Footer"; // <-- Importujemo Footer
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { getOperators } from "@/services/api";
+import { getOperators, deleteOperator } from "@/services/api";
 import toast from "react-hot-toast";
 import { RegisterAgentModal } from "@/components/modals/RegisterOperatorModal";
-import { PlusCircle, Users, Edit } from "lucide-react";
+import { PlusCircle, Users, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
 
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -30,8 +31,7 @@ const AdminSection = ({ title, icon, action, children }) => (
     <div>{children}</div>
   </motion.div>
 );
-
-const AgentRow = ({ agent }) => (
+const AgentRow = ({ agent, onRemoveClick }) => (
   <motion.div
     layout
     initial={{ opacity: 0, y: 10 }}
@@ -46,9 +46,10 @@ const AgentRow = ({ agent }) => (
     <div className="text-left md:text-right">
       <Button
         variant="ghost"
-        className="text-brand-accent hover:text-brand-accent/80 p-1 h-auto text-base"
+        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto text-base"
+        onClick={() => onRemoveClick(agent)} // Prosleđujemo ceo agent objekat
       >
-        <Edit size={16} className="mr-2" /> Edit
+        <Trash2 size={16} className="mr-2" /> Remove
       </Button>
     </div>
   </motion.div>
@@ -81,6 +82,10 @@ export const OperatorManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [agentToDelete, setAgentToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchAgents = useCallback(async () => {
     try {
       if (agents.length === 0) setLoading(true);
@@ -99,6 +104,31 @@ export const OperatorManagementPage = () => {
 
   const handleRegistrationSuccess = () => {
     fetchAgents();
+  };
+
+  const handleRemoveClick = (agent) => {
+    setAgentToDelete(agent);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!agentToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteOperator(agentToDelete.id);
+      toast.success(
+        `Operator ${agentToDelete.firstName} ${agentToDelete.lastName} has been removed.`
+      );
+
+      setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
+      setIsConfirmOpen(false);
+      setAgentToDelete(null);
+    } catch (error) {
+      toast.error("Failed to remove operator. They may have assigned tickets.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -140,7 +170,11 @@ export const OperatorManagementPage = () => {
                     [...Array(3)].map((_, i) => <AgentRowSkeleton key={i} />)
                   ) : agents.length > 0 ? (
                     agents.map((agent) => (
-                      <AgentRow key={agent.id} agent={agent} />
+                      <AgentRow
+                        key={agent.id}
+                        agent={agent}
+                        onRemoveClick={handleRemoveClick}
+                      />
                     ))
                   ) : (
                     <div className="pt-6">
@@ -160,6 +194,14 @@ export const OperatorManagementPage = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleRegistrationSuccess}
+      />
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Remove Operator"
+        description={`Are you sure you want to remove ${agentToDelete?.firstName} ${agentToDelete?.lastName}? This action cannot be undone.`}
+        isLoading={isDeleting}
       />
     </>
   );

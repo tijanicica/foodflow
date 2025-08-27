@@ -869,10 +869,10 @@ INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
 
 -- TIKETI VEZANI ZA PROBLEM SA DOSTAVOM (kategorije 11, 13)
 -- #4 (Ana, ID=3) - Average resolution (35 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (4, 'CLOSED', 'Porudžbina kasni već 20 minuta.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '35 minute', 3, 3, 11);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (4, 4, 'Dala mi je informaciju gde se vozač nalazi.', NOW() - INTERVAL '1 day' + INTERVAL '1 hour');
+--INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+  --  (4, 'CLOSED', 'Porudžbina kasni već 20 minuta.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '35 minute', 3, 3, 11);
+--INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
+  --  (4, 4, 'Dala mi je informaciju gde se vozač nalazi.', NOW() - INTERVAL '1 day' + INTERVAL '1 hour');
 
 -- #5 (Zile, ID=557) - Very fast resolution (8 minutes)
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES

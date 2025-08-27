@@ -1,12 +1,10 @@
 package com.iis.foodflow.model.support;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,8 +18,12 @@ public class ProblemCategory {
 
     @ManyToOne
     @JoinColumn(name = "parent_category_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private ProblemCategory parentCategory;
 
     @OneToMany(mappedBy = "parentCategory")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<ProblemCategory> subCategories = new HashSet<>();
 }

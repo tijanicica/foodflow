@@ -9,6 +9,7 @@ import {
   getOperatorProfile,
   updateOperatorPhone,
   changeOperatorPassword,
+  updateOperatorName,
 } from "@/services/api";
 import toast from "react-hot-toast";
 import { Edit, Save, X, User, KeyRound } from "lucide-react";
@@ -54,39 +55,67 @@ export const OperatorProfilePage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [phone, setPhone] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+  });
 
   const fetchProfile = useCallback(async () => {
     try {
+      setLoading(true);
       const data = await getOperatorProfile();
-      const fullName = `${data.firstName} ${data.lastName}`;
-      setProfile({ ...data, fullName });
-      setPhone(data.phone || "");
+      setProfile(data);
+      setFormData({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone || "",
+      });
     } catch {
       toast.error("Failed to load profile data.");
     } finally {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
-  const handlePhoneSave = async () => {
-    if (phone === profile?.phone) {
-      setIsEditingPhone(false);
-      return;
-    }
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSaveChanges = async () => {
     try {
-      await updateOperatorPhone(phone);
-      toast.success("Phone number updated!");
+      if (
+        formData.firstName !== profile.firstName ||
+        formData.lastName !== profile.lastName
+      ) {
+        await updateOperatorName({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        });
+      }
+      if (formData.phone !== (profile.phone || "")) {
+        await updateOperatorPhone({ phone: formData.phone });
+      }
+      toast.success("Profile updated successfully!");
       await fetchProfile();
-      setIsEditingPhone(false);
+      setIsEditing(false);
     } catch {
-      toast.error("Failed to update phone number.");
+      toast.error("Failed to update profile.");
     }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setFormData({
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      phone: profile.phone || "",
+    });
   };
 
   const handlePasswordChange = async (passwordData) => {
@@ -123,13 +152,43 @@ export const OperatorProfilePage = () => {
             <ProfileSection
               title="Personal Information"
               icon={<User size={24} />}
+              action={
+                !isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit size={16} className="mr-2" /> Edit Profile
+                  </Button>
+                )
+              }
             >
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Full Name</span>
-                  <span className="font-semibold text-gray-800">
-                    {profile.fullName}
-                  </span>
+                  {isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        placeholder="First Name"
+                        className="max-w-xs h-9"
+                      />
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        placeholder="Last Name"
+                        className="max-w-xs h-9"
+                      />
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-gray-800">
+                      {profile.firstName} {profile.lastName}
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Email</span>
@@ -139,45 +198,33 @@ export const OperatorProfilePage = () => {
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Phone Number</span>
-                  {isEditingPhone ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="max-w-xs h-9"
-                      />
-                      <Button
-                        size="icon"
-                        onClick={handlePhoneSave}
-                        className="bg-green-600 hover:bg-green-700 h-9 w-9"
-                      >
-                        <Save size={16} />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setIsEditingPhone(false)}
-                        className="h-9 w-9"
-                      >
-                        <X size={16} />
-                      </Button>
-                    </div>
+                  {isEditing ? (
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="max-w-xs h-9"
+                    />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-800">
-                        {profile.phone || "Not set"}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-gray-400 hover:text-brand-primary h-8 w-8"
-                        onClick={() => setIsEditingPhone(true)}
-                      >
-                        <Edit size={16} />
-                      </Button>
-                    </div>
+                    <span className="font-semibold text-gray-800">
+                      {profile.phone || "Not set"}
+                    </span>
                   )}
                 </div>
+
+                {isEditing && (
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="ghost" onClick={handleCancel}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveChanges}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Save size={16} className="mr-2" /> Save Changes
+                    </Button>
+                  </div>
+                )}
               </div>
             </ProfileSection>
 

@@ -3,14 +3,13 @@ package com.iis.foodflow.model.user;
 import com.iis.foodflow.enums.Role;
 import com.iis.foodflow.model.support.SupportTicket;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -39,6 +38,8 @@ public class Operator implements UserDetails {
     private SupportAdministrator createdBySupportAdmin;
 
     @OneToMany(mappedBy = "operator")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<SupportTicket> tickets = new HashSet<>();
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

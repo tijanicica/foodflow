@@ -119,7 +119,7 @@ export const AgentPerformancePage = () => {
                 Average Rating
               </span>
               <span className="col-span-4 font-semibold text-sm text-gray-500 uppercase tracking-wider">
-                Resolved Tickets
+                Resolved and rated Tickets
               </span>
             </div>
 

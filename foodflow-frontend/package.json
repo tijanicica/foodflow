@@ -30,7 +30,7 @@
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.2.0",
     "leaflet-routing-machine": "^3.2.12",
-    "lucide-react": "^0.539.0",
+    "lucide-react": "^0.541.0",
     "react": "^18.2.0",
     "react-credit-cards-2": "^1.0.3",
     "react-day-picker": "^9.8.1",

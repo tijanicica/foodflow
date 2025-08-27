@@ -1,5 +1,7 @@
 // package com.iis.foodflow.security;
 package com.iis.foodflow.security;
+import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.model.user.Operator;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -50,6 +52,13 @@ public class JwtService {
         extraClaims.put("role", role);
         if (userDetails instanceof com.iis.foodflow.model.user.Manager) {
             extraClaims.put("id", ((com.iis.foodflow.model.user.Manager) userDetails).getId());
+        }
+        if (userDetails instanceof Customer customer) {
+            extraClaims.put("id", customer.getId());
+            extraClaims.put("name", customer.getFirstName());
+        } else if (userDetails instanceof Operator operator) {
+            extraClaims.put("id", operator.getId());
+            extraClaims.put("name", operator.getFirstName());
         }
 
         return generateToken(extraClaims, userDetails);

@@ -1,13 +1,17 @@
 package com.iis.foodflow.controller;
 
 import com.iis.foodflow.dto.request.ChangePasswordRequestDTO;
+import com.iis.foodflow.dto.request.OperatorDTO;
+import com.iis.foodflow.dto.request.UpdateNameDTO;
 import com.iis.foodflow.dto.request.UpdatePhoneRequestDTO;
 import com.iis.foodflow.dto.response.OperatorAnalyticsDTO;
 import com.iis.foodflow.dto.response.OperatorProfileDTO;
+import com.iis.foodflow.dto.response.TicketSummaryDTO;
 import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.OperatorRepository;
 import com.iis.foodflow.service.OperatorAnalyticsService;
+import com.iis.foodflow.service.SupportTicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +21,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,6 +32,7 @@ public class OperatorController {
     private final OperatorAnalyticsService analyticsService;
     private final OperatorRepository operatorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SupportTicketService supportTicketService;
 
     @GetMapping("/analytics")
     @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
@@ -56,6 +62,23 @@ public class OperatorController {
                 .orElseThrow(() -> new UsernameNotFoundException("Operator not found with email: " + operatorEmail));
 
         operator.setPhone(phoneDto.getPhone());
+        Operator updatedOperator = operatorRepository.save(operator);
+
+        return ResponseEntity.ok(convertToProfileDto(updatedOperator));
+    }
+
+    @PatchMapping("/profile/name")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<OperatorProfileDTO> updateOperatorName(
+            @Valid @RequestBody UpdateNameDTO nameDto,
+            Authentication authentication
+    ) {
+        String operatorEmail = authentication.getName();
+        Operator operator = operatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Operator not found with email: " + operatorEmail));
+
+        operator.setFirstName(nameDto.getFirstName());
+        operator.setLastName(nameDto.getLastName());
         Operator updatedOperator = operatorRepository.save(operator);
 
         return ResponseEntity.ok(convertToProfileDto(updatedOperator));
@@ -97,4 +120,22 @@ public class OperatorController {
         dto.setPhone(operator.getPhone());
         return dto;
     }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<List<TicketSummaryDTO>> getDashboard(Authentication authentication) {
+        Operator operator = (Operator) authentication.getPrincipal();
+        List<TicketSummaryDTO> tickets = supportTicketService.getTicketsForOperatorDashboard(operator.getId());
+        return ResponseEntity.ok(tickets);
+    }
+
+
+    @PostMapping("/tickets/{ticketId}/resolve")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<Void> resolveTicket(@PathVariable Long ticketId, Authentication authentication) {
+        Operator operator = (Operator) authentication.getPrincipal();
+        supportTicketService.resolveTicket(ticketId, operator);
+        return ResponseEntity.ok().build();
+    }
+
 }

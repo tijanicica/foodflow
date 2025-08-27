@@ -9,6 +9,7 @@ import {
   getSupportAdminProfile,
   updateSupportAdminPhone,
   changeSupportAdminPassword,
+  updateSupportAdminName,
 } from "@/services/api";
 import toast from "react-hot-toast";
 import { Edit, Save, X, User, KeyRound } from "lucide-react";
@@ -56,13 +57,23 @@ export const SupportAdminProfilePage = () => {
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [phone, setPhone] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+  });
 
   const fetchProfile = useCallback(async () => {
     try {
       const data = await getSupportAdminProfile();
-      const fullName = `${data.firstName} ${data.lastName}`;
-      setProfile({ ...data, fullName });
-      setPhone(data.phone || "");
+      setProfile(data);
+      // Postavljamo početne vrednosti za formu
+      setFormData({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone || "",
+      });
     } catch {
       toast.error("Failed to load profile data.");
     } finally {
@@ -74,13 +85,39 @@ export const SupportAdminProfilePage = () => {
     fetchProfile();
   }, [fetchProfile]);
 
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleNameSave = async () => {
+    if (
+      formData.firstName === profile?.firstName &&
+      formData.lastName === profile?.lastName
+    ) {
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      await updateSupportAdminName({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      });
+      toast.success("Name updated successfully!");
+      await fetchProfile(); // Osveži podatke
+      setIsEditingName(false);
+    } catch {
+      toast.error("Failed to update name.");
+    }
+  };
+
   const handlePhoneSave = async () => {
-    if (phone === profile?.phone) {
+    if (formData.phone === profile?.phone) {
       setIsEditingPhone(false);
       return;
     }
     try {
-      await updateSupportAdminPhone(phone);
+      await updateSupportAdminPhone({ phone: formData.phone }); // Šaljemo objekat
       toast.success("Phone number updated!");
       await fetchProfile();
       setIsEditingPhone(false);
@@ -123,13 +160,44 @@ export const SupportAdminProfilePage = () => {
             <ProfileSection
               title="Personal Information"
               icon={<User size={24} />}
+              action={
+                !isEditingName &&
+                !isEditingPhone && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    <Edit size={16} className="mr-2" /> Edit Profile
+                  </Button>
+                )
+              }
             >
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Full Name</span>
-                  <span className="font-semibold text-gray-800">
-                    {profile.fullName}
-                  </span>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        placeholder="First Name"
+                        className="max-w-xs h-9"
+                      />
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        placeholder="Last Name"
+                        className="max-w-xs h-9"
+                      />
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-gray-800">
+                      {profile.firstName} {profile.lastName}
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Email</span>
@@ -139,45 +207,44 @@ export const SupportAdminProfilePage = () => {
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Phone Number</span>
-                  {isEditingPhone ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="max-w-xs h-9"
-                      />
-                      <Button
-                        size="icon"
-                        onClick={handlePhoneSave}
-                        className="bg-green-600 hover:bg-green-700 h-9 w-9"
-                      >
-                        <Save size={16} />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setIsEditingPhone(false)}
-                        className="h-9 w-9"
-                      >
-                        <X size={16} />
-                      </Button>
-                    </div>
+                  {isEditingName ? ( // Koristimo isEditingName da bi se i telefon menjao u istom modu
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="max-w-xs h-9"
+                    />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-800">
-                        {profile.phone || "Not set"}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-gray-400 hover:text-brand-primary h-8 w-8"
-                        onClick={() => setIsEditingPhone(true)}
-                      >
-                        <Edit size={16} />
-                      </Button>
-                    </div>
+                    <span className="font-semibold text-gray-800">
+                      {profile.phone || "Not set"}
+                    </span>
                   )}
                 </div>
+
+                {/* Dugmad za čuvanje ili odustajanje */}
+                {isEditingName && (
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setIsEditingName(false);
+                        fetchProfile();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        await handleNameSave();
+                        await handlePhoneSave();
+                        setIsEditingName(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Save size={16} className="mr-2" /> Save Changes
+                    </Button>
+                  </div>
+                )}
               </div>
             </ProfileSection>
 

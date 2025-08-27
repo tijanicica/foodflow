@@ -63,6 +63,9 @@ import { ViewOrderPage } from "./pages/ViewOrderPage";
 import { SupportAnalyticsPage } from "./pages/SupportAnalyticsPage";
 import { OperatorAnalyticsPage } from "./pages/OperatorAnalyticsPage.jsx";
 import { OperatorProfilePage } from "./pages/OperatorProfilePage";
+import { SupportChatPage } from "./pages/SupportChatPage.jsx";
+import { OperatorDashboardPage } from "./pages/OperatorDashboardPage.jsx";
+import { OperatorChatPage } from "./pages/OperatorChatPage.jsx";
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
@@ -86,6 +89,7 @@ const router = createBrowserRouter([
       { path: "/contact", element: <ContactPage /> },
       { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
       { path: "/terms-of-service", element: <TermsOfServicePage /> },
+      { path: "/support/chat/:ticketId", element: <SupportChatPage /> },
     ],
   },
   // Driver
@@ -188,6 +192,8 @@ const router = createBrowserRouter([
   // Support operator
   { path: "/operator/analytics", element: <OperatorAnalyticsPage /> },
   { path: "operator/profile", element: <OperatorProfilePage /> },
+  { path: "/operator/dashboard", element: <OperatorDashboardPage /> },
+  { path: "/operator/chat/:ticketId", element: <OperatorChatPage /> },
 
   // Rute koje nemaju poseban layout (Login, Register)
   { path: "/", element: <LoginPage /> },

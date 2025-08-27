@@ -1,11 +1,14 @@
 package com.iis.foodflow.controller;
 
 import com.iis.foodflow.dto.request.*;
+import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.OperatorRepository;
 import com.iis.foodflow.repository.SupportAdministratorRepository;
+import com.iis.foodflow.repository.SupportTicketRepository;
 import com.iis.foodflow.service.OperatorService;
+import com.iis.foodflow.service.SupportTicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,8 @@ public class SupportAdminController {
     private final OperatorService operatorService;
     private final SupportAdministratorRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OperatorRepository operatorRepository;
+    private final SupportTicketRepository supportTicketRepository;
 
     @PostMapping("/register-operator")
     @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
@@ -59,9 +64,10 @@ public class SupportAdminController {
     @PatchMapping("/profile/phone")
     @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
     public ResponseEntity<SupportAdministrator> updateAdminPhone(
-            @Valid @RequestBody UpdatePhoneRequestDTO phoneDto,
+             @Valid @RequestBody UpdatePhoneRequestDTO phoneDto,
             Authentication authentication
     ) {
+
         String adminEmail = authentication.getName();
         SupportAdministrator admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("Admin not found with email: " + adminEmail));
@@ -104,6 +110,41 @@ public class SupportAdminController {
     public ResponseEntity<List<OperatorRatingDTO>> getOperatorRankings() {
         List<OperatorRatingDTO> rankings = operatorService.getRankedOperators();
         return ResponseEntity.ok(rankings);
+    }
+
+    @PatchMapping("/profile/name")
+    @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
+    public ResponseEntity<SupportAdministrator> updateAdminName(
+            @Valid @RequestBody UpdateNameDTO nameDto,
+            Authentication authentication
+    ) {
+        String adminEmail = authentication.getName();
+        SupportAdministrator admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Admin not found with email: " + adminEmail));
+
+        admin.setFirstName(nameDto.getFirstName());
+        admin.setLastName(nameDto.getLastName());
+        SupportAdministrator updatedAdmin = adminRepository.save(admin);
+
+        return ResponseEntity.ok(updatedAdmin);
+    }
+
+    @DeleteMapping("/operators/{operatorId}")
+    @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
+    public ResponseEntity<?> deleteOperator(@PathVariable Long operatorId) {
+
+        if (!operatorRepository.existsById(operatorId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<TicketStatus> activeStatuses = List.of(TicketStatus.OPEN, TicketStatus.IN_PROGRESS);
+        if (supportTicketRepository.existsByOperatorIdAndStatusIn(operatorId, activeStatuses)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Cannot delete operator. Please resolve or reassign their active tickets first."));
+        }
+
+        operatorRepository.deleteById(operatorId);
+        return ResponseEntity.noContent().build();
     }
 
 }
