@@ -807,3 +807,8 @@ export const updateOperatorName = async (nameData) => {
 export const deleteOperator = async (operatorId) => {
     await apiClient.delete(`/support-admin/operators/${operatorId}`);
 };
+
+export const getMyRecommendations = async () => {
+    const response = await apiClient.get('/orders/my-recommendations');
+    return response.data;
+};

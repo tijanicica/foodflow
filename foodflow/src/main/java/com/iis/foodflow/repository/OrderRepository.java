@@ -208,4 +208,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "WHERE r.manager = :manager AND r.id = :restaurantId AND oi.order.creationDate >= :startDate " +
             "GROUP BY miv.menuItem.name ORDER BY orderCount DESC")
     List<Object[]> findTopPerformingItemsByRestaurantSince(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
+
+
+    @Query(value = "SELECT suggest_most_frequent_items(:customerId, :count)", nativeQuery = true)
+    List<Long> findRecommendedItemIdsForCustomer(@Param("customerId") Long customerId, @Param("count") int count);
 }

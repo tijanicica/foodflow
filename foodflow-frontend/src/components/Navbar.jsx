@@ -53,6 +53,7 @@ export const Navbar = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
+          sessionStorage.removeItem('hasSeenRecommendations');
         navigate('/login', { replace: true });
     };
 

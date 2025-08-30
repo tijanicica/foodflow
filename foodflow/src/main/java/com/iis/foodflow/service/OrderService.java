@@ -3,10 +3,7 @@ package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.request.OrderRequestDTO;
 import com.iis.foodflow.dto.request.RateOrderFoodRequest;
-import com.iis.foodflow.dto.response.OrderDetailDTO;
-import com.iis.foodflow.dto.response.OrderSummaryDTO;
-import com.iis.foodflow.dto.response.RepeatingOrderTemplateDTO;
-import com.iis.foodflow.dto.response.TrackOrderDTO;
+import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.enums.OrderStatus;
 import com.iis.foodflow.enums.OrderType;
 import com.iis.foodflow.enums.PaymentType;
@@ -571,5 +568,29 @@ public class OrderService {
                 .driverLocation(new TrackOrderDTO.Point(driver.getLatitude(), driver.getLongitude()))
                 .customerLocation(new TrackOrderDTO.Point(customerAddress.getLatitude(), customerAddress.getLongitude()))
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecommendedItemDTO> getRecommendedItemsForCustomer(Customer customer) {
+        // 1. Позивамо нашу PL/pgSQL функцију преко репозиторијума да добијемо ID-јеве
+        List<Long> recommendedIds = orderRepository.findRecommendedItemIdsForCustomer(customer.getId(), 1);
+
+        if (recommendedIds == null || recommendedIds.isEmpty()) {
+            return List.of(); // Врати празну листу ако нема препорука
+        }
+
+        // 2. Дохватамо све детаље за те артикле једним упитом
+        List<MenuItemVersion> recommendedItems = menuItemVersionRepository.findAllById(recommendedIds);
+
+        // 3. Мапирамо у DTO за приказ на фронтенду
+        return recommendedItems.stream()
+                .map(miv -> new RecommendedItemDTO(
+                        miv.getId(),
+                        miv.getMenuItem().getName(),
+                        miv.getMenuItem().getImageUrl(),
+                        miv.getPrice(),
+                        miv.getMenuVersion().getMenu().getRestaurant().getId()
+                ))
+                .collect(Collectors.toList());
     }
 }

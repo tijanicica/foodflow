@@ -9,6 +9,7 @@ import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.service.AddressService;
 import com.iis.foodflow.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/addresses")
@@ -45,11 +47,28 @@ public class AddressController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    public ResponseEntity<UserProfileDTO.AddressDTO> updateAddress(
+    public ResponseEntity<?> updateAddress(
             @PathVariable("id") Long id,
             @RequestBody UpdateAddressRequestDTO addressData,
             @AuthenticationPrincipal Customer customer) {
-        UserProfileDTO.AddressDTO updatedAddress = userService.updateAddress(id, addressData, customer);
-        return ResponseEntity.ok(updatedAddress);
+
+        try {
+            // Овај позив остаје исти. Он ће бацити изузетак ако тригер реагује.
+            UserProfileDTO.AddressDTO updatedAddress = userService.updateAddress(id, addressData, customer);
+            return ResponseEntity.ok(updatedAddress);
+
+        } catch (DataAccessException e) {
+            // DataAccessException је Spring-ов омотач око SQL грешака.
+            // Проверавамо да ли је узрок грешке она коју баца наш тригер.
+            if (e.getMostSpecificCause().getMessage().contains("Cannot edit address details")) {
+                // Враћамо HTTP 409 Conflict статус са јасном поруком.
+                // Фронтенд ће ову поруку моћи да прочита.
+                Map<String, String> errorResponse = Map.of("message", e.getMostSpecificCause().getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+            }
+            // Ако је нека друга грешка у бази, врати општију грешку.
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Database error occurred."));
+        }
     }
+
 }
