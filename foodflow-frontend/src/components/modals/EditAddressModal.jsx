@@ -83,7 +83,14 @@ export const EditAddressModal = ({ isOpen, onClose, onAddressUpdated, addressDat
             onAddressUpdated();
             onClose();
         } catch (error) {
-            toast.error(error.message || "An error occurred while updating the address.");
+             if (error.response && error.response.data && error.response.data.message) {
+            // Приказујемо тачну поруку коју је послао тригер!
+            toast.error(error.response.data.message);
+        } else {
+            // Ако нема специфичне поруке, приказујемо генеричку
+            toast.error("An error occurred while updating the address.");
+        }
+
         } finally {
             setIsLoading(false);
         }

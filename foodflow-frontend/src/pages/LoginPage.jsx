@@ -61,6 +61,8 @@ export function LoginPage() {
           destination = "/driver";
           break;
         case "ROLE_CUSTOMER":
+           console.log('🔧 Setting justLoggedIn flag for customer');
+          sessionStorage.setItem('justLoggedIn', 'true');
           destination = "/home";
           break;
         case "ROLE_OPERATOR":
