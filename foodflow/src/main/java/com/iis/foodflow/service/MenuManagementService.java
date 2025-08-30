@@ -158,19 +158,8 @@ public class MenuManagementService {
             throw new SecurityException("You are not authorized to activate this menu.");
         }
 
-        Restaurant restaurant = versionToActivate.getMenu().getRestaurant();
-        Restaurant fullRestaurant = restaurantRepository.findByIdWithMenusAndVersions(restaurant.getId())
-                .orElseThrow(() -> new IllegalStateException("Restaurant not found"));
-
-        fullRestaurant.getMenus().forEach(menu -> {
-            menu.getVersions().forEach(version -> {
-                if (version.isActive()) {
-                    version.setActive(false);
-                    menuVersionRepository.save(version);
-                }
-            });
-        });
-
+        // Једноставно поставите жељену верзију као активну и сачувајте.
+        // PL/pgSQL тригер на бази података ће се побринути за деактивирање свих осталих.
         versionToActivate.setActive(true);
         menuVersionRepository.save(versionToActivate);
     }
