@@ -554,10 +554,11 @@ INSERT INTO menu_item_diet_type (menu_item_id, diet_type_id) VALUES
 -- ====================================================================
 
 -- PORUDŽBINA #1: DELIVERED, od Jovana (ID=2), na adresu (ID=1)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at) VALUES
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, card_amount, cash_amount) VALUES
     (1, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1400.00, 1, 1, 2,
      NOW() - INTERVAL '2 day' + INTERVAL '45 minute', -- Rok isporuke (ETA) je bio 45 minuta
-     NOW() - INTERVAL '2 day' + INTERVAL '30 minute'  -- A isporučeno je za 30 minuta. NA VRIJEME!
+     NOW() - INTERVAL '2 day' + INTERVAL '30 minute',  -- A isporučeno je za 30 minuta. NA VRIJEME!
+     1400.00, 0.00
     );
 
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (1, 1, 1, 1);
@@ -565,8 +566,8 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (1,
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (1, 1, 2, 'ACCEPTED');
 
 -- PORUDŽBINA #2: CANCELED, prihvaćena od Jovana (ID=2)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id) VALUES
-    (2, 'CANCELED', 'CASH', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1350.00, 1, 1, 2);
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, card_amount, cash_amount) VALUES
+    (2, 'CANCELED', 'CASH', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1350.00, 1, 1, 2, 0.00, 1350.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (2, 1, 2, 9), -- Tiramisu
                                                                           (3, 1, 2, 11); -- Cheesecake
@@ -577,10 +578,11 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
 
 
 -- PORUDŽBINA #3: DELIVERED, od Jovana (ID=2)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at) VALUES
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, card_amount, cash_amount) VALUES
     (3, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '1 day', 150.00, 1350.00, 1, 1, 2,
      NOW() - INTERVAL '1 day' + INTERVAL '40 minute', -- Rok isporuke (ETA) je bio 40 minuta
-     NOW() - INTERVAL '1 day' + INTERVAL '55 minute'   -- A isporučeno je za 55 minuta. KASNI!
+     NOW() - INTERVAL '1 day' + INTERVAL '55 minute',   -- A isporučeno je za 55 minuta. KASNI!
+     0.00, 1350.00
     );
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (4, 1, 3, 21);
@@ -589,16 +591,16 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (3, 3, 2, 'ACCEPTED');
 
 -- PORUDŽBINA #4: SCHEDULED_PENDING (nema vozača)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, scheduled_for) VALUES
-    (4, 'SCHEDULED_PENDING', 'CARD', 'SCHEDULED', NOW(), 150.00, 4250.00, 1, 1, NOW() + INTERVAL '1 day');
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, scheduled_for, card_amount, cash_amount) VALUES
+    (4, 'SCHEDULED_PENDING', 'CARD', 'SCHEDULED', NOW(), 150.00, 4250.00, 1, 1, NOW() + INTERVAL '1 day', 4250.00, 0.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (5, 2, 4, 16), -- Losos na žaru
                                                                           (6, 1, 4, 20); -- Voćna Salata
 
 
 -- PORUDŽBINA #5: CREATED (nema vozača, čeka potvrdu menadžera)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id) VALUES
-    (5, 'CREATED', 'COMBINED', 'REPEATING', NOW(), 150.00, 1050.00, 1, 1);
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (5, 'CREATED', 'COMBINED', 'REPEATING', NOW(), 150.00, 1050.00, 1, 1, 550.00, 500.00);
 
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (7, 1, 5, 6),
@@ -612,8 +614,8 @@ UPDATE orders SET repeating_order_template_id = 1 WHERE id = 5;
 
 
 -- PORUDŽBINA #6: CONFIRMED (nema vozača, ali ponuđena nekome - idealno za test dashboarda)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id) VALUES
-    (6, 'CONFIRMED', 'CASH', 'REGULAR', NOW() - INTERVAL '30 minute', 150.00, 1000.00, 1, 1);
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (6, 'CONFIRMED', 'CASH', 'REGULAR', NOW() - INTERVAL '30 minute', 150.00, 1000.00, 1, 1, 0.00, 1000.00);
 
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (9, 1, 6, 23);
@@ -651,8 +653,8 @@ INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for
 
 -- KORAK 1: Kreiramo novu porudžbinu sa ID=8.
 -- Status joj je 'CONFIRMED' jer čeka na dodjelu vozaču.
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id) VALUES
-    (8, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '1 hour', 150.00, 1650.00, 1, 1);
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (8, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '1 hour', 150.00, 1650.00, 1, 1, 1650.00, 0.00);
 
 -- KORAK 2: Dodajemo stavke za tu porudžbinu.
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
@@ -679,8 +681,8 @@ INSERT INTO coupon (id, code, date_from, date_to, active, used, customer_id) VAL
 
 -- KORAK 1: Kreiramo porudžbinu i povezujemo je sa kuponom ID=1
 -- Važno: total_price je 2800.00 jer je delivery_price 0 zbog kupona.
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, card_amount, delivered_at, coupon_id) VALUES
-    (30, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '3 day', 0.00, 2800.00, 1, 1, 8, 2800.00, NOW() - INTERVAL '3 day' + INTERVAL '30 minute', 1);
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, card_amount, cash_amount, delivered_at, coupon_id) VALUES
+    (30, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '3 day', 0.00, 2800.00, 1, 1, 8, 2800.00, 0.0 ,NOW() - INTERVAL '3 day' + INTERVAL '30 minute', 1);
 
 -- KORAK 2: Dodajemo stavke za porudžbinu
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
@@ -735,11 +737,12 @@ INSERT INTO driver (id, email, password, first_name, last_name, phone, role, veh
 
 -- ISPRAVLJENA INSERT KOMANDA ZA PORUDŽBINU #31 (SIMULACIJA OD 30 SEKUNDI)
 -- ISPRAVLJENA INSERT KOMANDA ZA PORUDŽBINU #31 (za praćenje)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta) VALUES
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, card_amount, cash_amount) VALUES
     (31, 'PICKED_UP', 'CARD', 'REGULAR',
      NOW() - INTERVAL '2 hours',          -- Postavlja vreme kreiranja na SADA (u UTC)
      150.00, 1450.00, 1, 11, 9,
-     (NOW() - INTERVAL '2 hours') + INTERVAL '5 minute' -- Postavlja ETA na 5 MINUTA U BUDUĆNOST (u UTC)
+     (NOW() - INTERVAL '2 hours') + INTERVAL '5 minute', -- Postavlja ETA na 5 MINUTA U BUDUĆNOST (u UTC)
+     1450.00, 0.00
     );
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (31, 1, 31, 122); -- 1x Piletina sa karijem
@@ -752,27 +755,27 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
 -- ====================================================================
 
 -- Mart 2025 (1 porudžbina)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
-    (80, 'DELIVERED', 'CARD', 'REGULAR', '2025-03-15 18:00:00', 150.00, 1300.00, 1, 1, 2, '2025-03-15 18:32:00');
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at, card_amount, cash_amount) VALUES
+    (80, 'DELIVERED', 'CARD', 'REGULAR', '2025-03-15 18:00:00', 150.00, 1300.00, 1, 1, 2, '2025-03-15 18:32:00', 1300.00, 0.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (80, 1, 80, 67); -- Pizza Capricciosa
 
 -- April 2025 (3 porudžbine)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
-                                                                                                                                                            (81, 'DELIVERED', 'CASH', 'REGULAR', '2025-04-05 13:10:00', 150.00, 1000.00, 1, 1, 8, '2025-04-05 13:45:00'),
-                                                                                                                                                            (82, 'DELIVERED', 'CARD', 'REGULAR', '2025-04-18 20:00:00', 150.00, 1750.00, 1, 11, 9, '2025-04-18 20:25:00'),
-                                                                                                                                                            (83, 'DELIVERED', 'CARD', 'REGULAR', '2025-04-29 19:00:00', 150.00, 2050.00, 1, 1, 2, '2025-04-29 19:33:00');
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at, card_amount, cash_amount) VALUES
+                                                                                                                                                            (81, 'DELIVERED', 'CASH', 'REGULAR', '2025-04-05 13:10:00', 150.00, 1000.00, 1, 1, 8, '2025-04-05 13:45:00', 0.00, 1000.00),
+                                                                                                                                                            (82, 'DELIVERED', 'CARD', 'REGULAR', '2025-04-18 20:00:00', 150.00, 1750.00, 1, 11, 9, '2025-04-18 20:25:00', 1750.00, 0.00),
+                                                                                                                                                            (83, 'DELIVERED', 'CARD', 'REGULAR', '2025-04-29 19:00:00', 150.00, 2050.00, 1, 1, 2, '2025-04-29 19:33:00', 2050.00, 0.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (81, 1, 81, 23), -- Classic Cheeseburger
                                                                           (82, 1, 82, 36), -- Spicy Tuna Roll
                                                                           (83, 2, 83, 46); -- 2x Pljeskavica with Kajmak
 
 -- Maj 2025 (4 porudžbine)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
-                                                                                                                                                            (84, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-01 12:00:00', 150.00, 1450.00, 1, 11, 9, '2025-05-01 12:22:00'),
-                                                                                                                                                            (85, 'DELIVERED', 'CASH', 'REGULAR', '2025-05-12 21:00:00', 150.00, 1950.00, 1, 1, 8, '2025-05-12 21:34:00'),
-                                                                                                                                                            (86, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-22 14:30:00', 150.00, 1450.00, 1, 1, 2, '2025-05-22 14:58:00'),
-                                                                                                                                                            (87, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-30 20:15:00', 150.00, 850.00, 1, 1, 8, '2025-05-30 20:40:00');
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at, card_amount, cash_amount) VALUES
+                                                                                                                                                            (84, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-01 12:00:00', 150.00, 1450.00, 1, 11, 9, '2025-05-01 12:22:00', 1450.00, 0.00),
+                                                                                                                                                            (85, 'DELIVERED', 'CASH', 'REGULAR', '2025-05-12 21:00:00', 150.00, 1950.00, 1, 1, 8, '2025-05-12 21:34:00', 0.00, 1950.00),
+                                                                                                                                                            (86, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-22 14:30:00', 150.00, 1450.00, 1, 1, 2, '2025-05-22 14:58:00', 1450.00, 0.00),
+                                                                                                                                                            (87, 'DELIVERED', 'CARD', 'REGULAR', '2025-05-30 20:15:00', 150.00, 850.00, 1, 1, 8, '2025-05-30 20:40:00', 850.00, 0.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (84, 1, 84, 122),-- Chicken with Curry
                                                                           (85, 1, 85, 16), -- Grilled Salmon
@@ -780,20 +783,20 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (87, 1, 87, 98); -- Chocolate Lava Cake
 
 -- Jun 2025 (2 porudžbine)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
-                                                                                                                                                            (88, 'DELIVERED', 'CARD', 'REGULAR', '2025-06-10 20:00:00', 150.00, 2750.00, 1, 1, 2, '2025-06-10 20:40:00'),
-                                                                                                                                                            (89, 'DELIVERED', 'CASH', 'REGULAR', '2025-06-25 13:00:00', 150.00, 1050.00, 1, 11, 9, '2025-06-25 13:21:00');
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at, card_amount, cash_amount) VALUES
+                                                                                                                                                            (88, 'DELIVERED', 'CARD', 'REGULAR', '2025-06-10 20:00:00', 150.00, 2750.00, 1, 1, 2, '2025-06-10 20:40:00', 2750.00, 0.00),
+                                                                                                                                                            (89, 'DELIVERED', 'CASH', 'REGULAR', '2025-06-25 13:00:00', 150.00, 1050.00, 1, 11, 9, '2025-06-25 13:21:00', 0.00, 1050.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (88, 1, 88, 91), -- Rump Steak
                                                                           (89, 1, 89, 111);-- Hake and Chips
 
 -- Juli 2025 (5 porudžbina)
-INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at) VALUES
-                                                                                                                                                            (90, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-02 19:10:00', 150.00, 1400.00, 1, 1, 8, '2025-07-02 19:45:00'),
-                                                                                                                                                            (91, 'DELIVERED', 'CASH', 'REGULAR', '2025-07-09 14:00:00', 150.00, 1250.00, 1, 1, 2, '2025-07-09 14:28:00'),
-                                                                                                                                                            (92, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-15 12:30:00', 150.00, 1400.00, 1, 11, 9, '2025-07-15 12:55:00'),
-                                                                                                                                                            (93, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-22 21:00:00', 150.00, 1950.00, 1, 1, 8, '2025-07-22 21:30:00'),
-                                                                                                                                                            (94, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-30 18:45:00', 150.00, 2950.00, 1, 1, 2, '2025-07-30 19:15:00');
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, delivered_at, card_amount, cash_amount) VALUES
+                                                                                                                                                            (90, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-02 19:10:00', 150.00, 1400.00, 1, 1, 8, '2025-07-02 19:45:00', 1400.00, 0.00),
+                                                                                                                                                            (91, 'DELIVERED', 'CASH', 'REGULAR', '2025-07-09 14:00:00', 150.00, 1250.00, 1, 1, 2, '2025-07-09 14:28:00', 0.00, 1250.00),
+                                                                                                                                                            (92, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-15 12:30:00', 150.00, 1400.00, 1, 11, 9, '2025-07-15 12:55:00', 1400.00, 0.00),
+                                                                                                                                                            (93, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-22 21:00:00', 150.00, 1950.00, 1, 1, 8, '2025-07-22 21:30:00', 1950.00, 0.00),
+                                                                                                                                                            (94, 'DELIVERED', 'CARD', 'REGULAR', '2025-07-30 18:45:00', 150.00, 2950.00, 1, 1, 2, '2025-07-30 19:15:00', 2950.00, 0.00);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
                                                                           (90, 1, 90, 1),   -- Pasta Carbonara
                                                                           (91, 1, 91, 78),  -- Falafel Bowl

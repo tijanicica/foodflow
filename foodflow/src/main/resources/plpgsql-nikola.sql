@@ -313,17 +313,59 @@ HAVING o.total_price > 2000.00
 ORDER BY o.total_price DESC
     LIMIT 5;
 BEGIN
-WITH UserFinancialOrders AS (
+    -- === КОРАК 1: Главни агрегати - САМО НА ТАБЕЛИ ORDERS ===
+WITH UserFinancialTotals AS (
     SELECT
-        o.id, o.total_price, o.card_amount, o.cash_amount,
-        CASE WHEN o.coupon_id IS NOT NULL THEN 150.00 ELSE 0 END AS coupon_saving,
-        r.price_range,
+        SUM(total_price) as total_spent,
+        SUM(CASE WHEN coupon_id IS NOT NULL THEN 150.00 ELSE 0 END) as total_savings,
+        SUM(COALESCE(card_amount, 0)) as total_card,
+        SUM(COALESCE(cash_amount, 0)) as total_cash
+    FROM orders
+    WHERE customer_id = p_customer_id
+      AND status = 'DELIVERED'
+      AND creation_date BETWEEN p_start_date AND p_end_date
+)
+SELECT
+        c.first_name || ' ' || c.last_name,
+        to_char(p_start_date, 'DD.MM.YYYY') || ' - ' || to_char(p_end_date, 'DD.MM.YYYY'),
+        COALESCE(uft.total_spent, 0),
+        COALESCE(uft.total_savings, 0),
+        COALESCE(uft.total_card, 0),
+        COALESCE(uft.total_cash, 0)
+INTO
+    v_report.customer_full_name, v_report.analysis_period, v_report.total_spent,
+    v_report.total_coupon_savings, v_report.total_paid_by_card, v_report.total_paid_by_cash
+FROM customer c
+         LEFT JOIN UserFinancialTotals uft ON true
+WHERE c.id = p_customer_id;
+
+-- === КОРАК 2: Анализа по добу дана (одвојени упит) ===
+WITH TimeAggregates AS (
+    SELECT
         CASE
             WHEN EXTRACT(HOUR FROM o.creation_date) BETWEEN 6 AND 11 THEN 'Morning (06-12h)'
             WHEN EXTRACT(HOUR FROM o.creation_date) BETWEEN 12 AND 16 THEN 'Lunch (12-17h)'
             WHEN EXTRACT(HOUR FROM o.creation_date) BETWEEN 17 AND 21 THEN 'Evening (17-22h)'
             ELSE 'Night (22-06h)'
-            END AS time_period
+            END AS time_period,
+        COUNT(o.id) as orders_count,
+        SUM(o.total_price) as total_spent
+    FROM orders o
+    WHERE o.customer_id = p_customer_id
+      AND o.status = 'DELIVERED'
+      AND o.creation_date BETWEEN p_start_date AND p_end_date
+    GROUP BY time_period
+)
+SELECT array_agg(ROW(ta.time_period, ta.orders_count, ta.total_spent)::time_of_day_spending ORDER BY ta.time_period)
+INTO v_report.spending_by_time_of_day
+FROM TimeAggregates ta;
+
+-- === КОРАК 3: Анализа по ценовном рангу (одвојени упит) ===
+WITH PriceRangeAggregates AS (
+    SELECT
+        r.price_range::text,
+            COUNT(DISTINCT o.id) as orders_count,
+        SUM(o.total_price) as total_spent
     FROM orders o
              JOIN order_item oi ON o.id = oi.order_id
              JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
@@ -333,23 +375,13 @@ WITH UserFinancialOrders AS (
     WHERE o.customer_id = p_customer_id
       AND o.status = 'DELIVERED'
       AND o.creation_date BETWEEN p_start_date AND p_end_date
-    GROUP BY o.id, r.price_range
+    GROUP BY r.price_range
 )
-SELECT
-        c.first_name || ' ' || c.last_name,
-        to_char(p_start_date, 'DD.MM.YYYY') || ' - ' || to_char(p_end_date, 'DD.MM.YYYY'),
-        COALESCE(SUM(ufo.total_price), 0), COALESCE(SUM(ufo.coupon_saving), 0),
-        COALESCE(SUM(ufo.card_amount), 0), COALESCE(SUM(ufo.cash_amount), 0),
-        (SELECT array_agg(ROW(ufo_inner.time_period, COUNT(*), SUM(ufo_inner.total_price))::time_of_day_spending ORDER BY MIN(ufo_inner.id))
-         FROM UserFinancialOrders ufo_inner GROUP BY ufo_inner.time_period),
-        (SELECT array_agg(ROW(ufo_inner.price_range::text, COUNT(*), SUM(ufo_inner.total_price))::price_range_spending ORDER BY ufo_inner.price_range)
-         FROM UserFinancialOrders ufo_inner GROUP BY ufo_inner.price_range)
-INTO v_report
-FROM customer c
-         LEFT JOIN UserFinancialOrders ufo ON true
-WHERE c.id = p_customer_id
-GROUP BY c.first_name, c.last_name;
+SELECT array_agg(ROW(pra.price_range, pra.orders_count, pra.total_spent)::price_range_spending ORDER BY pra.price_range)
+INTO v_report.spending_by_price_range
+FROM PriceRangeAggregates pra;
 
+-- === КОРАК 4: Курсор за најскупље поруџбине ===
 v_report.top_5_most_expensive_orders := '{}';
 OPEN expensive_orders_cursor;
 LOOP

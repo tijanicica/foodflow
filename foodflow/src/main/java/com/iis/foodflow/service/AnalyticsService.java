@@ -1,13 +1,16 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.response.CustomerAnalyticsDTO;
+import com.iis.foodflow.dto.response.CustomerFinancialReportDTO;
 import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.repository.CustomReportRepository;
 import com.iis.foodflow.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +20,8 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private final OrderRepository orderRepository;
+
+    private final CustomReportRepository customReportRepository;
 
     public CustomerAnalyticsDTO getCustomerAnalytics(Customer customer, String period) {
         // --- KORAK 1: Određivanje vremenskih perioda ---
@@ -101,5 +106,11 @@ public class AnalyticsService {
                 .divide(previous, 4, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100"));
         return change.intValue();
+    }
+
+    // Додајте нову методу
+    public CustomerFinancialReportDTO getCustomerFinancialReport(Long customerId, LocalDate startDate, LocalDate endDate) {
+        // Једноставно проследите позив ка репозиторијуму
+        return customReportRepository.generateCustomerFinancialReport(customerId, startDate, endDate);
     }
 }
