@@ -212,4 +212,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query(value = "SELECT suggest_most_frequent_items(:customerId, :count)", nativeQuery = true)
     List<Long> findRecommendedItemIdsForCustomer(@Param("customerId") Long customerId, @Param("count") int count);
+
+
+    @Query(value = "SELECT calculate_avg_fulfillment_time_minutes(:managerId, :startDate, :endDate, :restaurantId)", nativeQuery = true)
+    Optional<Double> calculateAverageFulfillmentTimeMinutesUsingFunction(
+            @Param("managerId") Long managerId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("restaurantId") Long restaurantId
+    );
+
 }
