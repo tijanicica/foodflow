@@ -242,3 +242,206 @@ EXPLAIN ANALYZE SELECT * FROM restaurant WHERE manager_id = 4;
 "Planning Time: 0.348 ms"
 "Execution Time: 0.163 ms"
 -- Убрзање ≈ 98 пута
+
+
+-------------------------------------Izvestaj
+--Извештај ће приказивати аналитику перформанси ресторана којима менаџер управља за дати временски период.
+--Укључиће укупан приход, број поруџбина, топ 5 и најмање продаваних артикала,
+--као и преглед појединачних ресторана.
+--4. PL/pgSQL Извештај: Аналитика перформанси ресторана за менаџера
+--Опис: Овај извештај пружа детаљан преглед перформанси ресторана којима одређени менаџер управља за дати временски период.
+--Користи сложене типове, курсор, WITH клаузулу,
+--агрегационе функције (SUM, COUNT, AVG), GROUP BY, HAVING и WHERE како би се задовољили сви услови задатка.
+
+-- Обришите старе типове ако постоје, како бисмо избегли грешке при поновном креирању
+DROP TYPE IF EXISTS menu_item_sales_summary_type CASCADE;
+DROP TYPE IF EXISTS restaurant_summary_type CASCADE;
+DROP TYPE IF EXISTS manager_performance_report_type CASCADE;
+
+-- Тип за сумарни приказ продаје једног артиклa
+CREATE TYPE menu_item_sales_summary_type AS (
+    item_id BIGINT,
+    item_name TEXT,
+    item_type TEXT,
+    total_quantity_sold BIGINT,
+    total_revenue_from_item NUMERIC(12, 2)
+    );
+
+-- Тип за сумарни приказ перформанси једног ресторана
+CREATE TYPE restaurant_summary_type AS (
+    restaurant_id BIGINT,
+    restaurant_name TEXT,
+    total_revenue NUMERIC(12, 2),
+    total_orders BIGINT,
+    confirmed_orders BIGINT,
+    canceled_orders BIGINT,
+    avg_order_value NUMERIC(10, 2)
+    );
+
+-- Главни тип за цео извештај менаџера
+CREATE TYPE manager_performance_report_type AS (
+    manager_full_name TEXT,
+    report_period TEXT,
+    overall_total_revenue NUMERIC(12, 2),
+    overall_total_orders BIGINT,
+    overall_confirmed_orders BIGINT,
+    overall_canceled_orders BIGINT,
+    top_5_selling_items menu_item_sales_summary_type[],
+    bottom_5_selling_items menu_item_sales_summary_type[],
+    restaurant_performance_details restaurant_summary_type[]
+    );
+
+---------------------
+--Корак 4.2: Креирање главне PL/pgSQL функције
+--Сада ћемо дефинисати функцију generate_manager_analytics_report
+--која ће сакупљати све податке и враћати их у дефинисаном сложеном типу.
+CREATE OR REPLACE FUNCTION generate_manager_analytics_report(
+    p_manager_id BIGINT,
+    p_start_date DATE,
+    p_end_date DATE
+)
+RETURNS manager_performance_report_type AS $$
+DECLARE
+v_report manager_performance_report_type;
+    v_item_summary_record menu_item_sales_summary_type;
+
+    -- Курсор за топ 5 продаваних артикала
+    top_5_items_cursor CURSOR FOR
+SELECT
+    mi.id AS item_id,
+    mi.name AS item_name,
+    mi.type::TEXT AS item_type,
+    SUM(oi.quantity) AS total_quantity_sold,
+    SUM(oi.quantity * miv.price) AS total_revenue_from_item
+FROM
+    orders o
+        JOIN order_item oi ON o.id = oi.order_id
+        JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
+        JOIN menu_version mv ON miv.menu_version_id = mv.id
+        JOIN menu m ON mv.menu_id = m.id
+        JOIN restaurant r ON m.restaurant_id = r.id
+        JOIN manager mg ON r.manager_id = mg.id
+        JOIN menu_item mi ON miv.menu_item_id = mi.id
+WHERE
+    mg.id = p_manager_id
+  AND o.creation_date BETWEEN p_start_date AND p_end_date + INTERVAL '23 hours 59 minutes 59 seconds' -- Укључује цео p_end_date
+  AND o.status = 'DELIVERED' -- Само испоручене поруџбине за продају
+GROUP BY
+    mi.id, mi.name, mi.type
+HAVING
+    SUM(oi.quantity) > 0 -- Укључи само артикле који су продати
+ORDER BY
+    SUM(oi.quantity * miv.price) DESC, SUM(oi.quantity) DESC
+    LIMIT 5;
+
+BEGIN
+    -- Коришћење WITH клаузуле за прикупљање основних података
+WITH ManagerRestaurantOrders AS (
+    SELECT
+        o.id AS order_id,
+        o.status AS order_status,
+        o.total_price AS order_total_price,
+        r.id AS restaurant_id,
+        r.name AS restaurant_name,
+        mi.id AS menu_item_id,
+        mi.name AS menu_item_name,
+        mi.type AS menu_item_type,
+        oi.quantity AS quantity_sold,
+        miv.price AS unit_price
+    FROM
+        orders o
+            JOIN order_item oi ON o.id = oi.order_id
+            JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
+            JOIN menu_version mv ON miv.menu_version_id = mv.id
+            JOIN menu m ON mv.menu_id = m.id
+            JOIN restaurant r ON m.restaurant_id = r.id
+            JOIN manager mg ON r.manager_id = mg.id -- Спајање на менаџера
+            JOIN menu_item mi ON miv.menu_item_id = mi.id -- Детаљи о основном артиклу
+    WHERE
+        mg.id = p_manager_id
+      AND o.creation_date BETWEEN p_start_date AND p_end_date + INTERVAL '23 hours 59 minutes 59 seconds'
+    ),
+-- Агрегација података по ресторану
+    RestaurantAggregates AS (
+SELECT
+    mro.restaurant_id,
+    mro.restaurant_name,
+    COUNT(DISTINCT mro.order_id) AS total_orders,
+    COALESCE(SUM(CASE WHEN mro.order_status = 'DELIVERED' THEN mro.order_total_price ELSE 0 END), 0) AS total_revenue,
+    COUNT(DISTINCT CASE WHEN mro.order_status = 'DELIVERED' THEN mro.order_id END) AS confirmed_orders,
+    COUNT(DISTINCT CASE WHEN mro.order_status IN ('CANCELED', 'REJECTED') THEN mro.order_id END) AS canceled_orders,
+    COALESCE(AVG(CASE WHEN mro.order_status = 'DELIVERED' THEN mro.order_total_price END), 0) AS avg_order_value
+FROM
+    ManagerRestaurantOrders mro
+GROUP BY
+    mro.restaurant_id, mro.restaurant_name
+    ),
+    -- Агрегација података о продаји артикала (за најмање продаване)
+    ItemSalesAggregates AS (
+SELECT
+    mro.menu_item_id,
+    mro.menu_item_name,
+    mro.menu_item_type,
+    SUM(mro.quantity_sold) AS total_quantity_sold,
+    SUM(mro.quantity_sold * mro.unit_price) AS total_revenue_from_item
+FROM
+    ManagerRestaurantOrders mro
+WHERE
+    mro.order_status = 'DELIVERED'
+GROUP BY
+    mro.menu_item_id, mro.menu_item_name, mro.menu_item_type
+HAVING
+    SUM(mro.quantity_sold) > 0 -- Укључи само артикле који су продати
+    )
+-- Главни SELECT који попуњава извештај
+SELECT
+    (SELECT mg.first_name || ' ' || mg.last_name FROM manager mg WHERE mg.id = p_manager_id) AS manager_full_name,
+    to_char(p_start_date, 'DD.MM.YYYY') || ' - ' || to_char(p_end_date, 'DD.MM.YYYY') AS report_period,
+    COALESCE(SUM(ra.total_revenue), 0) AS overall_total_revenue,
+    COALESCE(SUM(ra.total_orders), 0) AS overall_total_orders,
+    COALESCE(SUM(ra.confirmed_orders), 0) AS overall_confirmed_orders,
+    COALESCE(SUM(ra.canceled_orders), 0) AS overall_canceled_orders,
+    -- Најмање продавани артикли (користимо array_agg за ову листу)
+    (SELECT array_agg(ROW(isa_bottom.menu_item_id, isa_bottom.menu_item_name, isa_bottom.menu_item_type::TEXT, isa_bottom.total_quantity_sold, isa_bottom.total_revenue_from_item)::menu_item_sales_summary_type ORDER BY isa_bottom.total_revenue_from_item ASC, isa_bottom.total_quantity_sold ASC)
+     FROM ItemSalesAggregates isa_bottom LIMIT 5) AS bottom_5_selling_items,
+        -- Детаљи перформанси по ресторану
+        (SELECT array_agg(ROW(ra_det.restaurant_id, ra_det.restaurant_name, ra_det.total_revenue, ra_det.total_orders, ra_det.confirmed_orders, ra_det.canceled_orders, ra_det.avg_order_value)::restaurant_summary_type ORDER BY ra_det.restaurant_name)
+         FROM RestaurantAggregates ra_det) AS restaurant_performance_details
+INTO
+    v_report.manager_full_name,
+    v_report.report_period,
+    v_report.overall_total_revenue,
+    v_report.overall_total_orders,
+    v_report.overall_confirmed_orders,
+    v_report.overall_canceled_orders,
+    v_report.bottom_5_selling_items,
+    v_report.restaurant_performance_details
+FROM
+    RestaurantAggregates ra;
+
+-- Иницијализација листе за топ 5 артикала
+v_report.top_5_selling_items := '{}';
+
+    -- Коришћење курсора за попуњавање топ 5 продаваних артикала
+OPEN top_5_items_cursor;
+LOOP
+FETCH top_5_items_cursor INTO v_item_summary_record;
+        EXIT WHEN NOT FOUND;
+        v_report.top_5_selling_items := array_append(v_report.top_5_selling_items, v_item_summary_record);
+END LOOP;
+CLOSE top_5_items_cursor;
+
+RETURN v_report;
+END;
+$$ LANGUAGE plpgsql;
+
+--------------------------------------
+--Корак 4.3: Пример позивања функције (и тестирање)
+--Да бисте видели како извештај изгледа, морате имати генерисане поруџбине,
+--ставке поруџбина, меније, ресторане и менаџере
+-- Пример позивања функције за менаџера са ID=1 за период од 2024-01-01 до данас
+SELECT * FROM generate_manager_analytics_report(
+        4, -- !!! ЗАМЕНИТЕ ОВАЈ ID СА СТВАРНИМ ID-јем МЕНАЏЕРА !!!
+        '2024-01-01'::DATE,
+        CURRENT_DATE
+              );
