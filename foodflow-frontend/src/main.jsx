@@ -66,6 +66,8 @@ import { OperatorProfilePage } from "./pages/OperatorProfilePage";
 import { SupportChatPage } from "./pages/SupportChatPage.jsx";
 import { OperatorDashboardPage } from "./pages/OperatorDashboardPage.jsx";
 import { OperatorChatPage } from "./pages/OperatorChatPage.jsx";
+import { FinancialReportPage } from './pages/FinancialReportPage'; 
+
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
@@ -90,6 +92,7 @@ const router = createBrowserRouter([
       { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
       { path: "/terms-of-service", element: <TermsOfServicePage /> },
       { path: "/support/chat/:ticketId", element: <SupportChatPage /> },
+       { path: "/financial-report", element: <FinancialReportPage /> },
     ],
   },
   // Driver

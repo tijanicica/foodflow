@@ -5,7 +5,7 @@ import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useCart } from '@/context/CartContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { ShoppingCart, Menu, X, LogOut, User as UserIcon, Home, ScrollText, BarChart2 } from 'lucide-react';
+import { ShoppingCart, Menu, X, LogOut, User as UserIcon, Home, ScrollText, BarChart2, Landmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jwtDecode } from 'jwt-decode';
 
@@ -53,7 +53,6 @@ export const Navbar = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
-          sessionStorage.removeItem('hasSeenRecommendations');
         navigate('/login', { replace: true });
     };
 
@@ -100,6 +99,7 @@ export const Navbar = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 mt-2">
                                 <DropdownMenuItem onClick={() => navigate('/profile')}><UserIcon className="mr-2 h-4 w-4" /> My Profile</DropdownMenuItem>
+                               <DropdownMenuItem onClick={() => navigate('/financial-report')}><Landmark className="mr-2 h-4 w-4" /> Financial Report</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-700">
                                     <LogOut className="mr-2 h-4 w-4" /> Logout

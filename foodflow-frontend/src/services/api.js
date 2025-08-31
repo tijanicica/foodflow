@@ -812,3 +812,10 @@ export const getMyRecommendations = async () => {
     const response = await apiClient.get('/orders/my-recommendations');
     return response.data;
 };
+
+export const getCustomerFinancialReport = async (startDate, endDate) => {
+    const response = await apiClient.get('/analytics/customer-report', {
+        params: { startDate, endDate }
+    });
+    return response.data;
+};
