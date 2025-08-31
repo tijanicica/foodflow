@@ -92,4 +92,153 @@ RETURN avg_time_minutes;
 END;
 $$;
 
----
+------------------------------------------------------------indexi
+
+--- SQL Индекси: Оптимизација проналажења ресторана по менаџеру (B-Tree индекс)
+--Опис: Да би се демонстрирао утицај индекса на перформансе, фокусираћемо се на колону manager_id у табели restaurant.
+--Ова претрага је кључна за менаџере који приступају својим ресторанима (нпр. на контролној табли или у аналитици).
+--Прво ћемо измерити перформансе упита за проналажење свих ресторана којима управља одређени менаџер (на основу manager_id)
+--без икаквог индекса на тој колони, очекујући Sequential Scan. Затим ћемо креирати
+--B-Tree индекс на manager_id колони и поново измерити исти упит,
+--показујући јасно и значајно убрзање путем Index Scan-а или Bitmap Heap Scan-а.
+
+--КОРАК 1: ПРИПРЕМА И ЧИШЋЕЊЕ
+--Ове команде припремају базу за тест. Обавезно их све покрените пре генерисања података!
+-- Корак 1.1: Обришите стари индекс ако постоји од претходних тестова на manager_id у restaurant табели
+DROP INDEX IF EXISTS idx_restaurant_manager_id;
+
+-- Корак 1.2: Обришите све претходно генерисане ресторане и адресе
+-- Користимо "Mock Restaurant %" да не обришемо праве ресторане
+DELETE FROM restaurant WHERE name LIKE 'Mock Restaurant %';
+DELETE FROM address WHERE street LIKE 'Mock Street %';
+
+-- Корак 1.3: Обришите све претходно генерисане менаџере (да имамо чисте ID-јеве за везивање)
+-- Користимо "mock.manager%@example.com" да не обришемо праве менаџере
+DELETE FROM manager WHERE email LIKE 'mock.manager%@example.com';
+
+-- Корак 1.4: Ресетујте секвенце за ID-јеве табела
+-- Ово осигурава да ће нови ID-јеви почети одговарајуће
+SELECT setval('restaurant_id_seq', (SELECT COALESCE(MAX(id), 1) FROM restaurant));
+SELECT setval('address_id_seq', (SELECT COALESCE(MAX(id), 1) FROM address));
+SELECT setval('manager_id_seq', (SELECT COALESCE(MAX(id), 1) FROM manager));
+
+--КОРАК 2: ГЕНЕРИСАЊЕ ТЕСТ ПОДАТАКА (Менаџери и Ресторани)
+--Прво ћемо креирати неколико фиктивних менаџера, а затим много ресторана,
+--равномерно их расподељујући међу тим менаџерима.
+--Ово ће створити реалистичан сценарио где један менаџер управља значајним бројем ресторана, али не свим.
+-- Корак 2.1: Дефинисање процедуре за генерисање МЕНАЏЕРА И РЕСТОРАНА
+CREATE OR REPLACE PROCEDURE generate_mock_managers_and_restaurants()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+i INT;
+    v_manager_id_target BIGINT; -- ID менаџера чије ћемо ресторане тражити
+    v_manager_id_other1 BIGINT; -- ID другог менаџера
+    v_manager_id_other2 BIGINT; -- ID трећег менаџера
+    v_current_manager_id BIGINT;
+    v_address_id BIGINT;
+    v_restaurant_name TEXT;
+    v_price_range_text TEXT; -- Променљива за price_range
+    v_admin_id BIGINT;
+BEGIN
+    RAISE NOTICE 'Starting manager and restaurant data generation...';
+
+    -- Пронађите ID постојећег администратора (ако постоји). Ако не постоји, admin_id ће бити NULL.
+SELECT id INTO v_admin_id FROM administrator LIMIT 1;
+IF v_admin_id IS NULL THEN
+        RAISE NOTICE 'No administrator found, setting admin_id to NULL for generated managers.';
+END IF;
+
+    -- Генерисање 3 менаџера. ID првог менаџера ће бити наш "таргет" за претрагу.
+INSERT INTO manager (email, password, first_name, last_name, phone, role, admin_id)
+VALUES ('mock.manager_target@example.com', '$2a$10$UoWb6wE5g.i8lY01k.4yvO/k8g6m7p2q3r4s5t6u7v8w9x0y1z2', 'Target', 'Manager', '0601111111', 'MANAGER', v_admin_id)
+    RETURNING id INTO v_manager_id_target;
+
+INSERT INTO manager (email, password, first_name, last_name, phone, role, admin_id)
+VALUES ('mock.manager_other1@example.com', '$2a$10$UoWb6wE5g.i8lY01k.4yvO/k8g6m7p2q3r4s5t6u7v8w9x0y1z2', 'Other', 'Manager1', '0602222222', 'MANAGER', v_admin_id)
+    RETURNING id INTO v_manager_id_other1;
+
+INSERT INTO manager (email, password, first_name, last_name, phone, role, admin_id)
+VALUES ('mock.manager_other2@example.com', '$2a$10$UoWb6wE5g.i8lY01k.4yvO/k8g6m7p2q3r4s5t6u7v8w9x0y1z2', 'Other', 'Manager2', '0603333333', 'MANAGER', v_admin_id)
+    RETURNING id INTO v_manager_id_other2;
+
+RAISE NOTICE 'Generated managers. Target Manager ID: %s', v_manager_id_target;
+    RAISE NOTICE 'Other Manager IDs: %s, %s', v_manager_id_other1, v_manager_id_other2;
+
+    -- Генерисање 100.000 ресторана
+FOR i IN 1..100000 LOOP
+        v_restaurant_name := 'Mock Restaurant ' || i || ' ' || (ARRAY['Pizza', 'Pasta', 'Sushi', 'Grill', 'Cafe'])[floor(random() * 5 + 1)];
+
+        -- Ротирање менаџера за ресторане, тако да сваки менаџер има око 33% ресторана
+CASE (i % 3)
+            WHEN 0 THEN v_current_manager_id := v_manager_id_target;
+WHEN 1 THEN v_current_manager_id := v_manager_id_other1;
+WHEN 2 THEN v_current_manager_id := v_manager_id_other2;
+END CASE;
+
+        -- Генерисање price_range са CHR(36)
+CASE (i % 3)
+            WHEN 0 THEN v_price_range_text := CHR(36);
+WHEN 1 THEN v_price_range_text := CHR(36) || CHR(36);
+ELSE v_price_range_text := CHR(36) || CHR(36) || CHR(36);
+END CASE;
+
+        -- Генерисање адресе
+INSERT INTO address (street, street_number, city, country, postal_code, latitude, longitude)
+VALUES ('Mock Street ' || i, i::text, 'MockCity ' || (i%10), 'Serbia', (11000 + i%1000)::text, 44.0 + random(), 20.0 + random())
+    RETURNING id INTO v_address_id;
+
+-- Уметање ресторана
+INSERT INTO restaurant (name, price_range, manager_id, address_id, image_url, opening_time, closing_time, average_rating)
+VALUES (v_restaurant_name, v_price_range_text, v_current_manager_id, v_address_id, '/images/placeholder.jpg', '08:00', '23:00', round((random() * 2 + 3)::numeric, 1));
+
+IF i % 10000 = 0 THEN
+            RAISE NOTICE 'Inserted % restaurants and addresses...', i;
+END IF;
+END LOOP;
+    RAISE NOTICE 'Restaurant data generation finished.';
+END;
+$$;
+
+-- Корак 2.2: Покретање процедуре за генерисање података
+CALL generate_mock_managers_and_restaurants();
+
+-- **ОБАВЕЗНО!** Ажурирајте статистику базе након генерисања нових података.
+-- Ово је кључно да би оптимизатор имао свеже информације о табели.
+ANALYZE restaurant;
+
+--КОРАК 3: ТЕСТ ПРЕТРАГЕ РЕСТОРАНА ПО ID-ЈУ МЕНАЏЕРА - БЕЗ ИНДЕКСА (ОЧЕКУЈЕ СЕ Seq Scan И СПОРО ИЗВРШАВАЊЕ!)
+--За ову демонстрацију, користићемо ID таргет менаџера (који је генерисан као v_manager_id_target).
+--Након што извршите КОРАК 2, забележите ID који вам процедура испише за "Target Manager ID".
+--Користите тај ID у упиту испод.
+
+-- Корак 3.1: Мерење БЕЗ B-Tree индекса на 'manager_id' колони у restaurant табели
+-- !!! ЗАМЕНИТЕ 123 СА СТВАРНИМ ID-јем ВАШЕГ ТАРГЕТ МЕНАЏЕРА (нпр. 1, 4, 7 итд.) !!!
+EXPLAIN ANALYZE SELECT * FROM restaurant WHERE manager_id = 4;
+
+--rez bez indexa
+"Seq Scan on restaurant  (cost=0.00..1742.50 rows=41 width=1596) (actual time=0.021..13.258 rows=6 loops=1)"
+"  Filter: (manager_id = 4)"
+"  Rows Removed by Filter: 100006"
+"Planning Time: 2.147 ms"
+Execution Time: 15.980 ms
+
+---------------------------------sa indexom
+
+-- Корак 4.1: Креирање B-Tree индекса на колони 'manager_id' у restaurant табели
+CREATE INDEX idx_restaurant_manager_id ON restaurant (manager_id);
+
+-- **ОБАВЕЗНО!** Ажурирајте статистику базе након креирања индекса
+-- Поново користимо ANALYZE.
+ANALYZE restaurant;
+
+-- Корак 4.2: Мерење СА B-Tree индексом на 'manager_id' колони
+-- !!! ЗАМЕНИТЕ 123 СА СТВАРНИМ ID-јем ВАШЕГ ТАРГЕТ МЕНАЏЕРА !!!
+EXPLAIN ANALYZE SELECT * FROM restaurant WHERE manager_id = 4;
+
+--rez sa indexom
+"Index Scan using idx_restaurant_manager_id on restaurant  (cost=0.29..29.79 rows=7 width=102) (actual time=0.139..0.142 rows=6 loops=1)"
+"  Index Cond: (manager_id = 4)"
+"Planning Time: 0.348 ms"
+"Execution Time: 0.163 ms"
+-- Убрзање ≈ 98 пута
