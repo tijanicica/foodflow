@@ -58,7 +58,14 @@ public class ManagerAnalyticsService {
         long totalOrders = currentPeriodOrders.size();
         long confirmedOrders = countByStatus(currentPeriodOrders, com.iis.foodflow.enums.OrderStatus.DELIVERED);
         long canceledOrders = countByStatus(currentPeriodOrders, com.iis.foodflow.enums.OrderStatus.CANCELED);
-        double avgResponseTimeMinutes = 4.0;
+        // --- НОВО: Израчунавање просечног времена извршења/испоруке поруџбине ---
+        Double avgFulfillmentTime = orderRepository.calculateAverageFulfillmentTimeMinutesUsingFunction(
+                manager.getId(),
+                currentPeriodStart,
+                now,
+                restaurantId
+        ).orElse(0.0);
+        double avgResponseTimeMinutes = avgFulfillmentTime;
 
         BigDecimal previousTotalRevenue = calculateDeliveredRevenue(previousPeriodOrders);
         long previousTotalOrders = previousPeriodOrders.size();
