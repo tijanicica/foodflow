@@ -192,7 +192,7 @@ public class OrderService {
             orderRepository.save(newOrder);
         }
 
-      //  notificationService.sendOrderConfirmation(newOrder);
+        notificationService.sendOrderConfirmation(newOrder);
     }
 
     // === POMOĆNE (HELPER) METODE ===

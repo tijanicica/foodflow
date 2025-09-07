@@ -6,16 +6,32 @@ import { getOperatorDashboard } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MessageSquare, PlayCircle, MessageCircleDashed } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 
 const TicketCard = ({ ticket }) => {
   const isActiveChat = ticket.status === "IN_PROGRESS";
+  const getPriorityColor = (score) => {
+    if (score > 150) return "text-red-600";
+    if (score > 80) return "text-orange-500";
+    return "text-green-400";
+  };
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center">
+    <div className="bg-white p-4 rounded-lg gap-10 shadow-sm border flex justify-between items-center">
       <div>
-        <p className="font-bold">
-          Ticket #{ticket.id} - {ticket.customerName}
-        </p>
-        <p className="text-sm text-gray-500">{ticket.problemCategoryName}</p>
+        <div className="flex items-center justify-between gap-9">
+          <p className="font-bold">
+            Ticket #{ticket.id} - {ticket.customerName}
+          </p>
+          <div
+            className={`flex items-center gap-1 font-bold ${getPriorityColor(
+              ticket.priorityScore
+            )}`}
+          >
+            <CircleAlert size={16} />
+            <span>{ticket.priorityScore}</span>
+          </div>
+          <p className="text-sm text-gray-500">{ticket.problemCategoryName}</p>
+        </div>
       </div>
       <Button asChild>
         <Link to={`/operator/chat/${ticket.id}`}>

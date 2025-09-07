@@ -32,6 +32,8 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
     @Query("SELECT COUNT(t) FROM SupportTicket t WHERE t.operator.id = :operatorId AND t.status = 'CLOSED' AND t.closingTime >= :startOfDay")
     Long countResolvedTicketsByOperatorToday(@Param("operatorId") Long operatorId, @Param("startOfDay") LocalDateTime startOfDay);
 
+
+    // ovde cemo iskoristiti indeks da ubrzamo pretragu, posto ce u realnom sistemu korisnik imati dosta vise resenih tiketa
     @Query(
             value = "SELECT AVG(EXTRACT(EPOCH FROM (closing_time - creation_time))) " +
                     "FROM support_ticket t " +
@@ -46,12 +48,30 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "GROUP BY pc.name ORDER BY COUNT(t.id) DESC")
     List<CategoryTicketsDTO> countTicketsPerCategoryByOperator(@Param("operatorId") Long operatorId);
 
-    @Query("SELECT t FROM SupportTicket t " +
-            "JOIN FETCH t.problemCategory " +
-            "JOIN FETCH t.order o " +
-            "JOIN FETCH o.customer " +
-            "WHERE t.operator.id = :operatorId AND t.status IN :statuses")
-    List<SupportTicket> findSummariesByOperatorIdAndStatusIn(@Param("operatorId") Long operatorId, @Param("statuses") List<TicketStatus> statuses);
+    // PLSQL FUNKCIJA SE KORISTI DRUGI ZADATAK!
+        @Query(value = "SELECT " +
+                "  t.id AS id, " +
+                "  t.status AS status, " +
+                "  pc.name AS problemCategoryName, " +
+                "  c.first_name || ' ' || c.last_name AS customerName, " +
+                "  calculate_ticket_priority_score(t.id) AS priorityScore " + // <-- POZIV FUNKCIJE
+                "FROM support_ticket t " +
+                "JOIN problem_category pc ON t.problem_category_id = pc.id " +
+                "JOIN orders o ON t.order_id = o.id " +
+                "JOIN customer c ON o.customer_id = c.id " +
+                "WHERE t.operator_id = :operatorId AND t.status IN ('OPEN', 'IN_PROGRESS') " +
+                "ORDER BY priorityScore DESC", // <-- SORTIRAMO PO PRIORITETU
+                nativeQuery = true)
+        List<TicketSummaryProjection> findTicketSummariesForOperatorDashboard(@Param("operatorId") Long operatorId);
+
+        // Interfejs za projekciju sada uključuje i skor
+        interface TicketSummaryProjection {
+            Long getId();
+            String getStatus();
+            String getProblemCategoryName();
+            String getCustomerName();
+            Integer getPriorityScore(); // Tip je Integer
+        }
 
     @Query("SELECT t FROM SupportTicket t " +
             "LEFT JOIN FETCH t.messages m " +

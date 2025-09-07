@@ -27,6 +27,9 @@ def train():
     train_dataset = Dataset.from_pandas(train_df)
     eval_dataset = Dataset.from_pandas(eval_df)
 
+    #Učitava se DistilBERT model i tokenizer.
+    #Tokenizer pretvara rečenice u brojeve (input za model).
+
     model_checkpoint = "distilbert-base-uncased"
     print(f"Loading tokenizer and model for '{model_checkpoint}'...")
 

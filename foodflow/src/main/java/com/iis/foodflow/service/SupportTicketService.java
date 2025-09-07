@@ -100,12 +100,19 @@ public class SupportTicketService {
         return dto;
     }
 
+    // plsql sort po hitnosti
     public List<TicketSummaryDTO> getTicketsForOperatorDashboard(Long operatorId) {
-        List<TicketStatus> activeStatuses = List.of(TicketStatus.OPEN, TicketStatus.IN_PROGRESS);
+        List<SupportTicketRepository.TicketSummaryProjection> projections =
+                ticketRepository.findTicketSummariesForOperatorDashboard(operatorId);
 
-        return ticketRepository.findSummariesByOperatorIdAndStatusIn(operatorId, activeStatuses)
-                .stream()
-                .map(TicketSummaryDTO::new)
+        return projections.stream()
+                .map(p -> new TicketSummaryDTO(
+                        p.getId(),
+                        TicketStatus.valueOf(p.getStatus()),
+                        p.getProblemCategoryName(),
+                        p.getCustomerName(),
+                        p.getPriorityScore()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -140,7 +147,8 @@ public class SupportTicketService {
         }
 
         ticket.setStatus(TicketStatus.RESOLVED);
-        ticket.setClosingTime(LocalDateTime.now());
+        //dodala triger za plsql
+        //ticket.setClosingTime(LocalDateTime.now());
         ticketRepository.save(ticket);
 
         chatService.sendStatusUpdate(ticketId, TicketStatus.RESOLVED);
@@ -170,7 +178,7 @@ public class SupportTicketService {
 
         ticketRepository.save(ticket);
     }
-
+    @Transactional
     public void closeTicket(Long ticketId) {
         SupportTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));

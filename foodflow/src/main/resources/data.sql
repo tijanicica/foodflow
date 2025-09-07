@@ -5,7 +5,7 @@
 -- KORISNICI
 -- Customer
 INSERT INTO customer (id, email, password, first_name, last_name, phone, role) VALUES
-    (1, 'stojicic.nikola02@gmail.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
+    (1, 'tijanapetrovicns03@gmail.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
 -- Vozaci
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
     (2, 'driver1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'CAR', 'OFFLINE', 0, 44.8125, 20.4612, NOW(), 0.0);
@@ -903,9 +903,17 @@ INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
 
 
 -- OTVORENI TIKETI (NE ULAZE U STATISTIKU)
--- #9 (Mia, ID=552) - Još uvek otvoren
+-- #9 (Mia, ID=552) - Još uvek otvoreni tiketi
 INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
     (9, 'OPEN', 'Ne mogu da se ulogujem na nalog.', NOW() - INTERVAL '1 hour', NULL, 552, 92, 14);
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (10, 'OPEN', 'Aplikacija kaže da je dostavljeno, ali hranu nisam dobio.', NOW() - INTERVAL '5 minute', NULL, 552, 89, 12);
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (11, 'OPEN', 'Nedostaje mi sok uz porudžbinu.', NOW() - INTERVAL '25 minute', NULL, 552, 91, 5);
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (12, 'OPEN', 'Dostavljač mi se još nije javio, a prošlo je vreme dostave.', NOW() - INTERVAL '2 minute', NULL, 552, 93, 11);
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+    (13, 'OPEN', 'Sva hrana je stigla potpuno hladna.', NOW() - INTERVAL '15 minute', NULL, 552, 86, 8);
 
 ALTER SEQUENCE customer_id_seq RESTART WITH 200;
 ALTER SEQUENCE driver_id_seq RESTART WITH 200;
