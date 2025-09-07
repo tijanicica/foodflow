@@ -10,6 +10,8 @@ import { RegisterAgentModal } from "@/components/modals/RegisterOperatorModal";
 import { PlusCircle, Users, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
+import { Download } from "lucide-react";
+import { downloadOperatorReport } from "@/services/api";
 
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -31,29 +33,57 @@ const AdminSection = ({ title, icon, action, children }) => (
     <div>{children}</div>
   </motion.div>
 );
-const AgentRow = ({ agent, onRemoveClick }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0 }}
-    className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-2 items-center text-base hover:bg-gray-50/80 rounded-lg transition-colors"
-  >
-    <span className="font-medium text-brand-primary">
-      {agent.firstName} {agent.lastName}
-    </span>
-    <span className="text-gray-600">{agent.email}</span>
-    <div className="text-left md:text-right">
-      <Button
-        variant="ghost"
-        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto text-base"
-        onClick={() => onRemoveClick(agent)} // Prosleđujemo ceo agent objekat
-      >
-        <Trash2 size={16} className="mr-2" /> Remove
-      </Button>
-    </div>
-  </motion.div>
-);
+const AgentRow = ({ agent, onRemoveClick }) => {
+  const handleDownload = async () => {
+    try {
+      const blob = await downloadOperatorReport(agent.id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `report_${agent.firstName}_${agent.lastName}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      toast.error("Could not download report.");
+    }
+  };
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-2 items-center text-base hover:bg-gray-50/80 rounded-lg transition-colors"
+    >
+      <span className="font-medium text-brand-primary">
+        {agent.firstName} {agent.lastName}
+      </span>
+      <span className="text-gray-600">{agent.email}</span>
+      <div className="text-left md:text-right flex items-center justify-end">
+        {/* NOVO DUGME ZA IZVEŠTAJ */}
+        <Button
+          variant="ghost"
+          className="text-brand-primary/70 hover:text-brand-primary p-1 h-auto text-base"
+          onClick={handleDownload}
+        >
+          <Download size={16} className="mr-2" /> Report
+        </Button>
+
+        <Button
+          variant="ghost"
+          className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto text-base"
+          onClick={() => onRemoveClick(agent)} // Prosleđujemo ceo agent objekat
+        >
+          <Trash2 size={16} className="mr-2" /> Remove
+        </Button>
+      </div>
+    </motion.div>
+  );
+};
 
 const EmptyState = () => (
   <div className="text-center py-16 px-6 bg-gray-50 rounded-lg border-2 border-dashed">

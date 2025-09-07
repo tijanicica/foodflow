@@ -135,6 +135,13 @@
 			<version>1.0.10</version> <!-- Proverena i stabilna verzija -->
 		</dependency>
 
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itext7-core</artifactId>
+			<version>7.1.16</version>
+			<type>pom</type>
+		</dependency>
+
 		<!-- Thymeleaf je potreban za renderovanje HTML templejta -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

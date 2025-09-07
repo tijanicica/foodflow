@@ -1,18 +1,24 @@
 package com.iis.foodflow.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.iis.foodflow.dto.request.*;
 import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.model.user.SupportAdministrator;
+import com.iis.foodflow.repository.OperatorReportRepository;
 import com.iis.foodflow.repository.OperatorRepository;
 import com.iis.foodflow.repository.SupportAdministratorRepository;
 import com.iis.foodflow.repository.SupportTicketRepository;
 import com.iis.foodflow.service.OperatorService;
+import com.iis.foodflow.service.PdfOperatorReportService;
 import com.iis.foodflow.service.SupportTicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -20,6 +26,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +39,8 @@ public class SupportAdminController {
     private final PasswordEncoder passwordEncoder;
     private final OperatorRepository operatorRepository;
     private final SupportTicketRepository supportTicketRepository;
+    private final PdfOperatorReportService pdfOperatorReportService;
+    private final OperatorReportRepository reportRepository;
 
     @PostMapping("/register-operator")
     @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
@@ -145,6 +154,26 @@ public class SupportAdminController {
 
         operatorRepository.deleteById(operatorId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/operators/{operatorId}/report")
+    @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
+    public ResponseEntity<InputStreamResource> downloadOperatorReport(@PathVariable Long operatorId) {
+        JsonNode reportData = reportRepository.getOperatorReportData(operatorId);
+
+        if (reportData.has("error")) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ByteArrayInputStream pdf = pdfOperatorReportService.generateOperatorReport(reportData);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "inline; filename=operator_report_" + operatorId + ".pdf");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(pdf));
     }
 
 }

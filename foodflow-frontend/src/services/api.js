@@ -807,3 +807,10 @@ export const updateOperatorName = async (nameData) => {
 export const deleteOperator = async (operatorId) => {
     await apiClient.delete(`/support-admin/operators/${operatorId}`);
 };
+
+export const downloadOperatorReport = async (operatorId) => {
+    const response = await apiClient.get(`/support-admin/operators/${operatorId}/report`, {
+        responseType: 'blob', // Važno: govorimo axios-u da očekuje fajl
+    });
+    return response.data;
+};

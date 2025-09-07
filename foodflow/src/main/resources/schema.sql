@@ -78,6 +78,7 @@ END;
 
 -------------------------------- CETVRTI ZADATAK SBP IZVESTAJ --------------------------------
 -- za izvestaje o kategorijama ovo je jedan red
+DROP TYPE IF EXISTS category_performance_row;
 CREATE TYPE category_performance_row AS (
                                             category_name TEXT,
                                             ticket_count BIGINT,
@@ -87,15 +88,15 @@ CREATE TYPE category_performance_row AS (
 -- vraca izvestaj kao jsonb, zbog pdf generisanja
 CREATE OR REPLACE FUNCTION get_operator_performance_report(p_operator_id BIGINT)
     RETURNS JSONB AS '
-DECLARE
-
+    DECLARE
     operator_info RECORD;
     overall_metrics RECORD;
-    category_details category_performance_row[]; -- Niz našeg složenog tipa
-
+    -- Varijabla za čuvanje jednog reda iz kursora
+    category_row RECORD;
+    -- Inicijalizujemo prazan niz za rezultate
+    category_details category_performance_row[] := ''{}'';
 
     category_cursor CURSOR FOR
-        -- WITH klauzula za izolovanje relevantnih tiketa
         WITH OperatorResolvedTickets AS (
             SELECT
                 st.id,
@@ -106,18 +107,17 @@ DECLARE
                 st.operator_id = p_operator_id
               AND st.status IN (''RESOLVED'', ''CLOSED'')
         )
-        -- Složeni upit sa JOIN-om preko 3 tabele, GROUP BY, HAVING, agregacijama
         SELECT
             pc_parent.name AS category_name,
             COUNT(ort.id) AS ticket_count,
             COALESCE(AVG(opr.rating), 0.0) AS avg_rating
         FROM
             OperatorResolvedTickets ort
-                LEFT JOIN
+        LEFT JOIN
             operator_rating opr ON ort.id = opr.id
-                JOIN
+        JOIN
             problem_category pc_sub ON ort.problem_category_id = pc_sub.id
-                JOIN
+        JOIN
             problem_category pc_parent ON pc_sub.parent_category_id = pc_parent.id
         GROUP BY
             pc_parent.name
@@ -125,9 +125,8 @@ DECLARE
             COUNT(ort.id) > 0
         ORDER BY
             ticket_count DESC;
-
 BEGIN
-    -- 1. Dohvatanje osnovnih informacija o operateru
+    -- 1. Dohvatanje osnovnih informacija o operateru (bez izmena)
     SELECT id, first_name, last_name, email INTO operator_info
     FROM operator WHERE id = p_operator_id;
 
@@ -135,7 +134,7 @@ BEGIN
         RETURN jsonb_build_object(''error'', ''Operator not found'');
     END IF;
 
-    -- 2. Izračunavanje ukupnih metrika
+    -- 2. Izračunavanje ukupnih metrika (bez izmena)
     SELECT
         COUNT(*) AS total_resolved_tickets,
         COALESCE(AVG(opr.rating), 0.0) AS overall_avg_rating,
@@ -143,28 +142,36 @@ BEGIN
     INTO
         overall_metrics
     FROM support_ticket st
-             LEFT JOIN operator_rating opr ON st.id = opr.id
+    LEFT JOIN operator_rating opr ON st.id = opr.id
     WHERE st.operator_id = p_operator_id AND st.status IN (''RESOLVED'', ''CLOSED'');
 
-    -- 3. Prikupljanje podataka po kategorijama koristeći kursor
-    category_details := array(
-            SELECT ROW(rec.category_name, rec.ticket_count, rec.avg_rating)::category_performance_row
-            FROM (OPEN category_cursor) AS rec
-                        );
+    -- ===== ISPRAVLJENA LOGIKA ZA KURSOR =====
+    -- 3. Prikupljanje podataka po kategorijama koristeći standardni LOOP
+    OPEN category_cursor;
+    LOOP
+        FETCH category_cursor INTO category_row;
+        -- Izlazimo iz petlje kada više nema redova
+        EXIT WHEN NOT FOUND;
 
-    -- 4. Sklapanje finalnog JSON objekta koji vraćamo Javi
+        -- Dodajemo pročitani red u naš niz
+        category_details := array_append(category_details, ROW(category_row.category_name, category_row.ticket_count, category_row.avg_rating)::category_performance_row);
+    END LOOP;
+    CLOSE category_cursor;
+    -- ==========================================
+
+    -- 4. Sklapanje finalnog JSON objekta (bez izmena)
     RETURN jsonb_build_object(
             ''operatorInfo'', jsonb_build_object(
-                    ''id'', operator_info.id,
-                    ''firstName'', operator_info.first_name,
-                    ''lastName'', operator_info.last_name,
-                    ''email'', operator_info.email
-                            ),
+                ''id'', operator_info.id,
+                ''firstName'', operator_info.first_name,
+                ''lastName'', operator_info.last_name,
+                ''email'', operator_info.email
+            ),
             ''overallMetrics'', jsonb_build_object(
-                    ''totalResolvedTickets'', overall_metrics.total_resolved_tickets,
-                    ''overallAverageRating'', overall_metrics.overall_avg_rating,
-                    ''averageResolutionSeconds'', overall_metrics.avg_resolution_seconds
-                              ),
+                ''totalResolvedTickets'', overall_metrics.total_resolved_tickets,
+                ''overallAverageRating'', overall_metrics.overall_avg_rating,
+                ''averageResolutionSeconds'', overall_metrics.avg_resolution_seconds
+            ),
             ''performanceByCategory'', (SELECT jsonb_agg(jsonb_build_object(''categoryName'', r.category_name, ''ticketCount'', r.ticket_count, ''avgRating'', r.avg_rating)) FROM unnest(category_details) as r)
            );
 END;
