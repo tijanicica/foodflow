@@ -11,9 +11,9 @@ import { CircleAlert } from "lucide-react";
 const TicketCard = ({ ticket }) => {
   const isActiveChat = ticket.status === "IN_PROGRESS";
   const getPriorityColor = (score) => {
-    if (score > 150) return "text-red-600";
+    if (score > 150) return "text-red-700";
     if (score > 80) return "text-orange-500";
-    return "text-green-400";
+    return "text-green-500";
   };
   return (
     <div className="bg-white p-4 rounded-lg gap-10 shadow-sm border flex justify-between items-center">
@@ -23,12 +23,12 @@ const TicketCard = ({ ticket }) => {
             Ticket #{ticket.id} - {ticket.customerName}
           </p>
           <div
-            className={`flex items-center gap-1 font-bold ${getPriorityColor(
+            className={`flex items-center gap-5 font-bold ${getPriorityColor(
               ticket.priorityScore
             )}`}
           >
             <CircleAlert size={16} />
-            <span>{ticket.priorityScore}</span>
+            {/* <span>{ticket.priorityScore}</span> */}
           </div>
           <p className="text-sm text-gray-500">{ticket.problemCategoryName}</p>
         </div>
@@ -97,6 +97,24 @@ export const OperatorDashboardPage = () => {
               ) : (
                 <p>No new tickets assigned.</p>
               )}
+            </div>
+          </div>
+        </div>
+        {/* Legenda */}
+        <div className="mt-10 p-4 bg-white rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold mb-2">Priority Legend</h3>
+          <div className="flex gap-6">
+            <div className="flex items-center gap-2 text-red-700">
+              <CircleAlert size={18} />
+              <span>Highest priority</span>
+            </div>
+            <div className="flex items-center gap-2 text-orange-500">
+              <CircleAlert size={18} />
+              <span>Medium priority</span>
+            </div>
+            <div className="flex items-center gap-2 text-green-500">
+              <CircleAlert size={18} />
+              <span>Lowest priority</span>
             </div>
           </div>
         </div>

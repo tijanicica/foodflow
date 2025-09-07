@@ -1,5 +1,8 @@
 package com.iis.foodflow.service;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
@@ -10,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.text.DecimalFormat;
+import com.itextpdf.io.font.PdfEncodings;
 
 @Service
 public class PdfOperatorReportService {
@@ -18,6 +22,17 @@ public class PdfOperatorReportService {
         PdfWriter writer = new PdfWriter(out);
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf);
+
+        try {
+
+            PdfFont font = PdfFontFactory.createFont("src/main/resources/fonts/DejaVuSans.ttf",
+                    PdfEncodings.IDENTITY_H, true);
+
+            document.setFont(font);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         DecimalFormat df = new DecimalFormat("#.##");
 
