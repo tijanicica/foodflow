@@ -121,18 +121,16 @@ public class OrderAssignmentService {
     private double calculateDriverScore(Driver driver, Order order) {
         double score = 0.0;
 
-        // AŽURIRANE TEŽINE: Dodali smo W_REJECTIONS i malo preraspodijelili ostale
         final double W_WEATHER_VEHICLE = 25;
         final double W_DISTANCE = 20;
         final double W_BUSYNESS = 20;
         final double W_DAILY_DELIVERIES = 10;
         final double W_RATING = 10;
-        final double W_REJECTIONS = 15; // <-- Novi kriterij, prilično je važan
+        final double W_REJECTIONS = 15;
 
 
 
         // --- KRITERIJ #1: Vremenski uslovi i Vozilo ---
-        // (Ovaj dio ostaje isti kao u prethodnom odgovoru)
         WeatherCondition weather = systemSettingsService.getCurrentWeather();
         switch (driver.getVehicleType()) {
             case CAR:
@@ -156,7 +154,6 @@ public class OrderAssignmentService {
         }
 
         // --- KRITERIJ #2: Lokacija (što bliži restoranu) ---
-// Prvo, dobijamo restoran iz porudžbine na ispravan način
         Restaurant restaurant = order.getOrderItems().stream()
                 .findFirst()
                 .map(item -> item.getMenuItemVersion().getMenuVersion().getMenu().getRestaurant())
@@ -190,11 +187,11 @@ public class OrderAssignmentService {
         int todaysDeliveries = orderRepository.countTodaysDeliveriesForDriver(driver);
         score += (1.0 / (1.0 + todaysDeliveries)) * W_DAILY_DELIVERIES;
 
-        // --- KRITERIJ #5: Ocjena (što veća) ---
+        // --- KRITERIJ #5: Ocena (što veća) ---
         double rating = (driver.getAverageRating() == null || driver.getAverageRating() == 0) ? 3.0 : driver.getAverageRating();
         score += (rating / 5.0) * W_RATING;
 
-        // --- KRITERIJ #6: Broj odbijanja (što manje, to bolje) - NOVO ---
+        // --- KRITERIJ #6: Broj odbijanja (što manje, to bolje)
         int rejections = (driver.getRejectionCount() == null) ? 0 : driver.getRejectionCount();
         // Koristimo istu logiku kao za zauzetost - što je veći broj, manji je multiplikator.
         // Ako ima 0 odbijanja, dobiva 100% poena. Ako ima 1, dobiva 50%, itd.
@@ -203,9 +200,7 @@ public class OrderAssignmentService {
 
         return score;
     }
-    /**
-     * Kreira i sprema novu ponudu za vozača.
-     */
+
     private void createOffer(Order order, Driver driver) {
         OrderOffer newOffer = OrderOffer.builder()
                 .order(order)
