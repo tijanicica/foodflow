@@ -1,23 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import { getAllDriverPerformances } from '@/services/api';
+import { getAllDriverPerformances,deleteDriverById } from '@/services/api';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Star, TrendingUp, TrendingDown, Users, CheckCircle, PlusCircle } from 'lucide-react';
 import { AdminNavbar } from '@/components/AdminNavbar';
-
-// UVOZIMO NOVU MODAL KOMPONENTU
 import { RegisterDriverModal } from '@/components/modals/RegisterDriverModal';
+import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 
-// === Komponenta za Red u Tabeli (bez izmena) ===
-const DriverRow = ({ driver, index }) => {
+
+export const DriverRow = ({ driver, index, onDeleteRequest }) => {
+     if (index === 0) console.log('CEO OBJEKAT VOZAČA:', driver);
     const onTimePercentage = (driver.onTimeRate * 100).toFixed(0);
     const rating = driver.averageRating.toFixed(1);
-    const getOnTimeColorClass = (percentage) => { /* ... (bez izmena) ... */ };
-    const getRatingColorClass = (rating) => { /* ... (bez izmena) ... */ };
+
+    const getOnTimeColorClass = (percentage) => {
+        const p = parseInt(percentage, 10);
+        if (p >= 95) return 'bg-green-100 text-green-700';
+        if (p >= 80) return 'bg-yellow-100 text-yellow-700';
+        return 'bg-red-100 text-red-700';
+    };
+
+    const getRatingColorClass = (rating) => {
+        const r = parseFloat(rating);
+        if (r >= 4.5) return 'text-green-500';
+        if (r >= 3.5) return 'text-yellow-500';
+        if (r > 0) return 'text-red-500';
+        return 'text-gray-400';
+    };
+
+    // Pomoćna funkcija koja se poziva na klik "Delete" dugmeta
+     const handleDriverDelete = async () => {
+        // Čuvamo podatke o vozaču pre nego što resetujemo state
+        const driverIdToDelete = confirmState.driverId;
+        const driverNameToDelete = confirmState.driverName;
+    
+        // ODMAH zatvaramo modal da korisnik vidi da se nešto dešava
+        setConfirmState({ isOpen: false, driverId: null, driverName: '' });
+    
+        if (!driverIdToDelete) return;
+    
+        // Prikazujemo "loading" toast dok se operacija ne završi
+        const deleteToast = toast.loading(`Brisanje vozača ${driverNameToDelete}...`);
+    
+        try {
+            await deleteDriverById(driverIdToDelete);
+            
+            // Ažuriramo toast sa porukom o uspehu
+            toast.success(`Vozač ${driverNameToDelete} je uspešno arhiviran i obrisan.`, {
+                id: deleteToast,
+            });
+            
+            // Ažuriraj listu vozača na ekranu
+            setDrivers(currentDrivers => currentDrivers.filter(d => d.id !== driverIdToDelete));
+    
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.response?.data || "Došlo je do greške pri brisanju.";
+            
+            // Ažuriramo toast sa porukom o grešci
+            toast.error(errorMessage, {
+                id: deleteToast,
+            });
+        }
+    };
 
     return (
-        <motion.tr className="hover:bg-gray-50/50 transition-colors duration-200" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: index * 0.05 }}>
+        <motion.tr 
+            className="hover:bg-gray-50/50 transition-colors duration-200" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            transition={{ duration: 0.4, delay: index * 0.05 }}
+        >
             <td className="px-6 py-4 text-sm font-semibold text-gray-400">{index + 1}.</td>
             <td className="px-6 py-4">
                 <div className="font-bold text-gray-800">{driver.firstName} {driver.lastName}</div>
@@ -25,14 +78,33 @@ const DriverRow = ({ driver, index }) => {
             </td>
             <td className="px-6 py-4">
                 <div className={`flex items-center gap-1.5 font-bold text-md ${getRatingColorClass(rating)}`}>
-                    <Star className="h-5 w-5 fill-current" /><span>{rating}</span>
+                    <Star className="h-5 w-5 fill-current" />
+                    <span>{rating}</span>
                 </div>
             </td>
             <td className="px-6 py-4">
-                <div className={`px-3 py-1 text-sm font-semibold rounded-full inline-block ${getOnTimeColorClass(onTimePercentage)}`}>{onTimePercentage}%</div>
+                <div className={`px-3 py-1 text-sm font-semibold rounded-full inline-block ${getOnTimeColorClass(onTimePercentage)}`}>
+                    {onTimePercentage}%
+                </div>
             </td>
             <td className="px-6 py-4 text-center font-bold text-gray-700">{driver.totalDeliveries}</td>
-            <td className={`px-6 py-4 text-center font-extrabold text-lg ${driver.rejections > 0 ? 'text-red-500' : 'text-gray-400'}`}>{driver.rejections}</td>
+            <td className={`px-6 py-4 text-center font-extrabold text-lg ${driver.rejections > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                {driver.rejections}
+            </td>
+            <td className="px-6 py-4 text-right">
+                <button 
+    onClick={() => {
+        // Proveravamo da li klik uopšte radi
+        console.log(`Kliknuto na DELETE za vozača ID: ${driver.driverId}`); // <-- ISPRAVKA OVDE
+        
+        // Pozivamo funkciju koju smo dobili kao prop
+        onDeleteRequest(driver.driverId, `${driver.firstName} ${driver.lastName}`); // <-- ISPRAVKA OVDE
+    }}
+    className="text-sm font-semibold text-red-500 hover:text-red-700"
+>
+    Delete
+</button>
+            </td>
         </motion.tr>
     );
 };
@@ -42,6 +114,7 @@ export function AdminDriverPerformancePage() {
     const [drivers, setDrivers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [confirmState, setConfirmState] = useState({ isOpen: false, driverId: null, driverName: '' });
 
     // Izdvajamo dohvatanje podataka u posebnu funkciju
     const fetchData = async () => {
@@ -68,6 +141,34 @@ export function AdminDriverPerformancePage() {
         fetchData(); // Ponovo dohvati podatke da se prikaže novi vozač
     };
 
+const handleDriverDelete = async () => {
+    // Get the id and name from the state
+    const driverIdToDelete = confirmState.driverId;
+    const driverNameToDelete = confirmState.driverName;
+
+    // Immediately close the dialog
+    setConfirmState({ isOpen: false, driverId: null, driverName: '' });
+
+    if (!driverIdToDelete) {
+        toast.error("Driver ID was not found. Could not delete.");
+        return;
+    }
+
+    const deleteToast = toast.loading(`Deleting driver ${driverNameToDelete}...`);
+    try {
+        await deleteDriverById(driverIdToDelete);
+        toast.success(`Driver ${driverNameToDelete} successfully deleted.`, { id: deleteToast });
+        
+        // <-- IZMENA JE OVDE
+        // Ponovo dohvati sve podatke sa servera da bi se lista osvežila.
+        fetchData(); 
+
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || error.response?.data || "An error occurred.";
+        toast.error(errorMessage, { id: deleteToast });
+    }
+};
+
     const topPerformer = drivers[0];
     const lowPerformer = drivers[drivers.length - 1];
     const CHART_PALETTE = ['#A17A4B', '#FBBF24', '#D4A056', '#C0843D', '#E6B88A'];
@@ -81,6 +182,13 @@ export function AdminDriverPerformancePage() {
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={handleRegistrationSuccess}
             />
+<ConfirmDialog
+    isOpen={confirmState.isOpen}
+    onClose={() => setConfirmState({ isOpen: false, driverId: null, driverName: '' })}
+    onConfirm={handleDriverDelete}
+    title="Confirm Deletion"
+    description={`Are you sure you want to permanently delete the driver "${confirmState.driverName}"? This action cannot be undone.`}
+/>
             <div className="min-h-screen bg-[#FDFCF8]">
                 <AdminNavbar />
                 <main className="container mx-auto p-6 lg:p-10">
@@ -121,16 +229,32 @@ export function AdminDriverPerformancePage() {
                                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">On-Time (%)</th>
                                             <th className="px-6 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Deliveries</th>
                                             <th className="px-6 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Rejections</th>
+                                            <th className="px-6 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {drivers.length > 0 ? (
-                                            drivers.map((driver, index) => <DriverRow key={driver.id} driver={driver} index={index} />)
-                                        ) : (
-                                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">No driver data available.</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                  <tbody className="divide-y divide-gray-200">
+    {drivers.length > 0 ? (
+        drivers.map((driver, index) => (
+            <DriverRow 
+                key={driver.id} 
+                driver={driver} 
+                index={index}
+                // OVA LINIJA FALI - ona povezuje klik na dugme sa otvaranjem modala
+                onDeleteRequest={(driverId, driverName) => 
+                    setConfirmState({ isOpen: true, driverId, driverName })
+                }
+            />
+        ))
+    ) : (
+        // I OVDE ISPRAVI colSpan
+        <tr>
+            <td colSpan="7" className="p-8 text-center text-gray-500">
+                No driver data available.
+            </td>
+        </tr>
+    )}
+</tbody>
+                                                                </table>
                             </div>
 
                             {/* GRAFIKONI */}

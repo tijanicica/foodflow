@@ -819,3 +819,8 @@ export const getCustomerFinancialReport = async (startDate, endDate) => {
     });
     return response.data;
 };
+
+export const deleteDriverById = async (driverId) => {
+    // Ne očekujemo povratne podatke osim statusa, pa ne moramo da čuvamo response
+    await apiClient.delete(`/admin/managers/drivers/${driverId}`);
+};

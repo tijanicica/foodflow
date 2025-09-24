@@ -26,9 +26,6 @@ export function AdminNavbar() {
                     <NavLink to="/admin/dashboard" className={({isActive}) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                         Dashboard
                     </NavLink>
-                    <NavLink to="/admin/user-management" className={({isActive}) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                        User Management
-                    </NavLink>
                     <NavLink to="/admin/live-tracking" className={({isActive}) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                         Live Tracking
                     </NavLink>

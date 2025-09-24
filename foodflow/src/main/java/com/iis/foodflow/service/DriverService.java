@@ -839,4 +839,16 @@ public class DriverService {
                 simulationDurationSeconds // <-- Sedmi parametar je sada tu
         );
     }
+
+
+    @Transactional
+    public void deleteDriver(Long driverId) {
+        // Proveravamo da li vozač uopšte postoji pre brisanja
+        if (!driverRepository.existsById(driverId)) {
+            throw new EntityNotFoundException("Driver with ID " + driverId + " not found.");
+        }
+        // Ova komanda će poslati "DELETE FROM driver WHERE id=?" SQL komandu bazi.
+        // Ta komanda će aktivirati tvoj PL/pgSQL triger.
+        driverRepository.deleteById(driverId);
+    }
 }

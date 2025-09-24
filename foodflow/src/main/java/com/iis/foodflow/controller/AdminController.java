@@ -6,7 +6,10 @@ import com.iis.foodflow.dto.request.UpdateManagerRequestDTO;
 import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.model.user.Administrator;
 import com.iis.foodflow.service.AdminService;
+import com.iis.foodflow.service.DriverService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +25,8 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final DriverService driverService;
+
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_ADMINISTRATOR')")
@@ -73,6 +78,34 @@ public class AdminController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             // Vraća grešku ako email postoji ili lokacija nije validna
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+
+    @DeleteMapping("/drivers/{driverId}")
+    @PreAuthorize("hasRole('ADMINISTRATOR')") // Dodaj autorizaciju za svaki slučaj
+    public ResponseEntity<?> deleteDriver(@PathVariable Long driverId) {
+        try {
+            driverService.deleteDriver(driverId);
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException e) {
+            // Pokušaj da izvučeš konkretnu poruku iz baze
+            // Ponekad je prava poruka "sakrivena" unutar izuzetka
+            String rootCauseMessage = e.getMostSpecificCause().getMessage();
+            if (rootCauseMessage != null && rootCauseMessage.contains("Cannot delete driver")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Ne možete obrisati vozača jer ima aktivne dostave.");
+            }
+            // Generalna poruka ako ne možemo da pročitamo specifičnu
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Brisanje nije moguće zbog postojećih veza u bazi.");
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+
+        } catch (Exception e) {
+            // Opšti catch-all blok da vidimo da li se dešava neka druga greška
+            // Ovo je dobro za debagovanje
+            System.err.println("Neočekivana greška pri brisanju vozača: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Došlo je do neočekivane greške na serveru.");
         }
     }
 }
