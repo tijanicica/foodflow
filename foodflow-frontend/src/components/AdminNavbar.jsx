@@ -32,9 +32,6 @@ export function AdminNavbar() {
                     <NavLink to="/admin/driver-performance" className={({isActive}) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                         Driver Performance
                     </NavLink>
-                    <NavLink to="/admin/restaurant-performance" className={({isActive}) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                        Restaurant Performance
-                    </NavLink>
                     
                     {/* === VRAĆEN OBAVEZNI LINK === */}
                     <NavLink to="/admin/managers" className={({isActive}) => `${commonLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
