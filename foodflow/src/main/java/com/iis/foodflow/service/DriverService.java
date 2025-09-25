@@ -9,12 +9,9 @@ import com.iis.foodflow.model.delivery.OrderOffer;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Driver;
-import com.iis.foodflow.repository.DriverRatingRepository;
-import com.iis.foodflow.repository.DriverRepository;
-import com.iis.foodflow.repository.OrderOfferRepository;
+import com.iis.foodflow.repository.*;
 // Na vrhu DriverService.java
 import lombok.extern.slf4j.Slf4j;
-import com.iis.foodflow.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +43,7 @@ public class DriverService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
     private final RealtimeNotificationService realtimeNotificationService;
+    private final RestaurantRepository restaurantRepository; // DODAJTE OVO
 
     @Autowired
     private RoutingService routingService;
@@ -850,5 +848,30 @@ public class DriverService {
         // Ova komanda će poslati "DELETE FROM driver WHERE id=?" SQL komandu bazi.
         // Ta komanda će aktivirati tvoj PL/pgSQL triger.
         driverRepository.deleteById(driverId);
+    }
+
+    @Transactional(readOnly = true)
+    public RecommendedRestaurantDTO getRecommendedRestaurant(String driverEmail) {
+        // 1. Pronađi vozača da bismo dobili njegov ID
+        Driver driver = findDriverByEmail(driverEmail);
+
+        // 2. Pozovi novu metodu iz repozitorijuma koja poziva PL/pgSQL funkciju
+        Optional<Long> recommendedRestaurantIdOpt = driverRepository.findBestMatchRestaurantId(driver.getId());
+
+        // 3. Ako funkcija nije vratila preporuku, vrati prazan odgovor
+        if (recommendedRestaurantIdOpt.isEmpty()) {
+            throw new EntityNotFoundException("No recommendation available for driver: " + driverEmail);
+        }
+
+        // 4. Ako postoji preporuka, pronađi restoran i mapiraj ga u DTO
+        Long restaurantId = recommendedRestaurantIdOpt.get();
+        Restaurant recommendedRestaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new EntityNotFoundException("Recommended restaurant not found with ID: " + restaurantId));
+
+        return RecommendedRestaurantDTO.builder()
+                .id(recommendedRestaurant.getId())
+                .name(recommendedRestaurant.getName())
+                .address(recommendedRestaurant.getAddress().toString()) // Pretpostavka da Address ima dobar toString()
+                .build();
     }
 }

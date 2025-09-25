@@ -226,4 +226,13 @@ public class DriverController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/me/recommended-restaurant")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<RecommendedRestaurantDTO> getRecommendedRestaurantForDriver() {
+        // Pretpostavka je da imate mehanizam da dobijete email ulogovanog vozača
+        String driverEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        RecommendedRestaurantDTO recommendation = driverService.getRecommendedRestaurant(driverEmail);
+        return ResponseEntity.ok(recommendation);
+    }
+
 }

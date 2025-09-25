@@ -738,7 +738,25 @@ INSERT INTO driver (id, email, password, first_name, last_name, phone, role, veh
 -- Novi vozač za testiranje
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
     (10, 'driver4@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Milan', 'Milanović', '067123456', 'DRIVER', 'CAR', 'ONLINE', 0, 44.8080, 20.4600, NOW(), 0.0);
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (11, 'driver5@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Stefan', 'Petrovic', '061111222', 'DRIVER', 'BICYCLE', 'ONLINE', 1, 44.8150, 20.4620, NOW(), 0.0);
 
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (12, 'driver6@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Luka', 'Markovic', '062222333', 'DRIVER', 'MOTORCYCLE', 'OFFLINE', 0, 44.7866, 20.4489, NOW(), 0.0);
+
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (13, 'driver7@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ivan', 'Djordjevic', '063333444', 'DRIVER', 'CAR', 'ONLINE', 2, 44.8205, 20.4651, NOW(), 0.0);
+
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (14, 'driver8@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Filip', 'Nikolic', '064444555', 'DRIVER', 'BICYCLE', 'ONLINE', 0, 44.8020, 20.4700, NOW(), 0.0);
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (15, 'driver9@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Nemanja', 'Ilic', '065555666', 'DRIVER', 'MOTORCYCLE', 'ONLINE', 1, 44.8100, 20.4550, NOW(), 0.0);
+
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (16, 'driver10@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Andrej', 'Jovic', '066666777', 'DRIVER', 'CAR', 'OFFLINE', 3, 44.7950, 20.4800, NOW(), 0.0);
+
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (17, 'driver11@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'David', 'Pavlovic', '069888999', 'DRIVER', 'BICYCLE', 'ONLINE', 0, 44.8180, 20.4580, NOW(), 0.0);
 
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, card_amount, cash_amount) VALUES
     (32, 'PICKED_UP', 'CASH', 'REGULAR',
@@ -755,6 +773,65 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 -- KORAK 3: Dodajemo ponudu koju je vozač prihvatio
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (32, 32, 10, 'REJECTED');
+-- Scenario for Driver #11 (Stefan, BICYCLE, ONLINE)
+-- A successfully delivered order in the past.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, card_amount, cash_amount) VALUES
+    (101, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '3 day', 200.00, 1300.00, 1, 15, 11, NOW() - INTERVAL '3 day' + INTERVAL '50 minute', NOW() - INTERVAL '3 day' + INTERVAL '45 minute', 1300.00, 0.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (101, 1, 101, 78); -- Falafel Bowl
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (101, 101, 11, 'ACCEPTED');
+
+
+-- Scenario for Driver #12 (Luka, MOTORCYCLE, OFFLINE)
+-- Two past orders, one delivered, one canceled. He is offline, so no new offers.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, card_amount, cash_amount) VALUES
+    (102, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '5 day', 150.00, 750.00, 1, 12, 12, NOW() - INTERVAL '5 day' + INTERVAL '25 minute', NOW() - INTERVAL '5 day' + INTERVAL '20 minute', 0.00, 750.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (102, 1, 102, 45); -- Ćevapi
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (102, 102, 12, 'ACCEPTED');
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, card_amount, cash_amount) VALUES
+    (103, 'CANCELED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 150.00, 1250.00, 1, 1, 12, 1250.00, 0.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (103, 1, 103, 68); -- Quattro Formaggi
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (103, 103, 12, 'ACCEPTED');
+
+
+-- Scenario for Driver #13 (Ivan, CAR, ONLINE)
+-- This driver has REJECTED an offer for an order that is still waiting.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (104, 'CONFIRMED', 'CARD', 'REGULAR', NOW() - INTERVAL '1 hour', 150.00, 3050.00, 1, 18, 3050.00, 0.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (104, 1, 104, 89); -- Rib-eye Steak
+INSERT INTO order_offer (id, order_id, driver_id, status, reason_for_rejection) VALUES (104, 104, 13, 'REJECTED', 'Too far from my current location.');
+
+
+-- Scenario for Driver #14 (Filip, BICYCLE, DELIVERING)
+-- This driver is currently on an active delivery.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, card_amount, cash_amount) VALUES
+    (105, 'PICKED_UP', 'CASH', 'REGULAR', NOW() - INTERVAL '15 minute', 200.00, 1300.00, 1, 19, 14, NOW() + INTERVAL '20 minute', NOW() - INTERVAL '5 minute', 0.00, 1300.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (105, 1, 105, 100); -- Gluten-Free Pizza
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (105, 105, 14, 'ACCEPTED');
+
+
+-- Scenario for Driver #15 (Nemanja, MOTORCYCLE, ONLINE)
+-- This driver has a new offer waiting for him on his dashboard.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, card_amount, cash_amount) VALUES
+    (106, 'CONFIRMED', 'COMBINED', 'REGULAR', NOW() - INTERVAL '10 minute', 150.00, 1650.00, 1, 20, 1000.00, 650.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (106, 1, 106, 123); -- Sweet and Sour Chicken
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (106, 106, 15, 'SENT');
+
+
+-- Scenario for Driver #16 (Andrej, CAR, OFFLINE)
+-- This driver has a significant delivery history but is currently offline.
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, card_amount, cash_amount) VALUES
+                                                                                                                                                                                           (107, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '4 day', 150.00, 1050.00, 1, 14, 16, NOW() - INTERVAL '4 day' + INTERVAL '30 minute', NOW() - INTERVAL '4 day' + INTERVAL '28 minute', 1050.00, 0.00),
+                                                                                                                                                                                           (108, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '6 day', 150.00, 1650.00, 1, 16, 16, NOW() - INTERVAL '6 day' + INTERVAL '40 minute', NOW() - INTERVAL '6 day' + INTERVAL '35 minute', 1650.00, 0.00),
+                                                                                                                                                                                           (109, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '8 day', 150.00, 3650.00, 1, 1, 16, NOW() - INTERVAL '8 day' + INTERVAL '45 minute', NOW() - INTERVAL '8 day' + INTERVAL '50 minute', 0.00, 3650.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (107, 1, 107, 24), -- Double Bacon Burger
+                                                                          (108, 1, 108, 67), -- Capricciosa
+                                                                          (109, 1, 109, 90); -- T-Bone Steak
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+                                                              (107, 107, 16, 'ACCEPTED'),
+                                                              (108, 108, 16, 'ACCEPTED'),
+                                                              (109, 109, 16, 'ACCEPTED');
 
 
 -- ISPRAVLJENA INSERT KOMANDA ZA PORUDŽBINU #31 (SIMULACIJA OD 30 SEKUNDI)
@@ -855,6 +932,54 @@ INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival
 -- OCJENE ZA DOSTAVLJAČE (DriverRating)
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
     (2, 2, 2, 1, 1, 3, 5, 4, null, 5, null);
+-- Driver #11 (Stefan) gets a good manager rating for order #101.
+-- Restaurant #8 is managed by Manager #7.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (10, 101, 11, 1, 5, 5, 5, 7, 5, 5, 5);
+
+-- Driver #12 (Luka) gets an average customer rating for order #102, with no manager feedback.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (11, 102, 12, 1, 4, 3, 4, NULL, NULL, NULL, NULL);
+
+-- Driver #16 (Andrej) has a rich history, let's give him varied ratings.
+-- Order #107: Excellent rating from both customer and manager.
+-- Restaurant #3 is managed by Manager #4.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (12, 107, 16, 1, 5, 5, 5, 4, 5, 5, 5);
+
+-- Order #108: A poor rating from the manager, but the customer was satisfied.
+-- Restaurant #7 is managed by Manager #4.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (13, 108, 16, 1, 5, 4, 5, 4, 2, 3, 3);
+
+-- Order #109: Manager-only rating. The customer did not leave a review.
+-- Restaurant #9 is managed by Manager #4.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (14, 109, 16, 1, NULL, NULL, NULL, 4, 4, 5, 4);
+
+
+-- More ratings for original drivers
+-- =======================================
+
+-- Driver #2 (Jovan) gets more ratings for his historical orders.
+-- Order #88: Good rating. Restaurant #9 is managed by Manager #4.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (15, 88, 2, 1, 4, 5, 5, 4, 4, 5, 5);
+
+-- Order #91: The customer complained about hygiene, but the manager rated him well.
+-- Restaurant #8 is managed by Manager #7.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (16, 91, 2, 1, 5, 2, 4, 7, 5, 5, 5);
+
+-- Driver #8 (Petar) gets a perfect score for the delivery with the coupon (order #30).
+-- Restaurant #6 is managed by Manager #7.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (17, 30, 8, 1, 5, 5, 5, 7, 5, 5, 5);
+
+-- Driver #9 (Marko) gets a rating for order #82.
+-- Restaurant #4 is managed by Manager #7.
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (18, 82, 9, 1, 5, 4, 5, 7, 4, 5, 4);
 
 
 -- ===== PORUDŽBINA ZA TESTIRANJE "TRACK ON MAP" =====

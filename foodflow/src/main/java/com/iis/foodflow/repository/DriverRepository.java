@@ -22,4 +22,7 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
     @Query("SELECT d FROM Driver d WHERE d.status = 'ONLINE' AND d.id NOT IN " +
             "(SELECT o.driver.id FROM OrderOffer o WHERE o.order.id = :orderId)")
     List<Driver> findAvailableDrivers(@Param("orderId") Long orderId);
+
+    @Query(value = "SELECT calculate_driver_restaurant_compatibility(:driverId)", nativeQuery = true)
+    Optional<Long> findBestMatchRestaurantId(@Param("driverId") Long driverId);
 }
