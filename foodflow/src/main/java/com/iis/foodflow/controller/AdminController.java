@@ -93,11 +93,11 @@ public class AdminController {
             // Ponekad je prava poruka "sakrivena" unutar izuzetka
             String rootCauseMessage = e.getMostSpecificCause().getMessage();
             if (rootCauseMessage != null && rootCauseMessage.contains("Cannot delete driver")) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Ne možete obrisati vozača jer ima aktivne dostave.");
+                // More specific and user-friendly message based on the trigger's exception
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("This driver cannot be deleted because they have active deliveries.");
             }
-            // Generalna poruka ako ne možemo da pročitamo specifičnu
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Brisanje nije moguće zbog postojećih veza u bazi.");
-
+// A general fallback message for other integrity constraint violations
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Deletion is not possible due to existing database references.");
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 
