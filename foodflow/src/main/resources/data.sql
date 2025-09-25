@@ -735,6 +735,28 @@ INSERT INTO order_offer (id, order_id, driver_id, status, created_at, reason_for
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
     (9, 'driver3@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Marko', 'Marković', '066123456', 'DRIVER', 'CAR', 'ONLINE', 0, 45.2550, 19.8456, NOW(), 0.0);
 
+-- Novi vozač za testiranje
+INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
+    (10, 'driver4@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Milan', 'Milanović', '067123456', 'DRIVER', 'CAR', 'ONLINE', 0, 44.8080, 20.4600, NOW(), 0.0);
+
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, card_amount, cash_amount) VALUES
+    (32, 'PICKED_UP', 'CASH', 'REGULAR',
+     NOW() - INTERVAL '5 minute',          -- Kreirana pre 5 minuta
+     150.00, 1000.00, 1, 1, 10,
+     NOW() + INTERVAL '30 minute', -- ETA je za 30 minuta od sada
+     0.00, 1000.00
+    );
+
+-- KORAK 2: Dodajemo stavku za tu porudžbinu
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (32, 1, 32, 23); -- 1x Classic Cheeseburger
+
+-- KORAK 3: Dodajemo ponudu koju je vozač prihvatio
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+    (32, 32, 10, 'REJECTED');
+
+
 -- ISPRAVLJENA INSERT KOMANDA ZA PORUDŽBINU #31 (SIMULACIJA OD 30 SEKUNDI)
 -- ISPRAVLJENA INSERT KOMANDA ZA PORUDŽBINU #31 (za praćenje)
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, card_amount, cash_amount) VALUES

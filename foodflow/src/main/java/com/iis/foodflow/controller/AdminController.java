@@ -96,7 +96,6 @@ public class AdminController {
                 // More specific and user-friendly message based on the trigger's exception
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("This driver cannot be deleted because they have active deliveries.");
             }
-// A general fallback message for other integrity constraint violations
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Deletion is not possible due to existing database references.");
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -105,7 +104,7 @@ public class AdminController {
             // Opšti catch-all blok da vidimo da li se dešava neka druga greška
             // Ovo je dobro za debagovanje
             System.err.println("Neočekivana greška pri brisanju vozača: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Došlo je do neočekivane greške na serveru.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred on the server.");
         }
     }
 }
