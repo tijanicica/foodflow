@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Dodan useState
 import { useNavigate, Link } from 'react-router-dom';
-import { getDriverPerformance, updateDriverVehicle,getDriverStatus, updateDriverStatus,updateDriverProfile } from '@/services/api';
+import { getDriverPerformance, updateDriverVehicle,getDriverStatus, updateDriverStatus,updateDriverProfile,getRecommendedRestaurant  } from '@/services/api';
 // Ikonice
 import { FiUser,FiEdit2, FiSave, FiXCircle, FiTruck, FiClock, FiThumbsDown, FiStar } from 'react-icons/fi';
 import { BsBicycle } from 'react-icons/bs';
@@ -12,12 +12,52 @@ import toast from 'react-hot-toast';
 import { EditProfileModal } from '@/components/modals/EditDriverProfileModal';
 import { DriverCharts } from '../components/charts/DriverCharts';
 import { motion } from 'framer-motion';
+import { FiAward } from 'react-icons/fi';
 
 const VEHICLE_OPTIONS = [
     { value: 'CAR', label: 'Car', icon: <AiFillCar /> },
     { value: 'MOTORCYCLE', label: 'Motorcycle', icon: <FaMotorcycle /> },
     { value: 'BICYCLE', label: 'Bicycle', icon: <BsBicycle /> },
 ];
+
+const RecommendedRestaurantCard = ({ restaurant }) => {
+    if (!restaurant) {
+        // Ako nema preporuke, prikazujemo elegantnu poruku
+        return (
+            <div style={{
+                backgroundColor: 'white',
+                padding: '2rem',
+                borderRadius: '12px',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                textAlign: 'center',
+                color: '#6B7280'
+            }}>
+                <FiAward style={{ fontSize: '2.5rem', marginBottom: '1rem', color: '#D1D5DB' }} />
+                <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>No Recommendation Available</h4>
+                <p style={{ marginTop: '0.5rem' }}>Keep up the great work to get a top restaurant match!</p>
+            </div>
+        );
+    }
+
+    // Ako preporuka postoji, prikazujemo karticu sa podacima
+    return (
+        <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '12px',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.07)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2rem'
+        }}>
+            <FiAward style={{ fontSize: '3.5rem', color: '#8A643B', flexShrink: 0 }} />
+            <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#333' }}>{restaurant.name}</h4>
+                <p style={{ margin: '0.5rem 0 0', color: '#6B7280', fontSize: '1.1rem' }}>{restaurant.address}</p>
+            </div>
+        </div>
+    );
+};
 
 const pageContainerVariants = {
     hidden: { opacity: 0 },
@@ -45,6 +85,7 @@ const sectionVariants = {
 // --- AŽURIRANA KOMPONENTA BEZ 'POINTER' CURSORA ---
 const PerformanceCard = ({ label, value, icon }) => {
     const [isHovered, setIsHovered] = useState(false);
+    
 
     const cardStyle = {
         backgroundColor: 'white',
@@ -199,28 +240,32 @@ export function DriverProfilePage() {
     const [isModalOpen, setIsModalOpen] = useState(false); // Ovo je jedini state za kontrolu UI
     const getInitialStatus = () => localStorage.getItem('driverStatus') === 'ONLINE';
     const [isOnline, setIsOnline] = useState(getInitialStatus);
+    const [recommendedRestaurant, setRecommendedRestaurant] = useState(null); 
 
     // useEffect ostaje skoro isti, samo uklanjamo postavljanje state-ova koji više ne postoje
     useEffect(() => {
         async function fetchData() {
-            try {
-                setLoading(true);
-                const [performanceData, statusData] = await Promise.all([
-                    getDriverPerformance(),
-                    getDriverStatus()
-                ]);
+             try {
+            setLoading(true);
+            // Pozivamo sve potrebne endpointe paralelno radi brzine
+            const [performanceData, statusData, recommendationData] = await Promise.all([
+                getDriverPerformance(),
+                getDriverStatus(),
+                getRecommendedRestaurant().catch(err => null) // Važno: .catch() sprečava da sve pukne ako nema preporuke
+            ]);
 
-                setPerformance(performanceData);
-                
-                const serverStatusIsOnline = statusData.status === 'ONLINE';
-                setIsOnline(serverStatusIsOnline);
-                localStorage.setItem('driverStatus', statusData.status);
-            } catch (err) {
-                console.error("Failed to fetch driver data:", err);
-                setError('Could not load profile data. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
+            setPerformance(performanceData);
+            setRecommendedRestaurant(recommendationData); // Postavljamo preporuku u state
+
+            const serverStatusIsOnline = statusData.status === 'ONLINE';
+            setIsOnline(serverStatusIsOnline);
+            localStorage.setItem('driverStatus', statusData.status);
+        } catch (err) {
+            console.error("Failed to fetch driver data:", err);
+            setError('Could not load profile data. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
         }
         fetchData();
     }, []);
@@ -369,6 +414,11 @@ export function DriverProfilePage() {
                                 <PerformanceCard label="Rejections" value={performance.rejections ?? 0} icon={<FiThumbsDown />} />
                                 <PerformanceCard label="Average Rating" value={(performance.averageRating ?? 0).toFixed(1)} icon={<FiStar />} />
                             </div>
+                        </section>
+
+                         <section style={{ marginTop: '3rem' }}>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#333' }}>Top Restaurant Match</h3>
+                            <RecommendedRestaurantCard restaurant={recommendedRestaurant} />
                         </section>
 
                         {/* Podešavanja Naloga */}

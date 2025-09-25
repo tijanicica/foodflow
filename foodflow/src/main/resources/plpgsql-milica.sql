@@ -142,9 +142,8 @@ WITH
           AND o.status = 'DELIVERED'
           AND o.start_delivery_time IS NOT NULL AND o.delivered_at IS NOT NULL
         GROUP BY r.id
-        -- ==========================================================
-        -- UKLONILI SMO 'HAVING' USLOV DA OMOGUĆIMO VIŠE KANDIDATA
-        -- ==========================================================
+        HAVING COUNT(DISTINCT o.id) > 1
+
     ),
     NormalizationBounds AS (
         SELECT

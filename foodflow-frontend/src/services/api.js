@@ -824,3 +824,8 @@ export const deleteDriverById = async (driverId) => {
     // Ne očekujemo povratne podatke osim statusa, pa ne moramo da čuvamo response
     await apiClient.delete(`/admin/managers/drivers/${driverId}`);
 };
+export const getRecommendedRestaurant = async () => {
+    // Endpoint koji smo definisali u DriverController-u
+    const response = await apiClient.get('/drivers/me/recommended-restaurant');
+    return response.data;
+};

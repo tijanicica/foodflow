@@ -893,9 +893,148 @@ INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
                                                                                                                                                           (207, 207, 16, 1, 7, 5, 5, 4),
                                                                                                                                                           (208, 208, 16, 1, 7, 4, 4, 4),
+
                                                                                                                                                           (209, 209, 16, 1, 7, 5, 5, 5);
 
 
+-- Vozač #11 (Stefan, BICYCLE) dobija još 3 isporuke iz različitih restorana.
+-- ====================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (301, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '10 day', 200.00, 1100.00, 1, 17, 11, NOW() - INTERVAL '10 day' + INTERVAL '45 minute', NOW() - INTERVAL '10 day' + INTERVAL '48 minute', NOW() - INTERVAL '10 day' + INTERVAL '15 minute'), -- Malo kasni
+                                                                                                                                                                                      (302, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '9 day', 200.00, 1450.00, 1, 1, 11, NOW() - INTERVAL '9 day' + INTERVAL '50 minute', NOW() - INTERVAL '9 day' + INTERVAL '45 minute', NOW() - INTERVAL '9 day' + INTERVAL '20 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (301, 1, 301, 69), -- Pizza Corner: Vegetariana
+                                                                          (302, 1, 302, 23); -- Burger Queen: Classic Cheeseburger
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (301, 301, 11, 'ACCEPTED'), (302, 302, 11, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (301, 301, 11, 1, 4, 3, 4, 3), -- Lošija ocena za Pizza Corner
+                                                                                                                                                          (302, 302, 11, 1, 4, 5, 5, 5); -- Odlična ocena za Burger Queen
+
+
+-- Vozač #12 (Luka, MOTORCYCLE) dobija 2 nove uspešne isporuke.
+-- ====================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (303, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '7 day', 150.00, 3100.00, 1, 13, 12, NOW() - INTERVAL '7 day' + INTERVAL '25 minute', NOW() - INTERVAL '7 day' + INTERVAL '18 minute', NOW() - INTERVAL '7 day' + INTERVAL '5 minute'),
+                                                                                                                                                                                      (304, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '6 day', 150.00, 1600.00, 1, 1, 12, NOW() - INTERVAL '6 day' + INTERVAL '30 minute', NOW() - INTERVAL '6 day' + INTERVAL '25 minute', NOW() - INTERVAL '6 day' + INTERVAL '10 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (303, 1, 303, 56), -- The Golden Spoon: Beefsteak
+                                                                          (304, 1, 304, 12); -- Green Garden: Caesar Salad
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (303, 303, 12, 'ACCEPTED'), (304, 304, 12, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (303, 303, 12, 1, 7, 5, 5, 5), -- Odličan za Golden Spoon
+                                                                                                                                                          (304, 304, 12, 1, 7, 4, 5, 4); -- Dobar za Green Garden
+
+
+-- Vozač #13 (Ivan, CAR) dobija 2 isporuke.
+-- ====================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (305, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '5 day', 150.00, 1100.00, 1, 20, 13, NOW() - INTERVAL '5 day' + INTERVAL '35 minute', NOW() - INTERVAL '5 day' + INTERVAL '40 minute', NOW() - INTERVAL '5 day' + INTERVAL '15 minute'), -- Kasni
+                                                                                                                                                                                      (306, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '4 day', 150.00, 1800.00, 1, 21, 13, NOW() - INTERVAL '4 day' + INTERVAL '30 minute', NOW() - INTERVAL '4 day' + INTERVAL '28 minute', NOW() - INTERVAL '4 day' + INTERVAL '12 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (305, 1, 305, 111),-- Fish & Chips: Hake and Chips
+                                                                          (306, 1, 306, 122);-- Wok Express: Chicken with Curry
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (305, 305, 13, 'ACCEPTED'), (306, 306, 13, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (305, 305, 13, 1, 4, 2, 3, 2), -- Loša ocena zbog kašnjenja
+                                                                                                                                                          (306, 306, 13, 1, 7, 5, 4, 5); -- Dobra ocena
+
+
+-- Vozač #14 (Filip, BICYCLE) završava svoju dostavu i dobija još 2.
+-- ====================================================================
+UPDATE orders SET status = 'DELIVERED', delivered_at = NOW() - INTERVAL '5 minute' WHERE id = 105; -- Završava dostavu
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+    (105, 105, 14, 1, 7, 5, 5, 5); -- Dobija odličnu ocenu za nju
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (307, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '3 day', 200.00, 1400.00, 1, 1, 14, NOW() - INTERVAL '3 day' + INTERVAL '55 minute', NOW() - INTERVAL '3 day' + INTERVAL '50 minute', NOW() - INTERVAL '3 day' + INTERVAL '20 minute'),
+                                                                                                                                                                                      (308, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '2 day', 200.00, 1150.00, 1, 11, 14, NOW() - INTERVAL '2 day' + INTERVAL '50 minute', NOW() - INTERVAL '2 day' + INTERVAL '55 minute', NOW() - INTERVAL '2 day' + INTERVAL '22 minute'); -- Kasni
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (307, 1, 307, 1),  -- Pasta Paradise: Carbonara
+                                                                          (308, 1, 308, 13); -- Green Garden: Quinoa Salad
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (307, 307, 14, 'ACCEPTED'), (308, 308, 14, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (307, 307, 14, 1, 4, 5, 5, 5),
+                                                                                                                                                          (308, 308, 14, 1, 7, 3, 4, 3);
+
+
+-- Vozač #15 (Nemanja, MOTORCYCLE) dobija 3 dostave.
+-- ====================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (309, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '5 day', 150.00, 1250.00, 1, 16, 15, NOW() - INTERVAL '5 day' + INTERVAL '30 minute', NOW() - INTERVAL '5 day' + INTERVAL '20 minute', NOW() - INTERVAL '5 day' + INTERVAL '8 minute'),
+                                                                                                                                                                                      (310, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '4 day', 150.00, 3200.00, 1, 1, 15, NOW() - INTERVAL '4 day' + INTERVAL '25 minute', NOW() - INTERVAL '4 day' + INTERVAL '21 minute', NOW() - INTERVAL '4 day' + INTERVAL '7 minute'),
+                                                                                                                                                                                      (311, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '3 day', 150.00, 800.00, 1, 14, 15, NOW() - INTERVAL '3 day' + INTERVAL '35 minute', NOW() - INTERVAL '3 day' + INTERVAL '33 minute', NOW() - INTERVAL '3 day' + INTERVAL '12 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (309, 1, 309, 68), -- Pizza Corner
+                                                                          (310, 2, 310, 36), -- Sushi Heaven
+                                                                          (311, 1, 311, 49); -- Meraklija Grill
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (309, 309, 15, 'ACCEPTED'), (310, 310, 15, 'ACCEPTED'), (311, 311, 15, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (309, 309, 15, 1, 4, 4, 5, 4),
+                                                                                                                                                          (310, 310, 15, 1, 7, 5, 5, 5),
+                                                                                                                                                          (311, 311, 15, 1, 4, 5, 4, 4);
+
+
+-- Vozač #9 (Marko, CAR) dobija još 2 dostave.
+-- ====================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (312, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '7 day', 150.00, 1300.00, 1, 1, 9, NOW() - INTERVAL '7 day' + INTERVAL '30 minute', NOW() - INTERVAL '7 day' + INTERVAL '25 minute', NOW() - INTERVAL '7 day' + INTERVAL '10 minute'),
+                                                                                                                                                                                      (313, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '6 day', 150.00, 1000.00, 1, 1, 9, NOW() - INTERVAL '6 day' + INTERVAL '35 minute', NOW() - INTERVAL '6 day' + INTERVAL '31 minute', NOW() - INTERVAL '6 day' + INTERVAL '14 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (312, 1, 312, 1), -- Pasta Paradise
+                                                                          (313, 1, 313, 23);-- Burger Queen
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (312, 312, 9, 'ACCEPTED'), (313, 313, 9, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (312, 312, 9, 1, 4, 5, 5, 5),
+                                                                                                                                                          (313, 313, 9, 1, 4, 4, 5, 4);
+
+-- Vozač #10 (Milan, CAR) dobija još 2 dostave.
+-- ====================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (314, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '9 day', 150.00, 2400.00, 1, 1, 10, NOW() - INTERVAL '9 day' + INTERVAL '40 minute', NOW() - INTERVAL '9 day' + INTERVAL '38 minute', NOW() - INTERVAL '9 day' + INTERVAL '15 minute'),
+                                                                                                                                                                                      (315, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '8 day', 150.00, 1300.00, 1, 1, 10, NOW() - INTERVAL '8 day' + INTERVAL '35 minute', NOW() - INTERVAL '8 day' + INTERVAL '40 minute', NOW() - INTERVAL '8 day' + INTERVAL '12 minute'); -- Kasni
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (314, 1, 314, 58), -- The Golden Spoon
+                                                                          (315, 1, 315, 7); -- Pasta Paradise (nema stavke 7, pretpostavka greške, koristimo ID 1 za Carbonara)
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (314, 314, 10, 'ACCEPTED'), (315, 315, 10, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (314, 314, 10, 1, 7, 5, 5, 5),
+                                                                                                                                                         (315, 315, 10, 1, 4, 2, 4, 3);
+-- ====================================================================
+-- SCENARIJI ZA AKTIVNE I SPREMNE PORUDŽBINE - RASPOREĐENO NA 3 VOZAČA
+-- Cilj: Testirati logiku prikaza i brisanja sa više aktivnih vozača.
+-- ====================================================================
+
+-- SCENARIO 1: Vozač #13 (Ivan, CAR) je POKUPIO porudžbinu i vozi je ka kupcu.
+-- Ako probate da obrišete Ivana, triger će ga BLOKIRATI.
+-- =====================================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, card_amount, cash_amount) VALUES
+    (401, 'PICKED_UP', 'CASH', 'REGULAR', NOW() - INTERVAL '30 minute', 150.00, 1000.00, 1, 1, 13, NOW() + INTERVAL '15 minute', NOW() - INTERVAL '5 minute', 0.00, 1000.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (401, 1, 401, 23); -- Burger Queen: Classic Cheeseburger
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+    (401, 401, 13, 'ACCEPTED');
+
+
+-- SCENARIO 2: Vozač #15 (Nemanja, MOTORCYCLE) je prihvatio porudžbinu, koja je sada spremna u restoranu.
+-- Ako probate da obrišete Nemanju, triger će ga BLOKIRATI.
+-- =======================================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, card_amount, cash_amount) VALUES
+    (402, 'READY_FOR_PICKUP', 'CARD', 'REGULAR', NOW() - INTERVAL '20 minute', 150.00, 1500.00, 1, 13, 15, NOW() + INTERVAL '25 minute', 1500.00, 0.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (402, 1, 402, 34); -- Sushi Heaven: California Roll
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+    (402, 402, 15, 'ACCEPTED');
+
+
+-- SCENARIO 3: Vozač #17 (David, BICYCLE) je takođe prihvatio porudžbinu koja ga čeka u restoranu.
+-- Ako probate da obrišete Davida, triger će ga BLOKIRATI.
+-- ======================================================================================
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, card_amount, cash_amount) VALUES
+    (403, 'READY_FOR_PICKUP', 'CARD', 'REGULAR', NOW() - INTERVAL '15 minute', 200.00, 1300.00, 1, 16, 17, NOW() + INTERVAL '35 minute', 1300.00, 0.00);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+    (403, 1, 403, 67); -- Pizza Corner: Capricciosa
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+    (403, 403, 17, 'ACCEPTED');
 -- ====================================================================
 -- PORUDŽBINE U PRETHODNIM MESECIMA (ZA GRAFIKON) SA SPECIFIČNIM BROJEM PO MESECU
 -- ====================================================================
