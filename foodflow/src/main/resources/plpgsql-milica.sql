@@ -62,16 +62,21 @@ v_active_delivery_count INT;
 BEGIN
 
     -- === KORAK 1: VALIDACIJA ===
+    -- Proveravamo da li vozač ima 'ACCEPTED' ponudu za porudžbinu koja je
+    -- ili 'PICKED_UP' ili 'READY_FOR_PICKUP'.
 SELECT COUNT(*)
 INTO v_active_delivery_count
 FROM order_offer oo
          JOIN orders o ON oo.order_id = o.id
 WHERE oo.driver_id = OLD.id
   AND oo.status = 'ACCEPTED'
-  AND o.status = 'PICKED_UP';
+  -- ==========================================================
+  -- PROŠIREN USLOV: Sada proverava oba statusa
+  -- ==========================================================
+  AND o.status IN ('PICKED_UP', 'READY_FOR_PICKUP');
 
 IF v_active_delivery_count > 0 THEN
-        RAISE EXCEPTION 'Cannot delete driver: They are currently handling % active delivery/deliveries.', v_active_delivery_count;
+        RAISE EXCEPTION 'Cannot delete driver: They are assigned to % active or ready-to-pickup delivery/deliveries.', v_active_delivery_count;
 END IF;
 
     -- === KORAK 2: ARHIVIRANJE PODATAKA ===
@@ -87,10 +92,6 @@ VALUES (OLD.id, OLD.email, OLD.first_name, OLD.last_name, v_total_deliveries, NO
 -- === KORAK 3: ČIŠĆENJE SVIH VEZA ===
 DELETE FROM order_offer WHERE driver_id = OLD.id;
 UPDATE orders SET driver_id = NULL WHERE driver_id = OLD.id;
-
--- ==========================================================
--- NOVI KORAK: Brišemo i sve ocene vezane za ovog vozača
--- ==========================================================
 DELETE FROM driver_rating WHERE driver_id = OLD.id;
 
 -- === KORAK 4: DOZVOLA ZA BRISANJE ===
@@ -105,7 +106,6 @@ CREATE TRIGGER trg_final_before_driver_delete
     BEFORE DELETE ON driver
     FOR EACH ROW
     EXECUTE FUNCTION final_safe_delete_and_archive_driver();
-
 
 -- =================================================================
 -- ZADATAK 2: PL/pgSQL Funkcija za proračun kompatibilnosti (ISPRAVLJENA)
