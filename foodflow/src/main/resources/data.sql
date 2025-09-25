@@ -849,6 +849,53 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 -- Ponudu je prihvatio novi vozač
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (31, 31, 9, 'ACCEPTED');
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (201, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '10 day', 150.00, 1200.00, 1, 1, 2, NOW() - INTERVAL '10 day' + INTERVAL '30 minute', NOW() - INTERVAL '10 day' + INTERVAL '25 minute', NOW() - INTERVAL '10 day' + INTERVAL '10 minute'),
+                                                                                                                                                                                      (202, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '9 day', 150.00, 1050.00, 1, 1, 2, NOW() - INTERVAL '9 day' + INTERVAL '40 minute', NOW() - INTERVAL '9 day' + INTERVAL '38 minute', NOW() - INTERVAL '9 day' + INTERVAL '15 minute'),
+                                                                                                                                                                                      (203, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '8 day', 150.00, 800.00, 1, 1, 2, NOW() - INTERVAL '8 day' + INTERVAL '35 minute', NOW() - INTERVAL '8 day' + INTERVAL '31 minute', NOW() - INTERVAL '8 day' + INTERVAL '12 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (201, 1, 201, 24),
+                                                                          (202, 1, 202, 23),
+                                                                          (203, 1, 203, 46);
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+                                                              (201, 201, 2, 'ACCEPTED'), (202, 202, 2, 'ACCEPTED'), (203, 203, 2, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (201, 201, 2, 1, 4, 5, 5, 5),
+                                                                                                                                                          (202, 202, 2, 1, 4, 4, 4, 4),
+                                                                                                                                                          (203, 203, 2, 1, 4, 3, 4, 3);
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (204, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '12 day', 150.00, 1900.00, 1, 1, 8, NOW() - INTERVAL '12 day' + INTERVAL '25 minute', NOW() - INTERVAL '12 day' + INTERVAL '20 minute', NOW() - INTERVAL '12 day' + INTERVAL '8 minute'),
+                                                                                                                                                                                      (205, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '11 day', 150.00, 1600.00, 1, 1, 8, NOW() - INTERVAL '11 day' + INTERVAL '30 minute', NOW() - INTERVAL '11 day' + INTERVAL '22 minute', NOW() - INTERVAL '11 day' + INTERVAL '7 minute'),
+                                                                                                                                                                                      (206, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '10 day', 150.00, 1300.00, 1, 1, 8, NOW() - INTERVAL '10 day' + INTERVAL '35 minute', NOW() - INTERVAL '10 day' + INTERVAL '33 minute', NOW() - INTERVAL '10 day' + INTERVAL '14 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (204, 1, 204, 34),
+                                                                          (205, 1, 205, 36),
+                                                                          (206, 1, 206, 67);
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+                                                              (204, 204, 8, 'ACCEPTED'), (205, 205, 8, 'ACCEPTED'), (206, 206, 8, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (204, 204, 8, 1, 7, 5, 5, 5),
+                                                                                                                                                          (205, 205, 8, 1, 7, 5, 4, 5),
+                                                                                                                                                          (206, 206, 8, 1, 4, 3, 3, 4);
+
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, delivered_at, start_delivery_time) VALUES
+                                                                                                                                                                                      (207, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '15 day', 150.00, 1450.00, 1, 21, 16, NOW() - INTERVAL '15 day' + INTERVAL '30 minute', NOW() - INTERVAL '15 day' + INTERVAL '29 minute', NOW() - INTERVAL '15 day' + INTERVAL '11 minute'),
+                                                                                                                                                                                      (208, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '14 day', 150.00, 1600.00, 1, 21, 16, NOW() - INTERVAL '14 day' + INTERVAL '30 minute', NOW() - INTERVAL '14 day' + INTERVAL '35 minute', NOW() - INTERVAL '14 day' + INTERVAL '15 minute'),
+                                                                                                                                                                                      (209, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '13 day', 150.00, 1650.00, 1, 21, 16, NOW() - INTERVAL '13 day' + INTERVAL '35 minute', NOW() - INTERVAL '13 day' + INTERVAL '30 minute', NOW() - INTERVAL '13 day' + INTERVAL '10 minute');
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
+                                                                          (207, 1, 207, 122),
+                                                                          (208, 1, 208, 124),
+                                                                          (209, 1, 209, 125);
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
+                                                              (207, 207, 16, 'ACCEPTED'), (208, 208, 16, 'ACCEPTED'), (209, 209, 16, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
+                                                                                                                                                          (207, 207, 16, 1, 7, 5, 5, 4),
+                                                                                                                                                          (208, 208, 16, 1, 7, 4, 4, 4),
+                                                                                                                                                          (209, 209, 16, 1, 7, 5, 5, 5);
+
+
 -- ====================================================================
 -- PORUDŽBINE U PRETHODNIM MESECIMA (ZA GRAFIKON) SA SPECIFIČNIM BROJEM PO MESECU
 -- ====================================================================

@@ -107,62 +107,45 @@ CREATE TRIGGER trg_final_before_driver_delete
     FOR EACH ROW
     EXECUTE FUNCTION final_safe_delete_and_archive_driver();
 
+
+
+
+
+
 -- =================================================================
 -- ZADATAK 2: PL/pgSQL Funkcija za proračun kompatibilnosti (ISPRAVLJENA)
 -- AUTOR: Milica Bosnjak
 -- =================================================================
-
 CREATE OR REPLACE FUNCTION calculate_driver_restaurant_compatibility(p_driver_id BIGINT)
 RETURNS BIGINT AS $$
 DECLARE
-    -- === PONDERI (TEŽINE) ===
 w_delivery_count NUMERIC := 0.30;
     w_avg_rating     NUMERIC := 0.50;
     w_avg_speed      NUMERIC := 0.20;
-
     v_best_restaurant_id BIGINT;
 BEGIN
 WITH
-    -- KORAK A: Izračunavanje sirovih metrika za svaki restoran
     RawMetrics AS (
         SELECT
             r.id AS restaurant_id,
             COUNT(DISTINCT o.id) AS delivery_count,
-
-            -- =========================================================================
-            -- KLJUČNA ISPRAVKA: Računamo prosek ocena koje daje menadžer
-            -- (profesionalizam, higijena, komunikacija). Sve su na skali 1-5.
-            -- =========================================================================
-            COALESCE(
-                    AVG(
-                                (dr.professionalism_rating + dr.hygiene_rating_restaurant + dr.communication_rating) / 3.0
-                        ),
-                    3.0 -- Fallback: ako nema ocena od menadžera, dajemo mu prosečnu ocenu 3
-                ) AS avg_rating,
-
-            COALESCE(
-                    AVG(EXTRACT(EPOCH FROM (o.delivered_at - o.start_delivery_time)) / 60),
-                    25.0 -- Fallback: ako ne možemo izračunati vreme, dajemo mu prosečno vreme od 25 min
-                ) AS avg_delivery_minutes
-
+            COALESCE(AVG((dr.professionalism_rating + dr.hygiene_rating_restaurant + dr.communication_rating) / 3.0), 3.0) AS avg_rating,
+            COALESCE(AVG(EXTRACT(EPOCH FROM (o.delivered_at - o.start_delivery_time)) / 60), 25.0) AS avg_delivery_minutes
         FROM orders o
                  JOIN order_item oi ON o.id = oi.order_id
                  JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
                  JOIN menu_version mv ON miv.menu_version_id = mv.id
                  JOIN menu m ON mv.menu_id = m.id
                  JOIN restaurant r ON m.restaurant_id = r.id
-            -- Važno: LEFT JOIN jer porudžbina možda nema ocenu.
-            -- INNER JOIN bi izbacio sve porudžbine bez ocene iz statistike!
                  LEFT JOIN driver_rating dr ON o.id = dr.order_id AND dr.manager_id IS NOT NULL
-
         WHERE o.driver_id = p_driver_id
           AND o.status = 'DELIVERED'
           AND o.start_delivery_time IS NOT NULL AND o.delivered_at IS NOT NULL
         GROUP BY r.id
-                 -- Uključujemo samo restorane sa bar 3 dostave radi statističke relevantnosti
-        HAVING COUNT(DISTINCT o.id) > 2
+        -- ==========================================================
+        -- UKLONILI SMO 'HAVING' USLOV DA OMOGUĆIMO VIŠE KANDIDATA
+        -- ==========================================================
     ),
-    -- KORAK B: Pronalaženje MIN i MAX vrednosti za normalizaciju
     NormalizationBounds AS (
         SELECT
             MAX(delivery_count) AS max_count,
@@ -173,25 +156,24 @@ WITH
             MIN(avg_delivery_minutes) AS min_speed
         FROM RawMetrics
     ),
-    -- KORAK C: Normalizacija metrika i izračunavanje konačnog skora
     CompatibilityScores AS (
         SELECT
             rm.restaurant_id,
-            (rm.delivery_count - nb.min_count) / NULLIF(nb.max_count - nb.min_count, 0) AS norm_count,
+            -- Ako je max=min, normalizovana vrednost je 0.5 (prosek)
+            CASE WHEN (nb.max_count - nb.min_count) = 0 THEN 0.5 ELSE (rm.delivery_count - nb.min_count) / (nb.max_count - nb.min_count) END AS norm_count,
             (rm.avg_rating - 1.0) / (5.0 - 1.0) AS norm_rating,
-            1.0 - ((rm.avg_delivery_minutes - nb.min_speed) / NULLIF(nb.max_speed - nb.min_speed, 0)) AS norm_speed
+            -- Ako je max=min, normalizovana vrednost je 0.5 (prosek)
+            CASE WHEN (nb.max_speed - nb.min_speed) = 0 THEN 0.5 ELSE 1.0 - ((rm.avg_delivery_minutes - nb.min_speed) / (nb.max_speed - nb.min_speed)) END AS norm_speed
         FROM RawMetrics rm, NormalizationBounds nb
     )
-    -- FINALNI KORAK: Izračunaj ponderisani skor i pronađi najbolji restoran
 SELECT
     cs.restaurant_id
 INTO v_best_restaurant_id
 FROM CompatibilityScores cs
-WHERE cs.norm_count IS NOT NULL AND cs.norm_rating IS NOT NULL AND cs.norm_speed IS NOT NULL
 ORDER BY
-        (cs.norm_count * w_delivery_count) +
-        (cs.norm_rating * w_avg_rating) +
-        (cs.norm_speed * w_avg_speed)
+        (COALESCE(cs.norm_count, 0) * w_delivery_count) +
+        (COALESCE(cs.norm_rating, 0) * w_avg_rating) +
+        (COALESCE(cs.norm_speed, 0) * w_avg_speed)
         DESC
     LIMIT 1;
 
