@@ -113,8 +113,7 @@ CREATE TRIGGER trg_final_before_driver_delete
 
 
 -- =================================================================
--- ZADATAK 2: PL/pgSQL Funkcija za proračun kompatibilnosti (ISPRAVLJENA)
--- AUTOR: Milica Bosnjak
+-- ZADATAK 2: PL/pgSQL Funkcija za proračun kompatibilnosti
 -- =================================================================
 CREATE OR REPLACE FUNCTION calculate_driver_restaurant_compatibility(p_driver_id BIGINT)
 RETURNS BIGINT AS $$
