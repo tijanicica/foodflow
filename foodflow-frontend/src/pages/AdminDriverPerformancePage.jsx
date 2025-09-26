@@ -3,10 +3,11 @@ import { getAllDriverPerformances,deleteDriverById } from '@/services/api';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Star, TrendingUp, TrendingDown, Users, CheckCircle, PlusCircle } from 'lucide-react';
+import { Star, TrendingUp, TrendingDown, Users, CheckCircle, PlusCircle, BarChart2  } from 'lucide-react';
 import { AdminNavbar } from '@/components/AdminNavbar';
 import { RegisterDriverModal } from '@/components/modals/RegisterDriverModal';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
+import { Link } from 'react-router-dom';
 
 
 export const DriverRow = ({ driver, index, onDeleteRequest }) => {
@@ -197,6 +198,14 @@ const handleDriverDelete = async () => {
                             <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">Driver Performance</h1>
                             <p className="mt-2 text-lg text-gray-500">An analytical overview of metrics for all active drivers for the last 30 days.</p>
                         </div>
+                        <div className="flex items-center gap-4">
+                        {/* NOVO DUGME */}
+                        <Link to="/admin/reports/driver-performance" className="flex items-center gap-2 bg-white text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-300 hover:bg-gray-100 transition-colors duration-300">
+                            <BarChart2 size={20} />
+                            Advanced Report
+                        </Link>
+                        
+                        {/* Postojeće dugme */}
                         <button
                             onClick={() => setIsModalOpen(true)}
                             className="flex items-center gap-2 bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-yellow-600 transition-colors duration-300"
@@ -204,6 +213,7 @@ const handleDriverDelete = async () => {
                             <PlusCircle size={20} />
                             Register New Driver
                         </button>
+                    </div>
                     </motion.div>
 
                     {loading ? (

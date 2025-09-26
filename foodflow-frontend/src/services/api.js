@@ -829,3 +829,28 @@ export const getRecommendedRestaurant = async () => {
     const response = await apiClient.get('/drivers/me/recommended-restaurant');
     return response.data;
 };
+
+
+
+
+export const getDriverPerformanceReport = async (startDate, endDate, status) => {
+    // Kreiramo objekat sa parametrima koji će biti poslati u URL-u
+    const params = {};
+
+    if (startDate) {
+        params.startDate = startDate;
+    }
+    if (endDate) {
+        params.endDate = endDate;
+    }
+    // Šaljemo status samo ako nije 'ALL'
+    if (status && status !== 'ALL') {
+        params.status = status;
+    }
+
+    // Pozivamo TAČAN endpoint koji smo definisali u AdminController-u
+    const response = await apiClient.get('/admin/managers/reports/driver-performance', { params });
+    
+    // Vraćamo podatke dobijene od servera
+    return response.data;
+};

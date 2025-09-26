@@ -67,6 +67,7 @@ import { SupportChatPage } from "./pages/SupportChatPage.jsx";
 import { OperatorDashboardPage } from "./pages/OperatorDashboardPage.jsx";
 import { OperatorChatPage } from "./pages/OperatorChatPage.jsx";
 import { FinancialReportPage } from './pages/FinancialReportPage'; 
+import { AdminDriverReportPage } from './pages/AdminDriverReportPage';
 
 
 // Kreiraj ruter i definiši putanje (rute)
@@ -160,6 +161,7 @@ const router = createBrowserRouter([
   },
   // Rute za menadžere (Manager) unutar ManagerLayout-a
   {
+
     element: <ManagerLayout />,
     children: [
       { path: "/manager/dashboard", element: <ManagerDashboard /> },
@@ -185,7 +187,11 @@ const router = createBrowserRouter([
     path: "/admin/driver-performance",
     element: <AdminDriverPerformancePage />,
   },
-  { path: "/admin/live-tracking", element: <AdminLiveTrackingPage /> },
+
+    {
+    path: "/admin/reports/driver-performance",
+    element: <AdminDriverReportPage />,
+  },
 
   // Rute za podršku (Support Admin)
   { path: "/support/agent-management", element: <OperatorManagementPage /> },
