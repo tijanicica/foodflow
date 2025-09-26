@@ -15,70 +15,67 @@ import DatePicker from "react-datepicker"; // Importujemo komponentu
 
 // U AdminDriverReportPage.jsx
 
-/**
- * Univerzalna funkcija za parsiranje PostgreSQL nizova složenih tipova.
- * @param {string} str - String iz baze, npr. {"(CAR,2,1.00,16.00)"}
- * @returns {Array<string[]>} - Niz nizova, gde svaki unutrašnji niz sadrži vrednosti za jedan red.
- */
-function parsePgArray(str) {
+const parsePgRow = (rowStr) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < rowStr.length; i++) {
+        const char = rowStr[i];
+
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current);
+    return result;
+}
+
+const parsePgArray = (str) => {
     if (!str || str === '{}' || str === '[null]') {
         return [];
     }
-    // Uklanja spoljašnje vitičaste zagrade i navodnike
-    const cleanStr = str.replace(/^{"|"}$/g, '');
-    // Uklanja spoljašnje zagrade pojedinačnih zapisa
-    const content = cleanStr.slice(1, -1);
-    
+    // Uklanja {"(" na početku i ")}" na kraju
+    const cleanStr = str.slice(3, -3);
     // Deli na pojedinačne zapise
-    const records = content.split('),(');
-
-    return records.map(record => {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < record.length; i++) {
-            const char = record[i];
-            
-            if (char === '"' && record[i-1] !== '\\') {
-                inQuotes = !inQuotes;
-                continue;
-            }
-            
-            if (char === ',' && !inQuotes) {
-                result.push(current);
-                current = '';
-            } else if (char !== '\\') {
-                current += char;
-            }
-        }
-        result.push(current);
-        return result;
-    });
+    const records = cleanStr.split(')","(');
+    
+    return records.map(parsePgRow);
 }
 
 
 const parseVehiclePerformance = (str) => {
     const parsedData = parsePgArray(str);
-    return parsedData.map(parts => ({
-        vehicleType: parts[0],
-        totalDeliveries: parseInt(parts[1], 10),
-        onTimeDeliveries: parseInt(parts[2], 10),
-        onTimeRate: parseFloat(parts[3]),
-        avgDeliveryTimeMinutes: parseFloat(parts[4]),
-    }));
+    return parsedData.map(parts => {
+        if (parts.length < 5) return null;
+        return {
+            vehicleType: parts[0],
+            totalDeliveries: parseInt(parts[1], 10),
+            onTimeDeliveries: parseInt(parts[2], 10),
+            onTimeRate: parseFloat(parts[3]),
+            avgDeliveryTimeMinutes: parseFloat(parts[4]),
+        };
+    }).filter(Boolean);
 };
 
 const parseDelayedOrders = (str) => {
     const parsedData = parsePgArray(str);
-    return parsedData.map(parts => ({
-        orderId: parseInt(parts[0], 10),
-        restaurantName: parts[1],
-        reportedDelayMinutes: parseInt(parts[2], 10),
-        actualDeliveryMinutes: parseFloat(parts[3]),
-        wasOnTime: parts[4] === 't',
-        managerRatingAvg: parseFloat(parts[5]),
-    }));
+    return parsedData.map(parts => {
+        if (parts.length < 6) return null;
+        return {
+            orderId: parseInt(parts[0], 10),
+            restaurantName: parts[1],
+            reportedDelayMinutes: parseInt(parts[2], 10),
+            actualDeliveryMinutes: parseFloat(parts[3]),
+            wasOnTime: parts[4] === 't',
+            managerRatingAvg: parseFloat(parts[5]),
+        };
+    }).filter(Boolean);
 };
 
 // Glavna komponenta stranice
@@ -202,8 +199,8 @@ const DriverReportCard = ({ report }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {report.delayedOrdersDetails.map(d => (
-                                    <tr key={d.orderId} className="border-b">
+                                {report.delayedOrdersDetails.map((d, index) => (
+                                    <tr key={index} className="border-b">
                                         <td className="px-4 py-2 font-medium">{d.orderId}</td>
                                         <td className="px-4 py-2">{d.restaurantName}</td>
                                         <td className="px-4 py-2">{d.reportedDelayMinutes} min</td>
