@@ -1105,19 +1105,19 @@ INSERT INTO orders (
     eta, start_delivery_time, delivered_at,
     driver_reported_delay -- Ključna kolona za kursor!
 ) VALUES (
-             701, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '5 day',
+             701, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '3 day',
              150.00, 1800.00, 1, 1, 16,
-             NOW() - INTERVAL '5 day' + INTERVAL '55 minute', -- Originalni ETA (40 min) + prijavljeno kašnjenje (15 min)
-             NOW() - INTERVAL '5 day' + INTERVAL '25 minute', -- Krenuo je na vreme
-             NOW() - INTERVAL '5 day' + INTERVAL '52 minute', -- Isporučio je za 52 min (kasni 12 min u odnosu na originalni ETA)
-             15 -- Prijavio je kašnjenje od 15 minuta
+             NOW() - INTERVAL '3 day' + INTERVAL '45 minute', -- Originalni ETA (40 min) + prijavljeno kašnjenje (15 min)
+             NOW() - INTERVAL '3 day' + INTERVAL '23 minute', -- Krenuo je na vreme
+             NOW() - INTERVAL '3 day' + INTERVAL '52 minute', -- Isporučio je za 52 min (kasni 12 min u odnosu na originalni ETA)
+             12 -- Prijavio je kašnjenje od 15 minuta
          );
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
     (701, 1, 701, 58); -- Golden Spoon
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (701, 701, 16, 'ACCEPTED');
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
-    (701, 701, 16, 1, 7, 3, 5, 4);
+    (701, 701, 16, 1, 7, 3, 3, 4);
 
 -- ====================================================================
 -- DODATNI PODACI ZA TESTIRANJE KURSORA (delayed_orders_details)
@@ -1136,7 +1136,7 @@ INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, pro
 -- Slučaj 3: Vozač #8 (Petar Petrović) prijavljuje veliko kašnjenje i dobija lošu ocenu.
 -- =================================================================================
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, delivered_at, driver_reported_delay) VALUES
-    (703, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '12 day', 150.00, 1300.00, 1, 1, 8, NOW() - INTERVAL '12 day' + INTERVAL '50 minute', NOW() - INTERVAL '12 day' + INTERVAL '15 minute', NOW() - INTERVAL '12 day' + INTERVAL '58 minute', 20);
+    (703, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '12 day', 150.00, 1300.00, 1, 1, 8, NOW() - INTERVAL '12 day' + INTERVAL '50 minute', NOW() - INTERVAL '12 day' + INTERVAL '15 minute', NOW() - INTERVAL '12 day' + INTERVAL '58 minute', 9);
 INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (703, 1, 703, 67);
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (703, 703, 8, 'ACCEPTED');
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (703, 703, 8, 1, 4, 2, 4, 3);
@@ -1238,55 +1238,49 @@ INSERT INTO problem_category (id, name, parent_category_id) VALUES
                                                                 (13, 'Problem with delivery person', 2),
                                                                 (14, 'Website problem', 3);
 
--- DODATNI PODACI ZA TESTIRANJE KURSORA (delayed_orders_details)
--- Cilj: Obezbediti više porudžbina gde su vozači prijavili kašnjenje.
--- ISPRAVLJENI ID-jevi (počinju od 801)
--- ====================================================================
-
--- Slučaj 2: Vozač #2 (Jovan Jovanović) prijavljuje kašnjenje, ali ipak stiže na vreme.
--- ==================================================================================
+-- Slučaj 1: Vozač #9 (Marko Marković) prijavljuje manje kašnjenje, ali stiže ranije.
+-- ====================================================================================
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, delivered_at, driver_reported_delay) VALUES
-(801, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '10 day', 150.00, 1050.00, 1, 1, 2, NOW() - INTERVAL '10 day' + INTERVAL '45 minute', NOW() - INTERVAL '10 day' + INTERVAL '20 minute', NOW() - INTERVAL '10 day' + INTERVAL '44 minute', 10);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (801, 1, 801, 23);
-INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (801, 801, 2, 'ACCEPTED');
-INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (801, 801, 2, 1, 4, 5, 5, 5);
+    (801, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '8 day', 150.00, 1400.00, 1, 1, 9, NOW() - INTERVAL '8 day' + INTERVAL '40 minute', NOW() - INTERVAL '8 day' + INTERVAL '15 minute', NOW() - INTERVAL '8 day' + INTERVAL '38 minute', 5);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (801, 1, 801, 1); -- Pasta Carbonara
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (801, 801, 9, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (801, 801, 9, 1, 4, 5, 4, 5);
 
 
--- Slučaj 3: Vozač #8 (Petar Petrović) prijavljuje veliko kašnjenje i dobija lošu ocenu.
--- =================================================================================
+-- Slučaj 2: Vozač #13 (Ivan Djordjevic) prijavljuje kašnjenje i značajno kasni, dobija lošu ocenu.
+-- ==============================================================================================
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, delivered_at, driver_reported_delay) VALUES
-    (802, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '12 day', 150.00, 1300.00, 1, 1, 8, NOW() - INTERVAL '12 day' + INTERVAL '50 minute', NOW() - INTERVAL '12 day' + INTERVAL '15 minute', NOW() - INTERVAL '12 day' + INTERVAL '58 minute', 20);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (802, 1, 802, 67);
-INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (802, 802, 8, 'ACCEPTED');
-INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (802, 802, 8, 1, 4, 2, 4, 3);
+    (802, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '11 day', 150.00, 2950.00, 1, 1, 13, NOW() - INTERVAL '11 day' + INTERVAL '55 minute', NOW() - INTERVAL '11 day' + INTERVAL '20 minute', NOW() - INTERVAL '11 day' + INTERVAL '65 minute', 15);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (802, 1, 802, 56); -- Beefsteak
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (802, 802, 13, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (802, 802, 13, 1, 7, 2, 3, 2);
 
 
--- Slučaj 4: Vozač #11 (Stefan Petrović) prijavljuje kašnjenje na biciklu.
--- =======================================================================
+-- Slučaj 3: Vozač #14 (Filip Nikolic) prijavljuje kašnjenje na biciklu, ali isporučuje na vreme.
+-- ==========================================================================================
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, delivered_at, driver_reported_delay) VALUES
-    (803, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '7 day', 200.00, 1100.00, 1, 17, 11, NOW() - INTERVAL '7 day' + INTERVAL '55 minute', NOW() - INTERVAL '7 day' + INTERVAL '25 minute', NOW() - INTERVAL '7 day' + INTERVAL '53 minute', 10);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (803, 1, 803, 69);
-INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (803, 803, 11, 'ACCEPTED');
-INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (803, 803, 11, 1, 4, 4, 5, 4);
+    (803, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '9 day', 200.00, 1300.00, 1, 17, 14, NOW() - INTERVAL '9 day' + INTERVAL '60 minute', NOW() - INTERVAL '9 day' + INTERVAL '30 minute', NOW() - INTERVAL '9 day' + INTERVAL '58 minute', 15);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (803, 1, 803, 78); -- Falafel Bowl
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (803, 803, 14, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (803, 803, 14, 1, 7, 4, 4, 4);
 
 
--- Slučaj 5: Vozač #15 (Nemanja Ilic) prijavljuje kašnjenje ali je i dalje super brz sa motorom.
--- ===========================================================================================
+-- Slučaj 4: Vozač #15 (Nemanja Ilic) prijavljuje kašnjenje sa motorom, ali je i dalje izuzetno brz.
+-- ===============================================================================================
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, delivered_at, driver_reported_delay) VALUES
-    (804, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '6 day', 150.00, 3200.00, 1, 1, 15, NOW() - INTERVAL '6 day' + INTERVAL '30 minute', NOW() - INTERVAL '6 day' + INTERVAL '10 minute', NOW() - INTERVAL '6 day' + INTERVAL '29 minute', 5);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (804, 2, 804, 36);
+    (804, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '5 day', 150.00, 1450.00, 1, 1, 15, NOW() - INTERVAL '5 day' + INTERVAL '35 minute', NOW() - INTERVAL '5 day' + INTERVAL '12 minute', NOW() - INTERVAL '5 day' + INTERVAL '33 minute', 10);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (804, 1, 804, 122); -- Chicken with Curry
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (804, 804, 15, 'ACCEPTED');
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (804, 804, 15, 1, 7, 5, 5, 5);
 
 
--- Slučaj 6: Još jedno prijavljeno kašnjenje za Andreja Jovića (ID=16) da bi imao više od jednog unosa.
--- =================================================================================================
+-- Slučaj 5: Još jedno prijavljeno kašnjenje, ovaj put za Milana Milanovića (ID=10) koji na kraju kasni.
+-- ===================================================================================================
 INSERT INTO orders (id, status, payment_type, order_type, creation_date, delivery_price, total_price, customer_id, address_id, driver_id, eta, start_delivery_time, delivered_at, driver_reported_delay) VALUES
-    (805, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '3 day', 150.00, 1650.00, 1, 1, 16, NOW() - INTERVAL '3 day' + INTERVAL '45 minute', NOW() - INTERVAL '3 day' + INTERVAL '20 minute', NOW() - INTERVAL '3 day' + INTERVAL '48 minute', 5);
-INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (805, 1, 805, 90);
-INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (805, 805, 16, 'ACCEPTED');
-INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (805, 805, 16, 1, 4, 3, 4, 4);
-
+    (805, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '4 day', 150.00, 750.00, 1, 1, 10, NOW() - INTERVAL '4 day' + INTERVAL '40 minute', NOW() - INTERVAL '4 day' + INTERVAL '18 minute', NOW() - INTERVAL '4 day' + INTERVAL '43 minute', 5);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (805, 1, 805, 45); -- Ćevapi
+INSERT INTO order_offer (id, order_id, driver_id, status) VALUES (805, 805, 10, 'ACCEPTED');
+INSERT INTO driver_rating (id, order_id, driver_id, customer_id, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES (805, 805, 10, 1, 4, 3, 4, 3);
 -- OCJENE ZA DOSTAVLJAČE (DriverRating)
 INSERT INTO driver_rating (id, order_id, driver_id, customer_id, on_time_arrival_rating, hygiene_rating_customer, kindness_rating, manager_id, professionalism_rating, hygiene_rating_restaurant, communication_rating) VALUES
     (1, 1, 2, 1, 5, 3, 5, 4, 5, 5, 5);
