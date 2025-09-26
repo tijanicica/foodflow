@@ -461,7 +461,6 @@ SELECT
     (report).*
 FROM
     driver d
--- ISPRAVKA: Uklonjen je zarez ispred i koristi se standardna JOIN sintaksa
     CROSS JOIN LATERAL generate_driver_performance_report(d.id, '2025-01-01', CURRENT_DATE) AS report
 WHERE
     d.status = 'ONLINE';

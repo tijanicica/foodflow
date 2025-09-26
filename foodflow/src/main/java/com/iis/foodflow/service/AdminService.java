@@ -1,5 +1,6 @@
 package com.iis.foodflow.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iis.foodflow.dto.request.RegisterDriverRequestDTO;
 import com.iis.foodflow.dto.request.RegisterManagerRequestDTO;
 import com.iis.foodflow.dto.request.UpdateManagerRequestDTO;
@@ -13,15 +14,13 @@ import com.iis.foodflow.model.restaurant.Restaurant;
 import com.iis.foodflow.model.user.Administrator;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.model.user.Manager;
-import com.iis.foodflow.repository.DriverRepository;
-import com.iis.foodflow.repository.ManagerRepository;
-import com.iis.foodflow.repository.OrderRepository;
-import com.iis.foodflow.repository.RestaurantRepository;
+import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +34,9 @@ public class AdminService {
     private final RestaurantRepository restaurantRepository;
     private final DriverService driverService;
     private final OrderRepository orderRepository;
+
+    private final CustomDriverReportRepository customDriverReportRepository;
+    private final ObjectMapper objectMapper; // Spring ga automatski injektuje
 
     private final DriverRepository driverRepository;
 
@@ -214,6 +216,25 @@ public class AdminService {
                 .latitude(driver.getLatitude())
                 .longitude(driver.getLongitude())
                 .build();
+    }
+
+    public List<DriverPerformanceReportDTO> getDriverPerformanceReports(LocalDate startDate, LocalDate endDate, String status) {
+
+        // Postavljanje podrazumevanih vrednosti za datume ako nisu prosleđeni.
+        // Ako je startDate null, koristimo veoma daleki datum u prošlosti da obuhvatimo sve zapise.
+        LocalDate finalStartDate = (startDate != null) ? startDate : LocalDate.of(1970, 1, 1);
+
+        // Ako je endDate null, koristimo današnji datum kao krajnji period.
+        LocalDate finalEndDate = (endDate != null) ? endDate : LocalDate.now();
+
+        // Konvertujemo string status u odgovarajući Enum. Ako je status "ALL" ili nije poslat,
+        // prosleđujemo null, što će rezultirati time da se filter po statusu neće primeniti.
+        DriverStatus driverStatus = (status == null || status.equalsIgnoreCase("ALL"))
+                ? null
+                : DriverStatus.valueOf(status.toUpperCase());
+
+        // Pozivamo repozitorijum sa definisanim (ili podrazumevanim) vrednostima.
+        return customDriverReportRepository.getDriverPerformanceReports(finalStartDate, finalEndDate, driverStatus);
     }
 
 }

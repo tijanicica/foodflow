@@ -10,12 +10,14 @@ import com.iis.foodflow.service.DriverService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -106,5 +108,19 @@ public class AdminController {
             System.err.println("Neočekivana greška pri brisanju vozača: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred on the server.");
         }
+    }
+
+    @GetMapping("/reports/driver-performance")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    public ResponseEntity<List<DriverPerformanceReportDTO>> getDriverPerformanceReport(
+            // ==========================================================
+            // ISPRAVKA: Dodali smo 'required = false' za oba datuma
+            // ==========================================================
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String status
+    ) {
+        List<DriverPerformanceReportDTO> reportData = adminService.getDriverPerformanceReports(startDate, endDate, status);
+        return ResponseEntity.ok(reportData);
     }
 }

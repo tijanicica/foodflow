@@ -1,5 +1,6 @@
 package com.iis.foodflow.model.user;
 
+import com.iis.foodflow.dto.response.DriverPerformanceReportDTO;
 import com.iis.foodflow.enums.DriverStatus;
 import com.iis.foodflow.enums.Role;
 import com.iis.foodflow.enums.VehicleType;
@@ -8,12 +9,28 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
+@SqlResultSetMapping(
+        name = "DriverPerformanceReportMapping",
+        classes = @ConstructorResult(
+                targetClass = DriverPerformanceReportDTO.class,
+                columns = {
+                        @ColumnResult(name = "driverId", type = Long.class),
+                        @ColumnResult(name = "driver_full_name", type = String.class),
+                        @ColumnResult(name = "analysis_period", type = String.class),
+                        @ColumnResult(name = "overall_on_time_rate", type = BigDecimal.class),
+                        @ColumnResult(name = "total_rejected_offers", type = Long.class),
+                        @ColumnResult(name = "performance_by_vehicle", type = String.class),
+                        @ColumnResult(name = "delayed_orders_details", type = String.class)
+                }
+        )
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
