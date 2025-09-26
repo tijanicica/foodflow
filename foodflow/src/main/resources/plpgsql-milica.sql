@@ -21,9 +21,6 @@ FROM order_offer oo
          JOIN orders o ON oo.order_id = o.id
 WHERE oo.driver_id = OLD.id
   AND oo.status = 'ACCEPTED'
-  -- ==========================================================
-  -- PROŠIREN USLOV: Sada proverava oba statusa
-  -- ==========================================================
   AND o.status IN ('PICKED_UP', 'READY_FOR_PICKUP');
 
 IF v_active_delivery_count > 0 THEN
@@ -150,14 +147,12 @@ DROP INDEX IF EXISTS idx_driver_performance;
 -- Korak 1.2: Obrišite sve prethodno generisane vozače
 DELETE FROM driver WHERE first_name LIKE 'Mock Driver %';
 
--- Korak 1.3: Ресетујте секвенцу за ID-јеве
 SELECT setval('driver_id_seq', (SELECT COALESCE(MAX(id), 1) FROM driver));
 -- =================================================================
--- KORAK 2: ГЕНЕРИСАЊЕ ТЕСТ ПОДАТАКА
+-- KORAK 2: GNERISANJE TEST PODATAKA
 -- =================================================================
 
 -- Korak 2.1: Definicija procedure za generisanje 100,000 vozača
--- Korak 2.1: Definicija procedure za generisanje 100,000 vozača (ISPRAVLJENA VERZIJA)
 CREATE OR REPLACE PROCEDURE generate_mock_drivers()
 LANGUAGE plpgsql
 AS $$
@@ -182,10 +177,6 @@ VALUES (
                v_last_name,
                '06' || (1000000 + i)::text,
                'DRIVER',
-           -- ==========================================================
-           -- ISPRAVKA: Uklonjeno je eksplicitno kastovanje (::vehicle_type)
-           -- Baza će sama pokušati da pretvori string u odgovarajući ENUM.
-           -- ==========================================================
                v_vehicle_type,
                v_status,
                floor(random() * 50)::int,
@@ -203,10 +194,9 @@ $$;
 
 CALL generate_mock_drivers();
 
--- Korak 2.3: OBAVEZNO! Ažurirajte statistiku baze.
 ANALYZE driver;
 -- =================================================================
--- KORAK 3: ТЕСТ ПРЕТРАГЕ ПО ИМЕНУ (last_name, first_name)
+-- KORAK 3: TEST PRETRAGE PO IMENU (last_name, first_name)
 -- =================================================================
 
 -- Korak 3.1: Merenje BEZ indeksa
@@ -246,7 +236,7 @@ EXPLAIN ANALYZE SELECT * FROM driver WHERE last_name = 'Petrovic' AND first_name
 */
 
 -- =================================================================
--- KORAK 4: ТЕСТ ФИЛТРИРАЊА ПО ПЕРФОРМАНСАМА (average_rating, rejection_count)
+-- KORAK 4: TEST FILTRIRANJE PO PERFORMANSAMA (average_rating, rejection_count)
 -- =================================================================
 
 -- Korak 4.1: Merenje BEZ indeksa
@@ -301,7 +291,7 @@ EXPLAIN ANALYZE SELECT * FROM driver WHERE average_rating < 2.0 AND rejection_co
 
 -- Prvo brišemo stare tipove
 DROP TYPE IF EXISTS driver_performance_report CASCADE;
-DROP TYPE IF EXISTS restaurant_performance_summary CASCADE; -- IZMENJENO
+DROP TYPE IF EXISTS restaurant_performance_summary CASCADE;
 DROP TYPE IF EXISTS delayed_order_analysis CASCADE;
 
 -- Tip za analizu kašnjenja ostaje isti
@@ -314,8 +304,8 @@ CREATE TYPE delayed_order_analysis AS (
     manager_rating_avg NUMERIC
     );
 
--- Tip koji sumira performanse za jedan RESTORAN (umesto vozila)
-CREATE TYPE restaurant_performance_summary AS ( -- IZMENJENO
+-- Tip koji sumira performanse za jedan restoran
+CREATE TYPE restaurant_performance_summary AS (
     restaurant_name TEXT,
     total_deliveries BIGINT,
     on_time_deliveries BIGINT,
@@ -323,13 +313,13 @@ CREATE TYPE restaurant_performance_summary AS ( -- IZMENJENO
     avg_delivery_time_minutes NUMERIC
     );
 
--- Glavni tip za ceo izveštaj, sada sa novim nizom
+-- Glavni tip za ceo izveštaj
 CREATE TYPE driver_performance_report AS (
     driver_full_name TEXT,
     analysis_period TEXT,
     overall_on_time_rate NUMERIC,
     total_rejected_offers BIGINT,
-    performance_by_restaurant restaurant_performance_summary[], -- IZMENJENO
+    performance_by_restaurant restaurant_performance_summary[],
     delayed_orders_details delayed_order_analysis[]
     );
 
@@ -343,7 +333,7 @@ CREATE OR REPLACE FUNCTION generate_driver_performance_report(
     p_start_date DATE,
     p_end_date DATE
 )
--- IZMENA: Funkcija sada vraća tabelu, što je mnogo lakše za Javu
+
 RETURNS TABLE(
     driver_full_name TEXT,
     analysis_period TEXT,
@@ -448,7 +438,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =================================================================
--- KORAK 3: Primer kako se funkcija poziva (npr. iz pgAdmina za test)
+-- KORAK 3: Funkcija poziva
 -- =================================================================
 -- Pozivamo izveštaj za vozača sa ID=2 za period od početka 2025. godine do danas.
 SELECT * FROM generate_driver_performance_report(2, '2025-01-01', CURRENT_DATE);
