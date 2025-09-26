@@ -10,14 +10,24 @@ import { Calendar, Users, BarChart2, AlertTriangle, CheckCircle, XCircle } from 
 import "react-datepicker/dist/react-datepicker.css"; // Stil za date picker
 import DatePicker from "react-datepicker"; // Importujemo komponentu
 
-// Pomoćne funkcije za parsiranje stringova iz baze
+
+
+
 const parseVehiclePerformance = (str) => {
-    if (!str || str === "[null]") return [];
-    // Uklanja vitičaste zagrade i navodnike, a zatim deli po "),("
-    return str.slice(2, -2).split('),(').map(item => {
+    // Ako je string null, prazan ili sadrži "[null]", vrati prazan niz
+    if (!str || str.trim() === '' || str.trim() === '[null]') {
+        return [];
+    }
+    
+    // Uklanjamo spoljašnje vitičaste zagrade i navodnike
+    const cleanStr = str.replace(/^{"|"}|\s/g, '');
+
+    // Delimo string na pojedinačne zapise
+    // Primer zapisa: (MOTORCYCLE,4,3,0.75,22.25)
+    return cleanStr.slice(1, -1).split('),(').map(item => {
         const parts = item.split(',');
         return {
-            vehicleType: parts[0],
+            vehicleType: parts[0].replace(/"/g, ''), // Ukloni navodnike ako postoje
             totalDeliveries: parseInt(parts[1], 10),
             onTimeDeliveries: parseInt(parts[2], 10),
             onTimeRate: parseFloat(parts[3]),
@@ -25,22 +35,35 @@ const parseVehiclePerformance = (str) => {
         };
     });
 };
+// U AdminDriverReportPage.jsx
 
 const parseDelayedOrders = (str) => {
-    if (!str || str === "{}") return [];
-    return str.slice(2, -2).split('),(').map(item => {
+    // Ako je string null, prazan ili sadrži "{}", vrati prazan niz
+    if (!str || str.trim() === '' || str.trim() === '{}') {
+        return [];
+    }
+
+    // Korak 1: Ukloni spoljašnje vitičaste zagrade i sve duple navodnike
+    const cleanStr = str.slice(1, -1).replace(/"/g, '');
+
+    // Korak 2: Podeli na pojedinačne zapise. Sada su oni bez navodnika.
+    // Primer zapisa: (703,Pizza Corner,20,43.00,f,3.00)
+    return cleanStr.slice(1, -1).split('),(').map(item => {
         const parts = item.split(',');
+        
+        // Provera da li imamo dovoljno delova pre parsiranja
+        if (parts.length < 6) return null;
+
         return {
             orderId: parseInt(parts[0], 10),
-            restaurantName: parts[1].replace(/"/g, ''),
+            restaurantName: parts[1], // Ime je sada čist string
             reportedDelayMinutes: parseInt(parts[2], 10),
             actualDeliveryMinutes: parseFloat(parts[3]),
-            wasOnTime: parts[4] === 't',
+            wasOnTime: parts[4] === 't', // 't' je za true
             managerRatingAvg: parseFloat(parts[5])
         };
-    });
+    }).filter(item => item !== null); // Filtriramo neuspešno parsirane stavke
 };
-
 
 // Glavna komponenta stranice
 export function AdminDriverReportPage() {
@@ -89,11 +112,11 @@ export function AdminDriverReportPage() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mt-8 p-6 bg-white rounded-xl shadow-md border border-gray-100 flex flex-wrap items-center gap-6">
                     <div className="flex flex-col">
                         <label className="text-sm font-semibold text-gray-600 mb-1">Start Date</label>
-                        <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} className="w-full p-2 border border-gray-300 rounded-md" />
+                        <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} className="w-full p-2 border border-gray-300 rounded-md" dateFormat="dd.MM.yyyy" />
                     </div>
                     <div className="flex flex-col">
                         <label className="text-sm font-semibold text-gray-600 mb-1">End Date</label>
-                        <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} className="w-full p-2 border border-gray-300 rounded-md" />
+                        <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} className="w-full p-2 border border-gray-300 rounded-md" dateFormat="dd.MM.yyyy" />
                     </div>
                     <div className="flex flex-col">
                         <label className="text-sm font-semibold text-gray-600 mb-1">Driver Status</label>
