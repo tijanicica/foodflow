@@ -132,7 +132,6 @@ $$ LANGUAGE plpgsql;
 
 -- =================================================================
 -- ZADATAK 3: SQL Indeksi za optimizaciju pretrage vozača
--- AUTOR: Milica Bosnjak
 -- =================================================================
 
 -- =================================================================
@@ -149,7 +148,7 @@ DELETE FROM driver WHERE first_name LIKE 'Mock Driver %';
 
 SELECT setval('driver_id_seq', (SELECT COALESCE(MAX(id), 1) FROM driver));
 -- =================================================================
--- KORAK 2: GNERISANJE TEST PODATAKA
+-- KORAK 2: GENERISANJE TEST PODATAKA
 -- =================================================================
 
 -- Korak 2.1: Definicija procedure za generisanje 100,000 vozača
