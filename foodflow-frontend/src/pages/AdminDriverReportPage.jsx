@@ -13,56 +13,72 @@ import DatePicker from "react-datepicker"; // Importujemo komponentu
 
 
 
-const parseVehiclePerformance = (str) => {
-    // Ako je string null, prazan ili sadrži "[null]", vrati prazan niz
-    if (!str || str.trim() === '' || str.trim() === '[null]') {
-        return [];
-    }
-    
-    // Uklanjamo spoljašnje vitičaste zagrade i navodnike
-    const cleanStr = str.replace(/^{"|"}|\s/g, '');
-
-    // Delimo string na pojedinačne zapise
-    // Primer zapisa: (MOTORCYCLE,4,3,0.75,22.25)
-    return cleanStr.slice(1, -1).split('),(').map(item => {
-        const parts = item.split(',');
-        return {
-            vehicleType: parts[0].replace(/"/g, ''), // Ukloni navodnike ako postoje
-            totalDeliveries: parseInt(parts[1], 10),
-            onTimeDeliveries: parseInt(parts[2], 10),
-            onTimeRate: parseFloat(parts[3]),
-            avgDeliveryTimeMinutes: parseFloat(parts[4])
-        };
-    });
-};
 // U AdminDriverReportPage.jsx
 
-const parseDelayedOrders = (str) => {
-    // Ako je string null, prazan ili sadrži "{}", vrati prazan niz
-    if (!str || str.trim() === '' || str.trim() === '{}') {
+/**
+ * Univerzalna funkcija za parsiranje PostgreSQL nizova složenih tipova.
+ * @param {string} str - String iz baze, npr. {"(CAR,2,1.00,16.00)"}
+ * @returns {Array<string[]>} - Niz nizova, gde svaki unutrašnji niz sadrži vrednosti za jedan red.
+ */
+function parsePgArray(str) {
+    if (!str || str === '{}' || str === '[null]') {
         return [];
     }
+    // Uklanja spoljašnje vitičaste zagrade i navodnike
+    const cleanStr = str.replace(/^{"|"}$/g, '');
+    // Uklanja spoljašnje zagrade pojedinačnih zapisa
+    const content = cleanStr.slice(1, -1);
+    
+    // Deli na pojedinačne zapise
+    const records = content.split('),(');
 
-    // Korak 1: Ukloni spoljašnje vitičaste zagrade i sve duple navodnike
-    const cleanStr = str.slice(1, -1).replace(/"/g, '');
-
-    // Korak 2: Podeli na pojedinačne zapise. Sada su oni bez navodnika.
-    // Primer zapisa: (703,Pizza Corner,20,43.00,f,3.00)
-    return cleanStr.slice(1, -1).split('),(').map(item => {
-        const parts = item.split(',');
+    return records.map(record => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
         
-        // Provera da li imamo dovoljno delova pre parsiranja
-        if (parts.length < 6) return null;
+        for (let i = 0; i < record.length; i++) {
+            const char = record[i];
+            
+            if (char === '"' && record[i-1] !== '\\') {
+                inQuotes = !inQuotes;
+                continue;
+            }
+            
+            if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else if (char !== '\\') {
+                current += char;
+            }
+        }
+        result.push(current);
+        return result;
+    });
+}
 
-        return {
-            orderId: parseInt(parts[0], 10),
-            restaurantName: parts[1], // Ime je sada čist string
-            reportedDelayMinutes: parseInt(parts[2], 10),
-            actualDeliveryMinutes: parseFloat(parts[3]),
-            wasOnTime: parts[4] === 't', // 't' je za true
-            managerRatingAvg: parseFloat(parts[5])
-        };
-    }).filter(item => item !== null); // Filtriramo neuspešno parsirane stavke
+
+const parseVehiclePerformance = (str) => {
+    const parsedData = parsePgArray(str);
+    return parsedData.map(parts => ({
+        vehicleType: parts[0],
+        totalDeliveries: parseInt(parts[1], 10),
+        onTimeDeliveries: parseInt(parts[2], 10),
+        onTimeRate: parseFloat(parts[3]),
+        avgDeliveryTimeMinutes: parseFloat(parts[4]),
+    }));
+};
+
+const parseDelayedOrders = (str) => {
+    const parsedData = parsePgArray(str);
+    return parsedData.map(parts => ({
+        orderId: parseInt(parts[0], 10),
+        restaurantName: parts[1],
+        reportedDelayMinutes: parseInt(parts[2], 10),
+        actualDeliveryMinutes: parseFloat(parts[3]),
+        wasOnTime: parts[4] === 't',
+        managerRatingAvg: parseFloat(parts[5]),
+    }));
 };
 
 // Glavna komponenta stranice
