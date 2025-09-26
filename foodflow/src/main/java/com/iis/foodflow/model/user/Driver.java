@@ -16,21 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-@SqlResultSetMapping(
-        name = "DriverPerformanceReportMapping",
-        classes = @ConstructorResult(
-                targetClass = DriverPerformanceReportDTO.class,
-                columns = {
-                        @ColumnResult(name = "driverId", type = Long.class),
-                        @ColumnResult(name = "driver_full_name", type = String.class),
-                        @ColumnResult(name = "analysis_period", type = String.class),
-                        @ColumnResult(name = "overall_on_time_rate", type = BigDecimal.class),
-                        @ColumnResult(name = "total_rejected_offers", type = Long.class),
-                        @ColumnResult(name = "performance_by_vehicle", type = String.class),
-                        @ColumnResult(name = "delayed_orders_details", type = String.class)
-                }
-        )
-)
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

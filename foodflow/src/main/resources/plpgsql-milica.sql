@@ -299,12 +299,12 @@ EXPLAIN ANALYZE SELECT * FROM driver WHERE average_rating < 2.0 AND rejection_co
 -- Definišemo strukture podataka koje će naš izveštaj koristiti.
 -- =================================================================
 
--- Prvo brišemo stare tipove da bismo izbegli greške pri ponovnom kreiranju
+-- Prvo brišemo stare tipove
 DROP TYPE IF EXISTS driver_performance_report CASCADE;
-DROP TYPE IF EXISTS vehicle_performance_summary CASCADE;
+DROP TYPE IF EXISTS restaurant_performance_summary CASCADE; -- IZMENJENO
 DROP TYPE IF EXISTS delayed_order_analysis CASCADE;
 
--- Tip koji sadrži analizu porudžbina na kojima je prijavljeno kašnjenje
+-- Tip za analizu kašnjenja ostaje isti
 CREATE TYPE delayed_order_analysis AS (
     order_id BIGINT,
     restaurant_name TEXT,
@@ -314,23 +314,23 @@ CREATE TYPE delayed_order_analysis AS (
     manager_rating_avg NUMERIC
     );
 
--- Tip koji sumira performanse za jedan tip vozila
-CREATE TYPE vehicle_performance_summary AS (
-    vehicle_type TEXT,
+-- Tip koji sumira performanse za jedan RESTORAN (umesto vozila)
+CREATE TYPE restaurant_performance_summary AS ( -- IZMENJENO
+    restaurant_name TEXT,
     total_deliveries BIGINT,
     on_time_deliveries BIGINT,
-    on_time_rate NUMERIC, -- Procenat, npr. 0.85 za 85%
-    avg_delivery_time_minutes NUMERIC -- Prosečno vreme od PICKED_UP do DELIVERED
+    on_time_rate NUMERIC,
+    avg_delivery_time_minutes NUMERIC
     );
 
--- Glavni tip za ceo izveštaj
+-- Glavni tip za ceo izveštaj, sada sa novim nizom
 CREATE TYPE driver_performance_report AS (
     driver_full_name TEXT,
     analysis_period TEXT,
     overall_on_time_rate NUMERIC,
     total_rejected_offers BIGINT,
-    performance_by_vehicle vehicle_performance_summary[], -- Niz sa analizom po vozilu
-    delayed_orders_details delayed_order_analysis[] -- Niz sa analizom problematičnih porudžbina
+    performance_by_restaurant restaurant_performance_summary[], -- IZMENJENO
+    delayed_orders_details delayed_order_analysis[]
     );
 
 
@@ -343,110 +343,107 @@ CREATE OR REPLACE FUNCTION generate_driver_performance_report(
     p_start_date DATE,
     p_end_date DATE
 )
-RETURNS driver_performance_report AS $$
+-- IZMENA: Funkcija sada vraća tabelu, što je mnogo lakše za Javu
+RETURNS TABLE(
+    driver_full_name TEXT,
+    analysis_period TEXT,
+    overall_on_time_rate NUMERIC,
+    total_rejected_offers BIGINT,
+    performance_by_restaurant restaurant_performance_summary[],
+    delayed_orders_details delayed_order_analysis[]
+) AS $$
 DECLARE
-v_report driver_performance_report;
-    v_delayed_order_record delayed_order_analysis;
-
-    delayed_orders_cursor CURSOR FOR
-        -- ... (Definicija kursora ostaje ista) ...
-SELECT
-    o.id AS order_id,
-    r.name AS restaurant_name,
-    o.driver_reported_delay AS reported_delay_minutes,
-    ROUND(EXTRACT(EPOCH FROM (o.delivered_at - o.start_delivery_time)) / 60, 2) AS actual_delivery_minutes,
-    (o.delivered_at <= o.eta) AS was_on_time,
-    COALESCE(ROUND(((dr.professionalism_rating + dr.hygiene_rating_restaurant + dr.communication_rating) / 3.0)::numeric, 2), 0) AS manager_rating_avg
-FROM orders o
-         JOIN order_item oi ON o.id = oi.order_id
-         JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
-         JOIN menu_version mv ON miv.menu_version_id = mv.id
-         JOIN menu m ON mv.menu_id = m.id
-         JOIN restaurant r ON m.restaurant_id = r.id
-         LEFT JOIN driver_rating dr ON o.id = dr.order_id AND dr.manager_id IS NOT NULL
-WHERE o.driver_id = p_driver_id
-  AND o.status = 'DELIVERED'
-  AND o.creation_date BETWEEN p_start_date AND p_end_date
-  AND o.driver_reported_delay IS NOT NULL AND o.driver_reported_delay > 0;
-
+v_has_deliveries BOOLEAN;
 BEGIN
-WITH
-    DriverDeliveredOrders AS (
-        SELECT
-            d.vehicle_type::TEXT AS vehicle_type,
-                (o.delivered_at <= o.eta) AS is_on_time,
-            EXTRACT(EPOCH FROM (o.delivered_at - o.start_delivery_time)) / 60 AS delivery_duration_minutes
-        FROM orders o
-                 JOIN driver d ON o.driver_id = d.id
-        WHERE o.driver_id = p_driver_id
-          AND o.status = 'DELIVERED'
-          AND o.creation_date BETWEEN p_start_date AND p_end_date
-          AND o.start_delivery_time IS NOT NULL AND o.delivered_at IS NOT NULL
-    ),
-    VehicleAggregates AS (
-        SELECT
-            vehicle_type,
-            COUNT(*) AS total_deliveries,
-            COUNT(CASE WHEN is_on_time THEN 1 END) AS on_time_deliveries,
-            AVG(delivery_duration_minutes) AS avg_delivery_time_minutes
-        FROM DriverDeliveredOrders
-        GROUP BY vehicle_type
-    )
+    -- Proveravamo da li vozač ima bilo kakve isporučene porudžbine u periodu
+SELECT EXISTS (
+    SELECT 1 FROM orders
+    WHERE driver_id = p_driver_id
+      AND status = 'DELIVERED'
+      AND creation_date BETWEEN p_start_date AND p_end_date
+) INTO v_has_deliveries;
+
+-- Ako nema isporuka, vraćamo jedan red sa podrazumevanim vrednostima
+IF NOT v_has_deliveries THEN
+        RETURN QUERY
+SELECT
+        d.first_name || ' ' || d.last_name,
+        to_char(p_start_date, 'DD.MM.YYYY') || ' - ' || to_char(p_end_date, 'DD.MM.YYYY'),
+        0.00::NUMERIC,
+        COALESCE((SELECT COUNT(*) FROM order_offer
+                  WHERE driver_id = p_driver_id AND status = 'REJECTED'
+                    AND created_at BETWEEN p_start_date AND p_end_date), 0)::BIGINT,
+        '{}'::restaurant_performance_summary[],
+        '{}'::delayed_order_analysis[]
+FROM driver d
+WHERE d.id = p_driver_id;
+ELSE
+        -- Ako ima isporuka, radimo punu agregaciju
+        RETURN QUERY
+        WITH
+            DriverOrdersByRestaurant AS (
+                SELECT
+                    r.name AS restaurant_name,
+                    (o.delivered_at <= o.eta) AS is_on_time,
+                    EXTRACT(EPOCH FROM (o.delivered_at - o.start_delivery_time)) / 60 AS delivery_duration_minutes
+                FROM orders o
+                JOIN order_item oi ON o.id = oi.order_id
+                JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
+                JOIN menu_version mv ON miv.menu_version_id = mv.id
+                JOIN menu m ON mv.menu_id = m.id
+                JOIN restaurant r ON m.restaurant_id = r.id
+                WHERE o.driver_id = p_driver_id
+                  AND o.status = 'DELIVERED'
+                  AND o.creation_date BETWEEN p_start_date AND p_end_date
+                  AND o.start_delivery_time IS NOT NULL AND o.delivered_at IS NOT NULL
+            ),
+            RestaurantAggregates AS (
+                SELECT
+                    restaurant_name,
+                    COUNT(*) AS total_deliveries,
+                    COUNT(CASE WHEN is_on_time THEN 1 END) AS on_time_deliveries,
+                    AVG(delivery_duration_minutes) AS avg_delivery_time_minutes
+                FROM DriverOrdersByRestaurant
+                GROUP BY restaurant_name
+            ),
+            DelayedOrders AS (
+                SELECT array_agg(ROW(
+                    o.id,
+                    r.name,
+                    o.driver_reported_delay,
+                    ROUND(EXTRACT(EPOCH FROM (o.delivered_at - o.start_delivery_time)) / 60, 2),
+                    (o.delivered_at <= o.eta),
+                    COALESCE(ROUND(((dr.professionalism_rating + dr.hygiene_rating_restaurant + dr.communication_rating) / 3.0)::numeric, 2), 0)
+                )::delayed_order_analysis) AS details
+                FROM orders o
+                JOIN order_item oi ON o.id = oi.order_id
+                JOIN menu_item_version miv ON oi.menu_item_version_id = miv.id
+                JOIN menu_version mv ON miv.menu_version_id = mv.id
+                JOIN menu m ON mv.menu_id = m.id
+                JOIN restaurant r ON m.restaurant_id = r.id
+                LEFT JOIN driver_rating dr ON o.id = dr.order_id AND dr.manager_id IS NOT NULL
+                WHERE o.driver_id = p_driver_id
+                  AND o.status = 'DELIVERED'
+                  AND o.creation_date BETWEEN p_start_date AND p_end_date
+                  AND o.driver_reported_delay IS NOT NULL AND o.driver_reported_delay > 0
+            )
 SELECT
     (SELECT d.first_name || ' ' || d.last_name FROM driver d WHERE d.id = p_driver_id),
     to_char(p_start_date, 'DD.MM.YYYY') || ' - ' || to_char(p_end_date, 'DD.MM.YYYY'),
-    -- ==========================================================
-    -- ISPRAVKA 1: Zaokruživanje ukupnog procenta
-    -- ==========================================================
-    ROUND(SUM(va.on_time_deliveries)::NUMERIC / SUM(va.total_deliveries), 2),
+    ROUND(SUM(ra.on_time_deliveries)::NUMERIC / SUM(ra.total_deliveries), 2),
+    (SELECT COUNT(*) FROM order_offer WHERE driver_id = p_driver_id AND status = 'REJECTED' AND created_at BETWEEN p_start_date AND p_end_date),
     array_agg(
             ROW(
-                    va.vehicle_type,
-                    va.total_deliveries,
-                    va.on_time_deliveries,
-                -- ==========================================================
-                -- ISPRAVKA 2: Zaokruživanje procenta po vozilu
-                -- ==========================================================
-                    ROUND(va.on_time_deliveries::NUMERIC / va.total_deliveries, 2),
-                -- ==========================================================
-                -- ISPRAVKA 3: Zaokruživanje prosečnog vremena po vozilu
-                -- ==========================================================
-                    ROUND(va.avg_delivery_time_minutes::NUMERIC, 2)
-                )::vehicle_performance_summary
-        )
-INTO
-    v_report.driver_full_name,
-    v_report.analysis_period,
-    v_report.overall_on_time_rate,
-    v_report.performance_by_vehicle
-FROM VehicleAggregates va;
-
--- ... (ostatak funkcije ostaje isti) ...
-SELECT COALESCE(COUNT(*), 0)
-INTO v_report.total_rejected_offers
-FROM order_offer
-WHERE driver_id = p_driver_id
-  AND status = 'REJECTED'
-  AND created_at BETWEEN p_start_date AND p_end_date;
-
-v_report.delayed_orders_details := '{}';
-OPEN delayed_orders_cursor;
-LOOP
-FETCH delayed_orders_cursor INTO v_delayed_order_record;
-        EXIT WHEN NOT FOUND;
-        v_report.delayed_orders_details := array_append(v_report.delayed_orders_details, v_delayed_order_record);
-END LOOP;
-CLOSE delayed_orders_cursor;
-
-IF v_report.driver_full_name IS NULL THEN
-SELECT d.first_name || ' ' || d.last_name INTO v_report.driver_full_name FROM driver d WHERE d.id = p_driver_id;
-v_report.analysis_period := to_char(p_start_date, 'DD.MM.YYYY') || ' - ' || to_char(p_end_date, 'DD.MM.YYYY');
-        v_report.overall_on_time_rate := 0;
-        v_report.performance_by_vehicle := '{}';
-        v_report.total_rejected_offers := COALESCE(v_report.total_rejected_offers, 0);
+                    ra.restaurant_name,
+                    ra.total_deliveries,
+                    ra.on_time_deliveries,
+                    ROUND(ra.on_time_deliveries::NUMERIC / ra.total_deliveries, 2),
+                    ROUND(ra.avg_delivery_time_minutes::NUMERIC, 2)
+                )::restaurant_performance_summary
+        ),
+    (SELECT details FROM DelayedOrders)
+FROM RestaurantAggregates ra;
 END IF;
-
-RETURN v_report;
 END;
 $$ LANGUAGE plpgsql;
 

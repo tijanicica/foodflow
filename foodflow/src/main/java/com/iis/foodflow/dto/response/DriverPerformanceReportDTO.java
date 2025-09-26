@@ -1,13 +1,15 @@
 package com.iis.foodflow.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
-@NoArgsConstructor // Ostavljamo prazan konstruktor za svaki slučaj
+@NoArgsConstructor
 public class DriverPerformanceReportDTO {
 
     private Long driverId;
@@ -15,28 +17,33 @@ public class DriverPerformanceReportDTO {
     private String analysisPeriod;
     private BigDecimal overallOnTimeRate;
     private Long totalRejectedOffers;
-    private String performanceByVehicle;
-    private String delayedOrdersDetails;
 
-    // ==========================================================
-    // KLJUČNA ISPRAVKA: Dodajemo konstruktor koji JPA može da pozove
-    // Parametri MORAJU biti istim redosledom kao u @ColumnResult
-    // ==========================================================
+    // Parsirana polja koja će se videti u JSON-u
+    private List<RestaurantPerformanceSummaryDTO> performanceByRestaurant;
+    private List<DelayedOrderAnalysisDTO> delayedOrdersDetails;
+
+    // Sirovi stringovi iz baze (sakriveni iz JSON-a)
+    @JsonIgnore
+    private String performanceByRestaurantRaw;
+    @JsonIgnore
+    private String delayedOrdersDetailsRaw;
+
+    // Konstruktor koji JPA poziva. Redosled je ključan!
     public DriverPerformanceReportDTO(
             Long driverId,
             String driverFullName,
             String analysisPeriod,
             BigDecimal overallOnTimeRate,
             Long totalRejectedOffers,
-            String performanceByVehicle,
-            String delayedOrdersDetails
+            String performanceByRestaurantRaw,
+            String delayedOrdersDetailsRaw
     ) {
         this.driverId = driverId;
         this.driverFullName = driverFullName;
         this.analysisPeriod = analysisPeriod;
         this.overallOnTimeRate = overallOnTimeRate;
         this.totalRejectedOffers = totalRejectedOffers;
-        this.performanceByVehicle = performanceByVehicle;
-        this.delayedOrdersDetails = delayedOrdersDetails;
+        this.performanceByRestaurantRaw = performanceByRestaurantRaw;
+        this.delayedOrdersDetailsRaw = delayedOrdersDetailsRaw;
     }
 }

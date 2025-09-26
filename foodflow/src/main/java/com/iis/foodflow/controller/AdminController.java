@@ -113,11 +113,13 @@ public class AdminController {
     @GetMapping("/reports/driver-performance")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<DriverPerformanceReportDTO>> getDriverPerformanceReport(
-            // ==========================================================
-            // ISPRAVKA: Dodali smo 'required = false' za oba datuma
-            // ==========================================================
+            // 'required = false' znači da ovaj parametar NIJE OBAVEZAN u URL-u
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+
+            // Isto važi i za krajnji datum
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+
+            // I za status
             @RequestParam(required = false) String status
     ) {
         List<DriverPerformanceReportDTO> reportData = adminService.getDriverPerformanceReports(startDate, endDate, status);

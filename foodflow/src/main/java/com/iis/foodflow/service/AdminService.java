@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -219,22 +220,99 @@ public class AdminService {
     }
 
     public List<DriverPerformanceReportDTO> getDriverPerformanceReports(LocalDate startDate, LocalDate endDate, String status) {
-
-        // Postavljanje podrazumevanih vrednosti za datume ako nisu prosleđeni.
-        // Ako je startDate null, koristimo veoma daleki datum u prošlosti da obuhvatimo sve zapise.
         LocalDate finalStartDate = (startDate != null) ? startDate : LocalDate.of(1970, 1, 1);
-
-        // Ako je endDate null, koristimo današnji datum kao krajnji period.
         LocalDate finalEndDate = (endDate != null) ? endDate : LocalDate.now();
-
-        // Konvertujemo string status u odgovarajući Enum. Ako je status "ALL" ili nije poslat,
-        // prosleđujemo null, što će rezultirati time da se filter po statusu neće primeniti.
         DriverStatus driverStatus = (status == null || status.equalsIgnoreCase("ALL"))
                 ? null
                 : DriverStatus.valueOf(status.toUpperCase());
 
-        // Pozivamo repozitorijum sa definisanim (ili podrazumevanim) vrednostima.
-        return customDriverReportRepository.getDriverPerformanceReports(finalStartDate, finalEndDate, driverStatus);
+        // 1. Repozitorijum sada vraća listu DTO objekata sa sirovim stringovima
+        List<DriverPerformanceReportDTO> reportsFromDb = customDriverReportRepository.getDriverPerformanceReports(finalStartDate, finalEndDate, driverStatus);
+
+        // 2. Prolazimo kroz listu i parsiramo sirove stringove u strukturirane liste
+        reportsFromDb.forEach(report -> {
+            report.setPerformanceByRestaurant(parseRestaurantPerformance(report.getPerformanceByRestaurantRaw()));
+            report.setDelayedOrdersDetails(parseDelayedOrders(report.getDelayedOrdersDetailsRaw()));
+        });
+
+        return reportsFromDb;
     }
 
+    // Zamenite postojeće metode u AdminService.java sa ovim
+
+    private List<RestaurantPerformanceSummaryDTO> parseRestaurantPerformance(String rawData) {
+        if (rawData == null || rawData.equals("{}") || rawData.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<RestaurantPerformanceSummaryDTO> list = new ArrayList<>();
+
+        // Regularni izraz koji pronalazi sav sadržaj unutar zagrada (...)
+        // Ovo je mnogo pouzdanije nego deljenje stringa (split)
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\((.*?)\\)");
+        java.util.regex.Matcher matcher = pattern.matcher(rawData);
+
+        // Petlja koja prolazi kroz svaki pronađeni zapis
+        while (matcher.find()) {
+            // Dobijamo čist sadržaj unutar zagrada, npr: \"Pizza Corner\",2,1,0.50,30.50
+            String singleRecord = matcher.group(1);
+
+            // Delimo zapis po zarezu, ali ignorišemo zareze unutar navodnika (za svaki slučaj)
+            String[] parts = singleRecord.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+
+            if (parts.length == 5) {
+                try {
+                    // Uklanjamo navodnike i backslash-eve sa imena restorana
+                    String restaurantName = parts[0].replace("\\\"", "").replace("\"", "").trim();
+
+                    list.add(new RestaurantPerformanceSummaryDTO(
+                            restaurantName,
+                            Long.parseLong(parts[1].trim()),
+                            Long.parseLong(parts[2].trim()),
+                            new BigDecimal(parts[3].trim()),
+                            new BigDecimal(parts[4].trim())
+                    ));
+                } catch (NumberFormatException e) {
+                    System.err.println("Greška pri parsiranju performansi restorana: " + singleRecord);
+                }
+            }
+        }
+        return list;
+    }
+
+    private List<DelayedOrderAnalysisDTO> parseDelayedOrders(String rawData) {
+        if (rawData == null || rawData.equals("{}") || rawData.isEmpty() || rawData.equalsIgnoreCase("[null]")) {
+            return new ArrayList<>();
+        }
+        List<DelayedOrderAnalysisDTO> list = new ArrayList<>();
+
+        // Koristimo ISTI pouzdan pristup sa regularnim izrazom
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\((.*?)\\)");
+        java.util.regex.Matcher matcher = pattern.matcher(rawData);
+
+        while (matcher.find()) {
+            String singleRecord = matcher.group(1);
+
+            // Delimo po zarezu, ignorišući zareze unutar navodnika
+            String[] parts = singleRecord.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+
+            if (parts.length == 6) {
+                try {
+                    // Uklanjamo navodnike i backslash-eve sa imena restorana
+                    String restaurantName = parts[1].replace("\\\"", "").replace("\"", "").trim();
+
+                    list.add(new DelayedOrderAnalysisDTO(
+                            Long.parseLong(parts[0].trim()),
+                            restaurantName,
+                            Integer.parseInt(parts[2].trim()),
+                            new BigDecimal(parts[3].trim()),
+                            parts[4].trim().equals("t"), // Proveravamo da li je 't' za true
+                            new BigDecimal(parts[5].trim())
+                    ));
+                } catch (NumberFormatException e) {
+                    System.err.println("Greška pri parsiranju detalja o kašnjenju: " + singleRecord);
+                }
+            }
+        }
+        return list;
+    }
 }

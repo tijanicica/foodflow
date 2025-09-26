@@ -16,30 +16,36 @@ public class CustomDriverReportRepositoryImpl implements CustomDriverReportRepos
     private EntityManager entityManager;
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<DriverPerformanceReportDTO> getDriverPerformanceReports(LocalDate startDate, LocalDate endDate, DriverStatus status) {
-        // Osnovni upit koji poziva funkciju za svakog vozača
-        String baseQuery = """
+
+        String sqlQuery = """
             SELECT
                 d.id AS driverId,
-                (report).*
+                report.driver_full_name,
+                report.analysis_period,
+                report.overall_on_time_rate,
+                report.total_rejected_offers,
+                report.performance_by_restaurant,
+                report.delayed_orders_details
             FROM
-                driver d
-            CROSS JOIN LATERAL generate_driver_performance_report(d.id, :startDate, :endDate) AS report
+                driver d,
+                LATERAL generate_driver_performance_report(d.id, :startDate, :endDate) AS report
             """;
 
-        // Dinamički dodajemo WHERE klauzulu ako je status definisan
         if (status != null) {
-            baseQuery += " WHERE d.status = :status";
+            sqlQuery += " WHERE d.status = :status";
         }
 
-        Query query = entityManager.createNativeQuery(baseQuery, "DriverPerformanceReportMapping");
+        Query query = entityManager.createNativeQuery(sqlQuery, "DriverPerformanceReportMapping");
 
         query.setParameter("startDate", startDate);
         query.setParameter("endDate", endDate);
+
         if (status != null) {
             query.setParameter("status", status.name());
         }
 
-        return query.getResultList();
+        return (List<DriverPerformanceReportDTO>) query.getResultList();
     }
 }
