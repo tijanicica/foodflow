@@ -19,6 +19,53 @@ CREATE TRIGGER before_ticket_status_update
 -------------------------------- KRAJ PRVOG ZADATKA --------------------------------
 
 
+-------------------------------- PRVI ZADATAK SBP TRIGER --------------------------------
+
+CREATE OR REPLACE FUNCTION update_operator_average_rating()
+    RETURNS TRIGGER AS '
+DECLARE
+    v_operator_id BIGINT;
+    v_new_average_rating NUMERIC;
+BEGIN
+    -- Određujemo ID operatera na osnovu operacije
+    -- TG_OP je specijalna varijabla koja sadrži tip operacije (INSERT, UPDATE, DELETE)
+    IF (TG_OP = ''INSERT'' OR TG_OP = ''UPDATE'') THEN
+        -- Dohvatamo operator_id iz support_ticket tabele povezane sa novom ocenom
+        SELECT operator_id INTO v_operator_id
+        FROM support_ticket WHERE id = NEW.id;
+    END IF;
+
+    -- Ako smo pronašli ID operatera, računamo novi prosek
+    IF v_operator_id IS NOT NULL THEN
+        -- Izračunaj novi prosek samo za tog operatera
+        SELECT COALESCE(AVG(r.rating), 0.0) INTO v_new_average_rating
+        FROM operator_rating r
+                 JOIN support_ticket st ON r.id = st.id
+        WHERE st.operator_id = v_operator_id;
+
+        -- Ažuriraj operator tabelu sa novim prosekom
+        UPDATE operator
+        SET average_rating = v_new_average_rating
+        WHERE id = v_operator_id;
+    END IF;
+
+    -- Pošto je ovo AFTER triger, povratna vrednost nije bitna (može biti NULL)
+    RETURN NULL;
+END;
+' LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS after_rating_change_update_operator_avg ON operator_rating;
+
+-- Kreiramo novi triger
+CREATE TRIGGER after_rating_change_update_operator_avg
+    AFTER INSERT OR UPDATE ON operator_rating
+    FOR EACH ROW
+EXECUTE FUNCTION update_operator_average_rating();
+
+-------------------------------- KRAJ PRVOG ZADATKA --------------------------------
+
+
+
 -------------------------------- DRUGI ZADATAK SBP FUNKCIJA --------------------------------
 
 CREATE OR REPLACE FUNCTION calculate_ticket_priority_score(p_ticket_id BIGINT)

@@ -45,10 +45,15 @@ public class Operator implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "average_rating")
+    private Double averageRating;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(role);
     }
+
+
 
     @Override
     public String getUsername() {

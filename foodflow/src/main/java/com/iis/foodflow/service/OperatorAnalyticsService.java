@@ -1,7 +1,9 @@
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.response.OperatorAnalyticsDTO;
+import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.repository.OperatorRatingRepository;
+import com.iis.foodflow.repository.OperatorRepository;
 import com.iis.foodflow.repository.SupportTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,17 +16,21 @@ import java.time.LocalDateTime;
 public class OperatorAnalyticsService {
 
     private final SupportTicketRepository ticketRepository;
-    private final OperatorRatingRepository ratingRepository;
+    //private final OperatorRatingRepository ratingRepository;
+    private final OperatorRepository operatorRepository;
 
     public OperatorAnalyticsDTO getAnalyticsForOperator(Long operatorId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+
+        Operator operator = operatorRepository.findById(operatorId)
+                .orElseThrow(() -> new RuntimeException("Operator not found with ID: " + operatorId));
 
         Double avgTimeInSeconds = ticketRepository.getAverageResolutionTimeInSecondsByOperator(operatorId);
 
         return OperatorAnalyticsDTO.builder()
                 .totalTicketsToday(ticketRepository.countResolvedTicketsByOperatorToday(operatorId, startOfDay))
                 .totalTicketsAllTime(ticketRepository.countTotalResolvedTicketsByOperator(operatorId))
-                .averageRating(ratingRepository.getAverageRatingByOperator(operatorId))
+                .averageRating(operator.getAverageRating())
                 .averageResolutionTime(formatSeconds(avgTimeInSeconds))
                 .ticketsPerCategory(ticketRepository.countTicketsPerCategoryByOperator(operatorId))
                 .build();

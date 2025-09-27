@@ -9,7 +9,7 @@ public interface OperatorRatingRepository extends JpaRepository<OperatorRating, 
     @Query("SELECT AVG(r.rating) FROM OperatorRating r")
     Double getOverallAverageRating();
 
-    @Query("SELECT AVG(r.rating) FROM OperatorRating r WHERE r.supportTicket.operator.id = :operatorId")
-    Double getAverageRatingByOperator(@Param("operatorId") Long operatorId);
+//    @Query("SELECT AVG(r.rating) FROM OperatorRating r WHERE r.supportTicket.operator.id = :operatorId")
+//    Double getAverageRatingByOperator(@Param("operatorId") Long operatorId);
 }
 
