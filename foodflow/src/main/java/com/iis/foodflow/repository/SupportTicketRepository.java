@@ -54,17 +54,17 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
                 "  t.status AS status, " +
                 "  pc.name AS problemCategoryName, " +
                 "  c.first_name || ' ' || c.last_name AS customerName, " +
-                "  calculate_ticket_priority_score(t.id) AS priorityScore " + // <-- POZIV FUNKCIJE
+                "  calculate_ticket_priority_score(t.id) AS priorityScore " + // plsql funkcija
                 "FROM support_ticket t " +
                 "JOIN problem_category pc ON t.problem_category_id = pc.id " +
                 "JOIN orders o ON t.order_id = o.id " +
                 "JOIN customer c ON o.customer_id = c.id " +
                 "WHERE t.operator_id = :operatorId AND t.status IN ('OPEN', 'IN_PROGRESS') " +
-                "ORDER BY priorityScore DESC", // <-- SORTIRAMO PO PRIORITETU
+                "ORDER BY priorityScore DESC", // sortiraj po prioritetu
                 nativeQuery = true)
         List<TicketSummaryProjection> findTicketSummariesForOperatorDashboard(@Param("operatorId") Long operatorId);
 
-        // Interfejs za projekciju sada uključuje i skor
+        // interfejs za prikaz
         interface TicketSummaryProjection {
             Long getId();
             String getStatus();

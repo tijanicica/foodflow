@@ -27,36 +27,28 @@ DECLARE
     v_operator_id BIGINT;
     v_new_average_rating NUMERIC;
 BEGIN
-    -- Određujemo ID operatera na osnovu operacije
-    -- TG_OP je specijalna varijabla koja sadrži tip operacije (INSERT, UPDATE, DELETE)
     IF (TG_OP = ''INSERT'' OR TG_OP = ''UPDATE'') THEN
-        -- Dohvatamo operator_id iz support_ticket tabele povezane sa novom ocenom
         SELECT operator_id INTO v_operator_id
         FROM support_ticket WHERE id = NEW.id;
     END IF;
 
-    -- Ako smo pronašli ID operatera, računamo novi prosek
     IF v_operator_id IS NOT NULL THEN
-        -- Izračunaj novi prosek samo za tog operatera
         SELECT COALESCE(AVG(r.rating), 0.0) INTO v_new_average_rating
         FROM operator_rating r
                  JOIN support_ticket st ON r.id = st.id
         WHERE st.operator_id = v_operator_id;
 
-        -- Ažuriraj operator tabelu sa novim prosekom
         UPDATE operator
         SET average_rating = v_new_average_rating
         WHERE id = v_operator_id;
     END IF;
 
-    -- Pošto je ovo AFTER triger, povratna vrednost nije bitna (može biti NULL)
     RETURN NULL;
 END;
 ' LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS after_rating_change_update_operator_avg ON operator_rating;
 
--- Kreiramo novi triger
 CREATE TRIGGER after_rating_change_update_operator_avg
     AFTER INSERT OR UPDATE ON operator_rating
     FOR EACH ROW
@@ -76,9 +68,7 @@ DECLARE
     problem_category_id_ticket BIGINT;
     customer_id_ticket BIGINT;
     minutes_waiting INT;
-    total_orders_customer INT;
 BEGIN
-    -- 1. Dohvatamo potrebne podatke za tiket
     SELECT
         st.creation_time,
         st.problem_category_id,
@@ -94,26 +84,24 @@ BEGIN
     WHERE
         st.id = p_ticket_id;
 
-    -- Ako tiket ne postoji, vrati 0
+    -- ako ne nadje ticket
     IF NOT FOUND THEN
         RETURN 0;
     END IF;
 
-    -- 2. Faktor 1: Vreme čekanja (najuticajniji)
-    -- Svaki minut čekanja dodaje 2 poena
+    -- za svaki minut cekanja dobija 2 poena
     minutes_waiting := EXTRACT(EPOCH FROM (NOW() - creation_time_ticket)) / 60;
     score := score + (minutes_waiting * 2);
 
-    -- 3. Faktor 2: Kritičnost kategorije problema
-    -- Koristimo CASE za dodelu poena na osnovu ID-ja kategorije iz data.sql
+    -- order not delivered je problem koji najvise kaznjavamo
     score := score + CASE
-                         WHEN problem_category_id_ticket = 12 THEN 100 -- Order not delivered (NAJKRITIČNIJE)
+                         WHEN problem_category_id_ticket = 12 THEN 100 -- Order not delivered
                          WHEN problem_category_id_ticket = 8 THEN 70  -- Cold/spoiled food
                          WHEN problem_category_id_ticket = 7 THEN 60  -- Damaged food
                          WHEN problem_category_id_ticket = 11 THEN 50 -- Delivery delay
                          WHEN problem_category_id_ticket = 6 THEN 40  -- Wrong order
                          WHEN problem_category_id_ticket = 5 THEN 30  -- Incomplete order
-                         ELSE 10 -- Sve ostale kategorije
+                         ELSE 10 -- ostale kategorije
         END;
 
     RETURN score;
@@ -124,6 +112,7 @@ END;
 
 
 -------------------------------- CETVRTI ZADATAK SBP IZVESTAJ --------------------------------
+
 -- za izvestaje o kategorijama ovo je jedan red
 DROP TYPE IF EXISTS category_performance_row;
 CREATE TYPE category_performance_row AS (
@@ -138,9 +127,9 @@ CREATE OR REPLACE FUNCTION get_operator_performance_report(p_operator_id BIGINT)
     DECLARE
     operator_info RECORD;
     overall_metrics RECORD;
-    -- Varijabla za čuvanje jednog reda iz kursora
+    -- cuvanje jednog reda iz kursora
     category_row RECORD;
-    -- Inicijalizujemo prazan niz za rezultate
+    -- prazan niz za skladistenje rezultata
     category_details category_performance_row[] := ''{}'';
 
     category_cursor CURSOR FOR
@@ -173,7 +162,7 @@ CREATE OR REPLACE FUNCTION get_operator_performance_report(p_operator_id BIGINT)
         ORDER BY
             ticket_count DESC;
 BEGIN
-    -- 1. Dohvatanje osnovnih informacija o operateru (bez izmena)
+    -- informacije o operatoru
     SELECT id, first_name, last_name, email INTO operator_info
     FROM operator WHERE id = p_operator_id;
 
@@ -181,7 +170,7 @@ BEGIN
         RETURN jsonb_build_object(''error'', ''Operator not found'');
     END IF;
 
-    -- 2. Izračunavanje ukupnih metrika (bez izmena)
+    -- metrike za overall
     SELECT
         COUNT(*) AS total_resolved_tickets,
         COALESCE(AVG(opr.rating), 0.0) AS overall_avg_rating,
@@ -192,21 +181,17 @@ BEGIN
     LEFT JOIN operator_rating opr ON st.id = opr.id
     WHERE st.operator_id = p_operator_id AND st.status IN (''RESOLVED'', ''CLOSED'');
 
-    -- ===== ISPRAVLJENA LOGIKA ZA KURSOR =====
-    -- 3. Prikupljanje podataka po kategorijama koristeći standardni LOOP
+    -- metrike po kategorijama
     OPEN category_cursor;
     LOOP
         FETCH category_cursor INTO category_row;
-        -- Izlazimo iz petlje kada više nema redova
         EXIT WHEN NOT FOUND;
 
-        -- Dodajemo pročitani red u naš niz
         category_details := array_append(category_details, ROW(category_row.category_name, category_row.ticket_count, category_row.avg_rating)::category_performance_row);
     END LOOP;
     CLOSE category_cursor;
-    -- ==========================================
 
-    -- 4. Sklapanje finalnog JSON objekta (bez izmena)
+    -- json objekt zbog generisanja pdf-a
     RETURN jsonb_build_object(
             ''operatorInfo'', jsonb_build_object(
                 ''id'', operator_info.id,

@@ -20,14 +20,13 @@ public class OperatorReportRepository {
                 .setParameter(1, operatorId)
                 .getSingleResult();
         if (result == null) {
-            return null; // ili baciti izuzetak
+            return null;
         }
 
         try {
-            // 2. Parsiramo String u JsonNode
+            // parsiranje u json
             return objectMapper.readTree(result.toString());
         } catch (Exception e) {
-            // U slučaju greške pri parsiranju
             throw new RuntimeException("Failed to parse JSON report data from database", e);
         }
     }

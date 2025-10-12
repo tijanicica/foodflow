@@ -36,7 +36,7 @@ public class PdfOperatorReportService {
 
         DecimalFormat df = new DecimalFormat("#.##");
 
-        // Header
+        // header
         JsonNode operatorInfo = reportData.get("operatorInfo");
         document.add(new Paragraph("Performance Report for Operator: " + operatorInfo.get("firstName").asText() + " " + operatorInfo.get("lastName").asText())
                 .setBold().setFontSize(20));
@@ -45,7 +45,7 @@ public class PdfOperatorReportService {
 
         document.add(new Paragraph("\n"));
 
-        // Overall Metrics
+        // metrike overall
         JsonNode metrics = reportData.get("overallMetrics");
         document.add(new Paragraph("Overall Summary").setBold().setFontSize(16));
         document.add(new Paragraph("Total Resolved Tickets: " + metrics.get("totalResolvedTickets").asInt()));
@@ -57,7 +57,7 @@ public class PdfOperatorReportService {
 
         document.add(new Paragraph("\n"));
 
-        // Performance by Category Table
+        // metrike po kategorijama
         JsonNode categoryPerformance = reportData.get("performanceByCategory");
         if (categoryPerformance != null && categoryPerformance.isArray()) {
             document.add(new Paragraph("Performance by Category").setBold().setFontSize(16));
