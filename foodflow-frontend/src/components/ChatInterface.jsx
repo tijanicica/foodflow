@@ -73,27 +73,65 @@ export const ChatInterface = ({ userRole }) => {
       client.subscribe(`/topic/ticket/${ticketId}`, (message) => {
         const receivedMessage = JSON.parse(message.body);
 
-        if (receivedMessage.type === "STATUS_UPDATE") {
-          setTicket((prev) => ({ ...prev, status: receivedMessage.newStatus }));
-        } else if (receivedMessage.type === "READ_RECEIPT") {
-          if (receivedMessage.readerId !== userId) {
-            setLastReadByOther(true);
-          }
-        } else {
-          // Pretpostavljamo da je tip 'CHAT'
-          setMessages((prev) => [...prev, receivedMessage]);
-          if (receivedMessage.senderId !== userId) {
-            setLastReadByOther(false);
-            // Šaljemo "read" samo ako je prozor u fokusu
-            if (document.visibilityState === "visible") {
-              const readReceipt = { ticketId, readerId: userId };
-              stompClientRef.current.send(
-                "/app/chat.markAsRead",
-                {},
-                JSON.stringify(readReceipt)
-              );
+        switch (receivedMessage.type) {
+          case "STATUS_UPDATE":
+            setTicket((prev) => ({
+              ...prev,
+              status: receivedMessage.newStatus,
+            }));
+            break;
+
+          case "READ_RECEIPT":
+            if (receivedMessage.readerId !== userId) {
+              setLastReadByOther(true);
             }
-          }
+            break;
+
+          case "REASSIGNMENT":
+            // Ažuriraj stanje tiketa sa novim podacima o operateru
+            setTicket((prev) => ({
+              ...prev,
+              operatorId: receivedMessage.newOperatorId,
+              operatorName: receivedMessage.newOperatorName,
+            }));
+            // Dodaj sistemsku poruku u chat
+            setMessages((prev) => [
+              ...prev,
+              {
+                type: "system", // Specijalan tip za renderovanje
+                text: `You have been connected to a new operator: ${receivedMessage.newOperatorName}.`,
+              },
+            ]);
+            toast.info("Connecting to a new operator...");
+            break;
+
+          case "NO_OPERATORS_AVAILABLE":
+            // Ažuriraj status i dodaj sistemsku poruku
+            setTicket((prev) => ({ ...prev, status: "CLOSED" }));
+            setMessages((prev) => [
+              ...prev,
+              {
+                type: "system",
+                text: "Unfortunately, all operators are currently busy. Please try creating a new ticket later.",
+              },
+            ]);
+            toast.error("No available operators at the moment.");
+            break;
+
+          default: // Podrazumevano je CHAT
+            setMessages((prev) => [...prev, receivedMessage]);
+            if (receivedMessage.senderId !== userId) {
+              setLastReadByOther(false);
+              if (document.visibilityState === "visible") {
+                const readReceipt = { ticketId, readerId: userId };
+                stompClientRef.current.send(
+                  "/app/chat.markAsRead",
+                  {},
+                  JSON.stringify(readReceipt)
+                );
+              }
+            }
+            break;
         }
       });
 
@@ -200,46 +238,59 @@ export const ChatInterface = ({ userRole }) => {
             ref={messagesContainerRef}
             className="flex-grow overflow-y-auto mb-4 p-2 bg-gray-50/50 rounded-lg"
           >
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex flex-col my-2 ${
-                  msg.senderId === userId ? "items-end" : "items-start"
-                }`}
-              >
-                <span
-                  className={`text-xs text-gray-500 px-2 ${
-                    msg.senderId === userId ? "text-right" : "text-left"
-                  }`}
-                >
-                  {msg.senderName}
-                </span>
-                <div
-                  className={`inline-block p-3 rounded-2xl max-w-md ${
-                    msg.senderId === userId
-                      ? "bg-brand-primary text-white rounded-br-none"
-                      : "bg-gray-200 text-gray-800 rounded-bl-none"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-                {index === messages.length - 1 && msg.senderId === userId && (
-                  <div className="flex items-center gap-1 text-xs mt-1 px-2 text-gray-500">
-                    {lastReadByOther ? (
-                      <>
-                        <CheckCheck size={14} className="text-blue-500" />
-                        <span>Seen</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check size={14} />
-                        <span>Sent</span>
-                      </>
-                    )}
+            {messages.map((msg, index) => {
+              // --- NOVI BLOK ZA RENDER SISTEMSKE PORUKE ---
+              if (msg.type === "system") {
+                return (
+                  <div key={index} className="text-center my-4">
+                    <span className="bg-gray-200 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                      {msg.text}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                );
+              }
+
+              return (
+                <div
+                  key={index}
+                  className={`flex flex-col my-2 ${
+                    msg.senderId === userId ? "items-end" : "items-start"
+                  }`}
+                >
+                  <span
+                    className={`text-xs text-gray-500 px-2 ${
+                      msg.senderId === userId ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {msg.senderName}
+                  </span>
+                  <div
+                    className={`inline-block p-3 rounded-2xl max-w-md ${
+                      msg.senderId === userId
+                        ? "bg-brand-primary text-white rounded-br-none"
+                        : "bg-gray-200 text-gray-800 rounded-bl-none"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                  {index === messages.length - 1 && msg.senderId === userId && (
+                    <div className="flex items-center gap-1 text-xs mt-1 px-2 text-gray-500">
+                      {lastReadByOther ? (
+                        <>
+                          <CheckCheck size={14} className="text-blue-500" />
+                          <span>Seen</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check size={14} />
+                          <span>Sent</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <div ref={messagesEndRef} />
           </div>
 

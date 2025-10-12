@@ -88,4 +88,5 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
     Optional<SupportTicket> findByIdWithAllDetails(@Param("ticketId") Long ticketId);
 
     boolean existsByOperatorIdAndStatusIn(Long operatorId, List<TicketStatus> statuses);
+    List<SupportTicket> findByStatusInAndReassignmentCountLessThan(List<TicketStatus> statuses, int maxReassignments);
 }

@@ -21,14 +21,15 @@ INSERT INTO support_administrator (id, email, password, first_name, last_name, p
 
 
 -- Operator
-INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
-    (3, 6, 'operator@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ana', 'Anić', '064555666', 'OPERATOR');
-INSERT INTO operator (id,support_admin_id, email, password, first_name, last_name, phone, role) VALUES
-    (555,6,  'operatorlana@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Lana', 'Lanic', '064555661', 'OPERATOR');
-INSERT INTO operator (id,support_admin_id, email, password, first_name, last_name, phone, role) VALUES
-    (551, 6, 'operatorena@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ena', 'Enic', '064555662', 'OPERATOR');
-INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
-    (552,6, 'operatormia@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Mia', 'Miic', '064555663', 'OPERATOR');
+-- Potrebno je da obrišeš stare INSERT-e i zameniš ih ovima
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role, status, average_rating) VALUES
+    (3, 6, 'operator@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ana', 'Anić', '064555666', 'OPERATOR', 'ONLINE', 4.8);
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role, status, average_rating) VALUES
+    (555,6,  'operatorlana@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Lana', 'Lanic', '064555661', 'OPERATOR', 'ONLINE', 4.5);
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role, status, average_rating) VALUES
+    (551, 6, 'operatorena@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Ena', 'Enic', '064555662', 'OPERATOR', 'ONLINE', 4.2);
+INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role, status, average_rating) VALUES
+    (552,6, 'operatormia@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Mia', 'Miic', '064555663', 'OPERATOR', 'ONLINE', 3.9);
 INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
     (553, 6,'operatorlela@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Lela', 'Lelic', '064553666', 'OPERATOR');
 INSERT INTO operator (id, support_admin_id, email, password, first_name, last_name, phone, role) VALUES
@@ -844,76 +845,12 @@ INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES
 INSERT INTO order_offer (id, order_id, driver_id, status) VALUES
     (150, 150, 9, 'ACCEPTED');
 
--- ====================================================================
--- KORISNIČKA PODRŠKA (SUPPORT TICKETS) I OCENE OPERATERA
--- ====================================================================
 
--- TIKETI VEZANI ZA PROBLEM SA PORUDŽBINOM (kategorije 5, 6, 7, 8)
--- #1 (Ana, ID=3) - Very fast resolution (12 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (1, 'CLOSED', 'U porudžbini je nedostajao prilog.', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day' + INTERVAL '12 minute', 3, 30, 5);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (1, 5, 'Ana je odmah reagovala i organizovala slanje priloga. Svaka čast!', NOW() - INTERVAL '3 day' + INTERVAL '1 hour');
-
--- #2 (Lana, ID=555) - Fast resolution (25 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (2, 'CLOSED', 'Stigla mi je pogrešna pica.', NOW() - INTERVAL '5 day', NOW() - INTERVAL '5 day' + INTERVAL '25 minute', 555, 80, 6);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (2, 4, 'Problem je rešen, hvala.', NOW() - INTERVAL '5 day' + INTERVAL '1 hour');
-
--- #3 (Ena, ID=551) - Slower resolution (1 hour 10 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (3, 'CLOSED', 'Pakovanje je bilo oštećeno i hrana se prosula.', NOW() - INTERVAL '10 day', NOW() - INTERVAL '10 day' + INTERVAL '70 minute', 551, 81, 7);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (3, 3, 'Rešeno je, ali je moglo brže.', NOW() - INTERVAL '10 day' + INTERVAL '2 hours');
-
--- TIKETI VEZANI ZA PROBLEM SA DOSTAVOM (kategorije 11, 13)
--- #4 (Ana, ID=3) - Average resolution (35 minutes)
---INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-  --  (4, 'CLOSED', 'Porudžbina kasni već 20 minuta.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '35 minute', 3, 3, 11);
---INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-  --  (4, 4, 'Dala mi je informaciju gde se vozač nalazi.', NOW() - INTERVAL '1 day' + INTERVAL '1 hour');
-
--- #5 (Zile, ID=557) - Very fast resolution (8 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (5, 'CLOSED', 'Vozač je bio izuzetno neljubazan.', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day' + INTERVAL '8 minute', 557, 94, 13);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (5, 5, 'Zile se izvinio u ime kompanije i ponudio popust, profesionalno.', NOW() - INTERVAL '4 day' + INTERVAL '30 minute');
-
--- TIKETI VEZANI ZA TEHNIČKE PROBLEME (kategorija 14)
--- #6 (Ana, ID=3) - Fast resolution (18 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (6, 'CLOSED', 'Ne mogu da platim karticom, sajt izbacuje grešku.', '2025-06-10 20:45:00', '2025-06-10 21:03:00', 3, 88, 14);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (6, 5, 'Rešeno u roku od 20 minuta!', '2025-06-10 21:10:00');
-
--- #7 (Lana, ID=555) - Slower resolution (1 hour 30 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (7, 'CLOSED', 'Ne učitava mi se stranica za praćenje porudžbine.', NOW() - INTERVAL '6 day', NOW() - INTERVAL '6 day' + INTERVAL '90 minute', 555, 90, 14);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (7, 3, 'Odgovorili su posle sat i po.', NOW() - INTERVAL '5 day');
-
-
--- TIKETI U KATEGORIJI "OSTALO" (kategorija 4)
--- #8 (Marko, ID=556) - Very fast resolution (4 minutes)
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (8, 'CLOSED', 'Želim da pohvalim vozača Petra, bio je izuzetno brz i ljubazan!', NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day' + INTERVAL '4 minute', 556, 1, 4);
-INSERT INTO operator_rating (id, rating, comment, rating_date) VALUES
-    (8, 5, 'Hvala Marku što je prosledio pohvalu.', NOW() - INTERVAL '2 day' + INTERVAL '10 minute');
-
-
--- OTVORENI TIKETI (NE ULAZE U STATISTIKU)
--- #9 (Mia, ID=552) - Još uvek otvoreni tiketi
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (9, 'OPEN', 'Ne mogu da se ulogujem na nalog.', NOW() - INTERVAL '1 hour', NULL, 552, 92, 14);
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (10, 'OPEN', 'Aplikacija kaže da je dostavljeno, ali hranu nisam dobio.', NOW() - INTERVAL '5 minute', NULL, 552, 89, 12);
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (11, 'OPEN', 'Nedostaje mi sok uz porudžbinu.', NOW() - INTERVAL '25 minute', NULL, 552, 91, 5);
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (12, 'OPEN', 'Dostavljač mi se još nije javio, a prošlo je vreme dostave.', NOW() - INTERVAL '2 minute', NULL, 552, 93, 11);
-INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
-    (13, 'OPEN', 'Sva hrana je stigla potpuno hladna.', NOW() - INTERVAL '15 minute', NULL, 552, 86, 8);
+INSERT INTO operator_specialization (operator_id, problem_category_id) VALUES
+                                                                           (3, 1),   -- Ana je specijalista za SVE probleme sa porudžbinom
+                                                                           (555, 2), -- Lana je specijalista za SVE probleme sa dostavom
+                                                                           (551, 3); -- Ena je specijalista za SVE tehničke probleme
+-- Mia (552) nema specijalizaciju
 
 ALTER SEQUENCE customer_id_seq RESTART WITH 200;
 ALTER SEQUENCE driver_id_seq RESTART WITH 200;
@@ -935,4 +872,5 @@ ALTER SEQUENCE diet_type_id_seq RESTART WITH 200;
 ALTER SEQUENCE driver_rating_id_seq RESTART WITH 200;
 ALTER SEQUENCE order_offer_id_seq RESTART WITH 200;
 ALTER SEQUENCE repeating_order_id_seq RESTART WITH 200;
-ALTER SEQUENCE support_ticket_id_seq RESTART WITH 100;
+ALTER SEQUENCE support_ticket_id_seq RESTART WITH 150;
+ALTER SEQUENCE message_id_seq RESTART WITH 150;

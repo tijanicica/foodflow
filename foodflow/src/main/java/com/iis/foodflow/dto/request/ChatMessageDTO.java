@@ -18,9 +18,13 @@ public class ChatMessageDTO {
     private String senderName;
     private MessageType type;
     private TicketStatus newStatus;
+    private String newOperatorName;
+    private Long newOperatorId;
 
     public enum MessageType {
         CHAT,
-        STATUS_UPDATE
+        STATUS_UPDATE,
+        REASSIGNMENT,
+        NO_OPERATORS_AVAILABLE
     }
 }

@@ -1,10 +1,13 @@
 package com.iis.foodflow.model.user;
 
+import com.iis.foodflow.enums.OperatorStatus;
 import com.iis.foodflow.enums.Role;
+import com.iis.foodflow.model.support.ProblemCategory;
 import com.iis.foodflow.model.support.SupportTicket;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +50,21 @@ public class Operator implements UserDetails {
 
     @Column(name = "average_rating")
     private Double averageRating;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(255) default 'OFFLINE'")
+    private OperatorStatus status = OperatorStatus.OFFLINE;
+
+    @Column(name = "last_assigned_ticket_at")
+    private LocalDateTime lastAssignedTicketAt;
+
+    @ManyToMany(fetch = FetchType.EAGER) // EAGER da bismo lako pristupili specijalizacijama
+    @JoinTable(
+            name = "operator_specialization",
+            joinColumns = @JoinColumn(name = "operator_id"),
+            inverseJoinColumns = @JoinColumn(name = "problem_category_id")
+    )
+    private Set<ProblemCategory> specializations = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

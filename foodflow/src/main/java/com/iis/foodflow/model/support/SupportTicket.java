@@ -50,4 +50,7 @@ public class SupportTicket {
     @ManyToOne
     @JoinColumn(name = "problem_category_id", nullable=false)
     private ProblemCategory problemCategory;
+
+    @Column(name = "reassignment_count", nullable = false, columnDefinition = "int default 0")
+    private int reassignmentCount = 0;
 }

@@ -1,6 +1,7 @@
 package com.iis.foodflow.repository;
 
 import com.iis.foodflow.dto.request.OperatorRatingDTO;
+import com.iis.foodflow.enums.OperatorStatus;
 import com.iis.foodflow.model.user.Operator;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +33,6 @@ public interface OperatorRepository extends JpaRepository<Operator, Long> {
             "ORDER BY COUNT(st.id) ASC, RANDOM() " +
             "LIMIT 1", nativeQuery = true)
     Long findOperatorIdWithLeastOpenTickets();
+
+    List<Operator> findByStatus(OperatorStatus status);
 }
