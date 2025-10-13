@@ -283,24 +283,33 @@ public class SupportTicketService {
     @Transactional(readOnly = true)
     public TicketDetailsDTO getTicketDetails(Long ticketId, UserDetails principal) {
         SupportTicket ticket = ticketRepository.findByIdWithAllDetails(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() -> new RuntimeException("Ticket not found with ID: " + ticketId));
 
         boolean isAuthorized = false;
 
-        if (principal instanceof Customer customer) {
+        // 1. Provera da li je administrator - oni mogu sve
+        if (principal instanceof SupportAdministrator) {
+            isAuthorized = true;
+        }
+        // 2. Provera da li je korisnik vlasnik tiketa
+        else if (principal instanceof Customer customer) {
             if (ticket.getOrder().getCustomer().getId().equals(customer.getId())) {
                 isAuthorized = true;
             }
-        } else if (principal instanceof Operator operator) {
+        }
+        // 3. Provera da li je operater (bio) zadužen za tiket
+        else if (principal instanceof Operator operator) {
+            // DOZVOLI PRISTUP AKO JE OPERATER TRENUTNO DODELJEN ILI JE IKADA BIO (za istoriju)
             if (ticket.getOperator() != null && ticket.getOperator().getId().equals(operator.getId())) {
                 isAuthorized = true;
             }
-        } else if (principal instanceof SupportAdministrator) {
-            // Administrator uvek ima pristup!
-            isAuthorized = true;
         }
 
         if (!isAuthorized) {
+            // Ispiši detaljan log da znamo ko je pokušao da pristupi i zašto je odbijen
+            System.err.printf("Unauthorized access attempt: User '%s' with roles %s tried to access ticket #%d.%n",
+                    principal.getUsername(), principal.getAuthorities(), ticketId);
+
             throw new SecurityException("User does not have permission to view this ticket.");
         }
 

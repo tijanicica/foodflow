@@ -852,6 +852,91 @@ INSERT INTO operator_specialization (operator_id, problem_category_id) VALUES
                                                                            (551, 3); -- Ena je specijalista za SVE tehničke probleme
 -- Mia (552) nema specijalizaciju
 
+-- ====================================================================
+-- DODATNI KORISNICI ZA RAZNOVRSNIJU ANALITIKU
+-- ====================================================================
+INSERT INTO customer (id, email, password, first_name, last_name, phone, role) VALUES
+                                                                                   (10, 'customermarko@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Marko', 'Marković', '064222333', 'CUSTOMER'),
+                                                                                   (11, 'customerjelena@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jelena', 'Jelić', '064333444', 'CUSTOMER');
+
+
+-- ====================================================================
+-- BOGAT SKUP PORUDŽBINA I ZATVORENIH TIKETA ZA ANALITIKU
+-- ====================================================================
+-- Kreiramo 16 novih porudžbina i za SVAKU vežemo po JEDAN zatvoren tiket.
+-- Raspoređeni su po restoranima, operaterima i vremenu.
+
+-- GRUPA 1: Pasta Paradise (Restoran 1) & Operater Ana (ID=3)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, total_price, customer_id, address_id) VALUES
+                                                                                                                   (200, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '40 day', 1250, 1, 10), -- Stari
+                                                                                                                   (201, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '25 day', 1250, 10, 10),
+                                                                                                                   (202, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '12 day', 1250, 11, 10),
+                                                                                                                   (203, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '6 day', 1250, 1, 10);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (200, 1, 200, 1), (201, 1, 201, 1), (202, 1, 202, 1), (203, 1, 203, 1);
+
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+                                                                                                                                  (100, 'CLOSED', 'Nisam dobio piće.', NOW() - INTERVAL '40 day', NOW() - INTERVAL '40 day' + INTERVAL '10 minute', 3, 200, 5),
+                                                                                                                                  (101, 'CLOSED', 'Stigla je pogrešna pasta.', NOW() - INTERVAL '25 day', NOW() - INTERVAL '25 day' + INTERVAL '25 minute', 3, 201, 6),
+                                                                                                                                  (102, 'CLOSED', 'Hrana je bila hladna.', NOW() - INTERVAL '12 day', NOW() - INTERVAL '12 day' + INTERVAL '5 minute', 3, 202, 8),
+                                                                                                                                  (103, 'CLOSED', 'Pogrešan prilog.', NOW() - INTERVAL '6 day', NOW() - INTERVAL '6 day' + INTERVAL '45 minute', 3, 203, 6);
+INSERT INTO operator_rating (id, rating, comment) VALUES (100, 5, 'Brzo'), (101, 4, 'Ok'), (102, 5, 'Super'), (103, 3, 'Sporije');
+
+-- GRUPA 2: Burger Queen (Restoran 3) & Operater Lana (ID=555)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, total_price, customer_id, address_id) VALUES
+                                                                                                                   (204, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '35 day', 850, 1, 12), -- Stari
+                                                                                                                   (205, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '28 day', 850, 10, 12),
+                                                                                                                   (206, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '14 day', 850, 11, 12),
+                                                                                                                   (207, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '4 day', 850, 1, 12);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (204, 1, 204, 23), (205, 1, 205, 23), (206, 1, 206, 23), (207, 1, 207, 23);
+
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+                                                                                                                                  (104, 'CLOSED', 'Dostava kasni 30 minuta.', NOW() - INTERVAL '35 day', NOW() - INTERVAL '35 day' + INTERVAL '8 minute', 555, 204, 11),
+                                                                                                                                  (105, 'CLOSED', 'Nikad nije ni stiglo.', NOW() - INTERVAL '28 day', NOW() - INTERVAL '28 day' + INTERVAL '1 hour', 555, 205, 12),
+                                                                                                                                  (106, 'CLOSED', 'Kašnjenje opet.', NOW() - INTERVAL '14 day', NOW() - INTERVAL '14 day' + INTERVAL '15 minute', 555, 206, 11),
+                                                                                                                                  (107, 'CLOSED', 'Burger Queen dostava nije stigla.', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day' + INTERVAL '22 minute', 555, 207, 12);
+INSERT INTO operator_rating (id, rating, comment) VALUES (104, 5, 'Hvala'), (105, 2, 'Loše'), (106, 4, 'Korektno'), (107, 1, 'Užas');
+
+-- GRUPA 3: Green Garden (Restoran 2) & Operater Ena (ID=551)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, total_price, customer_id, address_id) VALUES
+                                                                                                                   (208, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '33 day', 1150, 1, 11), -- Stari
+                                                                                                                   (209, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '20 day', 1150, 10, 11),
+                                                                                                                   (210, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '10 day', 1150, 11, 11),
+                                                                                                                   (211, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '1 day', 1150, 1, 11);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (208, 1, 208, 12), (209, 1, 209, 12), (210, 1, 210, 12), (211, 1, 211, 12);
+
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+                                                                                                                                  (108, 'CLOSED', 'Ne mogu da platim karticom.', NOW() - INTERVAL '33 day', NOW() - INTERVAL '33 day' + INTERVAL '30 minute', 551, 208, 14),
+                                                                                                                                  (109, 'CLOSED', 'Sajt se srušio.', NOW() - INTERVAL '20 day', NOW() - INTERVAL '20 day' + INTERVAL '10 minute', 551, 209, 14),
+                                                                                                                                  (110, 'CLOSED', 'Ne prihvata mi kod.', NOW() - INTERVAL '10 day', NOW() - INTERVAL '10 day' + INTERVAL '18 minute', 551, 210, 14),
+                                                                                                                                  (111, 'CLOSED', 'Pitanje o Green Garden.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '12 minute', 551, 211, 4);
+INSERT INTO operator_rating (id, rating, comment) VALUES (108, 5, 'Bravo'), (109, 4, 'Ok'), (110, 5, 'Hvala'), (111, 5, 'Super');
+
+-- GRUPA 4: Wok Express (Restoran 12) & Operater Mia (ID=552)
+INSERT INTO orders (id, status, payment_type, order_type, creation_date, total_price, customer_id, address_id) VALUES
+                                                                                                                   (212, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '22 day', 1300, 10, 21),
+                                                                                                                   (213, 'DELIVERED', 'CASH', 'REGULAR', NOW() - INTERVAL '15 day', 1300, 11, 21),
+                                                                                                                   (214, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '9 day', 1300, 1, 21),
+                                                                                                                   (215, 'DELIVERED', 'CARD', 'REGULAR', NOW() - INTERVAL '2 day', 1300, 10, 21);
+INSERT INTO order_item (id, quantity, order_id, menu_item_version_id) VALUES (212, 1, 212, 122), (213, 1, 213, 122), (214, 1, 214, 122), (215, 1, 215, 122);
+
+INSERT INTO support_ticket (id, status, description, creation_time, closing_time, operator_id, order_id, problem_category_id) VALUES
+                                                                                                                                  (112, 'CLOSED', 'Hrana iz Woka je hladna.', NOW() - INTERVAL '22 day', NOW() - INTERVAL '22 day' + INTERVAL '2 hour', 552, 212, 8),
+                                                                                                                                  (113, 'CLOSED', 'Fali pirinač.', NOW() - INTERVAL '15 day', NOW() - INTERVAL '15 day' + INTERVAL '35 minute', 552, 213, 5),
+                                                                                                                                  (114, 'CLOSED', 'Vozač je bio neljubazan.', NOW() - INTERVAL '9 day', NOW() - INTERVAL '9 day' + INTERVAL '4 minute', 552, 214, 13),
+                                                                                                                                  (115, 'CLOSED', 'Kako da promenim adresu?', NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day' + INTERVAL '55 minute', 552, 215, 4);
+INSERT INTO operator_rating (id, rating, comment) VALUES (112, 2, 'Sporo'), (113, 4, 'Rešeno'), (114, 5, 'Profesionalno'), (115, 3, 'Prosek');
+
+-- Poruke (samo simbolično da čet nije prazan)
+INSERT INTO message(text, sent_at, ticket_id, sender_customer_id, sender_operator_id)
+SELECT 'Imam problem.', NOW() - INTERVAL '1 hour', id, (SELECT customer_id FROM orders WHERE id = order_id), null FROM support_ticket WHERE id BETWEEN 100 AND 115
+UNION ALL
+SELECT 'Rešavamo.', NOW() - INTERVAL '30 minute', id, null, operator_id FROM support_ticket WHERE id BETWEEN 100 AND 115;
+
+-- Ažuriranje sekvenci da ne bude kolizije sa novim ID-jevima
+ALTER SEQUENCE orders_id_seq RESTART WITH 300;
+ALTER SEQUENCE order_item_id_seq RESTART WITH 300;
+ALTER SEQUENCE support_ticket_id_seq RESTART WITH 200;
+ALTER SEQUENCE message_id_seq RESTART WITH 500;
 ALTER SEQUENCE customer_id_seq RESTART WITH 200;
 ALTER SEQUENCE driver_id_seq RESTART WITH 200;
 ALTER SEQUENCE operator_id_seq RESTART WITH 200;
@@ -864,13 +949,9 @@ ALTER SEQUENCE menu_id_seq RESTART WITH 200;
 ALTER SEQUENCE menu_version_id_seq RESTART WITH 200;
 ALTER SEQUENCE menu_item_id_seq RESTART WITH 200;
 ALTER SEQUENCE menu_item_version_id_seq RESTART WITH 200;
-ALTER SEQUENCE orders_id_seq RESTART WITH 200;
-ALTER SEQUENCE order_item_id_seq RESTART WITH 200;
 ALTER SEQUENCE problem_category_id_seq RESTART WITH 200;
 ALTER SEQUENCE allergen_id_seq RESTART WITH 200;
 ALTER SEQUENCE diet_type_id_seq RESTART WITH 200;
 ALTER SEQUENCE driver_rating_id_seq RESTART WITH 200;
 ALTER SEQUENCE order_offer_id_seq RESTART WITH 200;
 ALTER SEQUENCE repeating_order_id_seq RESTART WITH 200;
-ALTER SEQUENCE support_ticket_id_seq RESTART WITH 150;
-ALTER SEQUENCE message_id_seq RESTART WITH 150;

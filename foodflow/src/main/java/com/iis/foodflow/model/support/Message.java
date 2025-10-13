@@ -19,7 +19,8 @@ public class Message {
     @Column(columnDefinition = "TEXT")
     private String text;
     private LocalDateTime sentAt;
-    private boolean read;
+    @Column(nullable = true)
+    private Boolean read = false;
 
     @ManyToOne
     @JoinColumn(name = "ticket_id", nullable = false)
