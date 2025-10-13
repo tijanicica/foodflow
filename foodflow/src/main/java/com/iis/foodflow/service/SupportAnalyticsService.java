@@ -1,10 +1,13 @@
 package com.iis.foodflow.service;
 
+import com.iis.foodflow.dto.request.CategoryPerformanceDTO;
 import com.iis.foodflow.dto.request.SupportAnalyticsDTO;
 import com.iis.foodflow.repository.OperatorRatingRepository;
 import com.iis.foodflow.repository.SupportTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,12 +21,17 @@ public class SupportAnalyticsService {
         Double avgTimeInSeconds = ticketRepository.getAverageResolutionTimeInSeconds();
 
         String formattedAvgTime = formatSeconds(avgTimeInSeconds);
+        List<CategoryPerformanceDTO> performancePerCategory = ticketRepository.getAverageTimePerCategory();
+
+        // Formatiraj sekunde u čitljiv format
+        performancePerCategory.forEach(p -> p.setAverageResolutionTime(formatSeconds(Double.parseDouble(p.getAverageResolutionTime()))));
 
         return new SupportAnalyticsDTO(
                 totalTickets,
                 overallAverageRating,
                 formattedAvgTime,
-                ticketRepository.countTicketsPerCategory()
+                ticketRepository.countTicketsPerCategory(),
+                performancePerCategory
         );
     }
 

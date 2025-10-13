@@ -1,5 +1,6 @@
 package com.iis.foodflow.repository;
 
+import com.iis.foodflow.dto.request.CategoryPerformanceDTO;
 import com.iis.foodflow.dto.request.CategoryTicketsDTO;
 import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.support.SupportTicket;
@@ -120,5 +121,20 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "GROUP BY pc.name " +
             "ORDER BY COUNT(t.id) DESC")
     List<CategoryTicketsDTO> countTicketsPerCategoryByRestaurant(@Param("restaurantId") Long restaurantId);
+
+    @Query(
+            value = """
+        SELECT 
+            pc.name AS category_name,
+            CAST(AVG(EXTRACT(EPOCH FROM (t.closing_time - t.creation_time))) AS TEXT) AS avg_resolution_time
+        FROM support_ticket t
+        JOIN problem_category pc ON t.problem_category_id = pc.id
+        WHERE t.status = 'CLOSED'
+        GROUP BY pc.name
+    """,
+            nativeQuery = true
+    )
+    List<CategoryPerformanceDTO> getAverageTimePerCategory();
+
 
 }

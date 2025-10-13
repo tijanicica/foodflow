@@ -62,17 +62,24 @@ public class PdfOperatorReportService {
         if (categoryPerformance != null && categoryPerformance.isArray()) {
             document.add(new Paragraph("Performance by Category").setBold().setFontSize(16));
 
-            Table table = new Table(UnitValue.createPercentArray(new float[]{4, 2, 2}));
+            // Sada imamo 4 kolone
+            Table table = new Table(UnitValue.createPercentArray(new float[]{4, 2, 2, 3}));
             table.setWidth(UnitValue.createPercentValue(100));
 
             table.addHeaderCell("Category");
             table.addHeaderCell("Resolved Tickets");
             table.addHeaderCell("Average Rating");
+            table.addHeaderCell("Average Resolution Time"); // <-- NOVA KOLONA
 
             for (JsonNode category : categoryPerformance) {
                 table.addCell(category.get("categoryName").asText());
                 table.addCell(String.valueOf(category.get("ticketCount").asInt()));
                 table.addCell(df.format(category.get("avgRating").asDouble()));
+
+                // Formatiraj vreme iz sekundi
+                long catSeconds = category.get("avgResolutionSeconds").asLong();
+                String catAvgTime = String.format("%d:%02d:%02d", catSeconds / 3600, (catSeconds % 3600) / 60, catSeconds % 60);
+                table.addCell(catAvgTime); // <-- NOVI PODATAK
             }
             document.add(table);
         }

@@ -14,4 +14,5 @@ public class SupportAnalyticsDTO {
     private Double overallAverageRating;
     private String averageResolutionTime; // Npr. "2h 15m"
     private List<CategoryTicketsDTO> ticketsPerCategory;
+    private List<CategoryPerformanceDTO> performancePerCategory;
 }

@@ -251,7 +251,7 @@ export const SupportAnalyticsPage = () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80} // Made radius smaller to guarantee room for labels
+                  outerRadius={80}
                   labelLine={false}
                   label={<CustomPieLabel />}
                 >
@@ -271,6 +271,33 @@ export const SupportAnalyticsPage = () => {
                 />
               </RechartsPieChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Average Resolution Time by Category */}
+        <div className="mt-8 bg-white p-6 rounded-2xl shadow-sm border">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">
+            Average Resolution Time by Category
+          </h3>
+          <div className="space-y-2">
+            {/* Header */}
+            <div className="grid grid-cols-2 gap-4 px-4 py-2 font-semibold text-gray-600 bg-gray-50 rounded">
+              <span>Category</span>
+              <span className="text-right">Average Time</span>
+            </div>
+            {/* Data */}
+            {analytics.performancePerCategory &&
+              analytics.performancePerCategory.map((item) => (
+                <div
+                  key={item.categoryName}
+                  className="grid grid-cols-2 gap-4 px-4 py-2 border-b last:border-b-0"
+                >
+                  <span>{item.categoryName}</span>
+                  <span className="text-right font-medium">
+                    {item.averageResolutionTime}
+                  </span>
+                </div>
+              ))}
           </div>
         </div>
       </main>

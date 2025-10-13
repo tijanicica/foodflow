@@ -118,7 +118,8 @@ DROP TYPE IF EXISTS category_performance_row;
 CREATE TYPE category_performance_row AS (
                                             category_name TEXT,
                                             ticket_count BIGINT,
-                                            avg_rating NUMERIC
+                                            avg_rating NUMERIC,
+                                            avg_resolution_seconds NUMERIC
                                         );
 
 -- vraca izvestaj kao jsonb, zbog pdf generisanja
@@ -136,17 +137,19 @@ CREATE OR REPLACE FUNCTION get_operator_performance_report(p_operator_id BIGINT)
         WITH OperatorResolvedTickets AS (
             SELECT
                 st.id,
-                st.problem_category_id
+                st.problem_category_id,
+                EXTRACT(EPOCH FROM (st.closing_time - st.creation_time)) as resolution_seconds
             FROM
                 support_ticket st
             WHERE
                 st.operator_id = p_operator_id
-              AND st.status IN (''RESOLVED'', ''CLOSED'')
+              AND st.status IN (''RESOLVED'', ''CLOSED'') AND st.closing_time IS NOT NULL
         )
         SELECT
             pc_parent.name AS category_name,
             COUNT(ort.id) AS ticket_count,
-            COALESCE(AVG(opr.rating), 0.0) AS avg_rating
+            COALESCE(AVG(opr.rating), 0.0) AS avg_rating,
+            COALESCE(AVG(ort.resolution_seconds), 0.0) as avg_resolution_seconds
         FROM
             OperatorResolvedTickets ort
         LEFT JOIN
@@ -187,7 +190,7 @@ BEGIN
         FETCH category_cursor INTO category_row;
         EXIT WHEN NOT FOUND;
 
-        category_details := array_append(category_details, ROW(category_row.category_name, category_row.ticket_count, category_row.avg_rating)::category_performance_row);
+        category_details := array_append(category_details, ROW(category_row.category_name, category_row.ticket_count, category_row.avg_rating, category_row.avg_resolution_seconds)::category_performance_row);
     END LOOP;
     CLOSE category_cursor;
 
@@ -204,7 +207,8 @@ BEGIN
                 ''overallAverageRating'', overall_metrics.overall_avg_rating,
                 ''averageResolutionSeconds'', overall_metrics.avg_resolution_seconds
             ),
-            ''performanceByCategory'', (SELECT jsonb_agg(jsonb_build_object(''categoryName'', r.category_name, ''ticketCount'', r.ticket_count, ''avgRating'', r.avg_rating)) FROM unnest(category_details) as r)
+            ''performanceByCategory'', (SELECT jsonb_agg(jsonb_build_object(''categoryName'', r.category_name, ''ticketCount'', r.ticket_count, ''avgRating'', r.avg_rating,
+                                                                            ''avgResolutionSeconds'', r.avg_resolution_seconds )) FROM unnest(category_details) as r)
            );
 END;
 ' LANGUAGE plpgsql;
