@@ -89,4 +89,36 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
 
     boolean existsByOperatorIdAndStatusIn(Long operatorId, List<TicketStatus> statuses);
     List<SupportTicket> findByStatusInAndReassignmentCountLessThan(List<TicketStatus> statuses, int maxReassignments);
+
+    // NOVA METODA: Pronađi sve zatvorene tikete za određenog operatera
+    List<SupportTicket> findByOperatorIdAndStatusOrderByClosingTimeDesc(Long operatorId, TicketStatus status);
+
+    // NOVA METODA: Pronađi sve zatvorene tikete za određenog operatera u zadatom vremenskom periodu
+    List<SupportTicket> findByOperatorIdAndStatusAndClosingTimeAfterOrderByClosingTimeDesc(Long operatorId, TicketStatus status, LocalDateTime after);
+
+    // NOVA METODA: Pronađi sve zatvorene tikete (za administratora)
+    List<SupportTicket> findByStatusOrderByClosingTimeDesc(TicketStatus status);
+    @Query("SELECT t FROM SupportTicket t " +
+            "JOIN t.order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "WHERE m.restaurant.id = :restaurantId " +
+            "GROUP BY t.id")
+    List<SupportTicket> findTicketsByRestaurantId(@Param("restaurantId") Long restaurantId);
+
+    @Query("SELECT new com.iis.foodflow.dto.request.CategoryTicketsDTO(pc.name, COUNT(t.id)) " +
+            "FROM SupportTicket t " +
+            "JOIN t.problemCategory pc " +
+            "JOIN t.order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "WHERE m.restaurant.id = :restaurantId " +
+            "GROUP BY pc.name " +
+            "ORDER BY COUNT(t.id) DESC")
+    List<CategoryTicketsDTO> countTicketsPerCategoryByRestaurant(@Param("restaurantId") Long restaurantId);
+
 }

@@ -814,3 +814,24 @@ export const downloadOperatorReport = async (operatorId) => {
     });
     return response.data;
 };
+
+// Funkcija za operatera (dohvata svoju istoriju) i admina (dohvata celu istoriju)
+export const getTicketHistory = async () => {
+  const response = await apiClient.get("/ticket-history");
+  return response.data;
+};
+
+// Funkcija za admina (dohvata istoriju specifičnog operatera)
+export const getOperatorTicketHistory = async (operatorId) => {
+  const response = await apiClient.get(`/ticket-history/operator/${operatorId}`);
+  return response.data;
+};
+
+export const getRestaurantAnalytics = async () => {
+  const response = await apiClient.get("/restaurant-analytics");
+  return response.data;
+};
+
+export const sendAnalyticsToManager = async (restaurantId) => {
+  await apiClient.post(`/restaurant-analytics/send-report/${restaurantId}`);
+};

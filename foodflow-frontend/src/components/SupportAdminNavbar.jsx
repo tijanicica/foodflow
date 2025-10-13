@@ -18,6 +18,7 @@ const adminNavLinks = [
   { href: "/support/analytics", label: "Analytics" },
   { href: "/support/agent-performance", label: "Agent Performance" },
   { href: "/support/agent-management", label: "Agent Management" },
+  { href: "/support/restaurant-analytics", label: "Restaurant Analytics" },
 ];
 
 // NavItem komponenta ostaje ista

@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
 import { Download } from "lucide-react";
 import { downloadOperatorReport } from "@/services/api";
+import { ListChecks } from "lucide-react"; // Novi import
+import { OperatorHistoryModal } from "@/components/modals/OperatorHistoryModal"; // Novi import
 
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -33,7 +35,7 @@ const AdminSection = ({ title, icon, action, children }) => (
     <div>{children}</div>
   </motion.div>
 );
-const AgentRow = ({ agent, onRemoveClick }) => {
+const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
   const handleDownload = async () => {
     try {
       const blob = await downloadOperatorReport(agent.id);
@@ -63,14 +65,21 @@ const AgentRow = ({ agent, onRemoveClick }) => {
         {agent.firstName} {agent.lastName}
       </span>
       <span className="text-gray-600">{agent.email}</span>
-      <div className="text-left md:text-right flex items-center justify-end">
+      <div className="text-left md:text-right flex gap-3 items-center justify-end">
+        <Button
+          variant="ghost"
+          className="text-brand-primary/70 hover:text-brand-primary p-1 h-auto text-base"
+          onClick={() => onViewHistoryClick(agent)} // Poziv nove funkcije
+        >
+          <ListChecks size={16} className="mr-2" />
+        </Button>
         {/* NOVO DUGME ZA IZVEŠTAJ */}
         <Button
           variant="ghost"
           className="text-brand-primary/70 hover:text-brand-primary p-1 h-auto text-base"
           onClick={handleDownload}
         >
-          <Download size={16} className="mr-2" /> Report
+          <Download size={16} className="mr-2" />
         </Button>
 
         <Button
@@ -78,7 +87,7 @@ const AgentRow = ({ agent, onRemoveClick }) => {
           className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto text-base"
           onClick={() => onRemoveClick(agent)} // Prosleđujemo ceo agent objekat
         >
-          <Trash2 size={16} className="mr-2" /> Remove
+          <Trash2 size={16} className="mr-2" />
         </Button>
       </div>
     </motion.div>
@@ -115,6 +124,9 @@ export const OperatorManagementPage = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedOperator, setSelectedOperator] = useState(null);
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -161,6 +173,11 @@ export const OperatorManagementPage = () => {
     }
   };
 
+  const handleViewHistoryClick = (operator) => {
+    setSelectedOperator(operator);
+    setIsHistoryModalOpen(true);
+  };
+
   return (
     <>
       <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
@@ -204,6 +221,7 @@ export const OperatorManagementPage = () => {
                         key={agent.id}
                         agent={agent}
                         onRemoveClick={handleRemoveClick}
+                        onViewHistoryClick={handleViewHistoryClick}
                       />
                     ))
                   ) : (
@@ -232,6 +250,11 @@ export const OperatorManagementPage = () => {
         title="Remove Operator"
         description={`Are you sure you want to remove ${agentToDelete?.firstName} ${agentToDelete?.lastName}? This action cannot be undone.`}
         isLoading={isDeleting}
+      />
+      <OperatorHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        operator={selectedOperator}
       />
     </>
   );

@@ -66,7 +66,9 @@ import { OperatorProfilePage } from "./pages/OperatorProfilePage";
 import { SupportChatPage } from "./pages/SupportChatPage.jsx";
 import { OperatorDashboardPage } from "./pages/OperatorDashboardPage.jsx";
 import { OperatorChatPage } from "./pages/OperatorChatPage.jsx";
-
+import { OperatorChatHistoryPage } from "./pages/OperatorChatHistory";
+import { AdminChatViewPage } from "./pages/AdminChatViewPage";
+import { RestaurantAnalyticsPage } from "./pages/RestaurantAnalyticsPage";
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
   // Rute za kupce (Customer) unutar CustomerLayout-a i AppLayout-a
@@ -188,12 +190,21 @@ const router = createBrowserRouter([
   { path: "/support/agent-management", element: <OperatorManagementPage /> },
   { path: "/support/profile", element: <SupportAdminProfilePage /> },
   { path: "/support/analytics", element: <SupportAnalyticsPage /> },
+  { path: "/support/chat-history/:ticketId", element: <AdminChatViewPage /> },
+  {
+    path: "/support/restaurant-analytics/",
+    element: <RestaurantAnalyticsPage />,
+  },
 
   // Support operator
   { path: "/operator/analytics", element: <OperatorAnalyticsPage /> },
   { path: "operator/profile", element: <OperatorProfilePage /> },
   { path: "/operator/dashboard", element: <OperatorDashboardPage /> },
   { path: "/operator/chat/:ticketId", element: <OperatorChatPage /> },
+  {
+    path: "/operator/chat-history",
+    element: <OperatorChatHistoryPage />,
+  },
 
   // Rute koje nemaju poseban layout (Login, Register)
   { path: "/", element: <LoginPage /> },

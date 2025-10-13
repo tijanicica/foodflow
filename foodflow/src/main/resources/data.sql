@@ -5,7 +5,7 @@
 -- KORISNICI
 -- Customer
 INSERT INTO customer (id, email, password, first_name, last_name, phone, role) VALUES
-    (1, 'tijanapetrovicns03@gmail.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
+    (1, 'customerpetar@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Petar', 'Petrović', '064111222', 'CUSTOMER');
 -- Vozaci
 INSERT INTO driver (id, email, password, first_name, last_name, phone, role, vehicle_type, status, rejection_count, latitude, longitude, timestamp, average_rating) VALUES
     (2, 'driver1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Jovan', 'Jovanović', '064333444', 'DRIVER', 'CAR', 'OFFLINE', 0, 44.8125, 20.4612, NOW(), 0.0);
@@ -48,7 +48,7 @@ INSERT INTO operator (id, support_admin_id, email, password, first_name, last_na
 INSERT INTO manager (id, email, password, first_name, last_name, phone, role) VALUES
     (4, 'manager1@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Olivia', 'Rhye', '064777888', 'MANAGER');
 INSERT INTO manager (id, email, password, first_name, last_name, phone, role) VALUES
-    (7, 'manager2@example.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Marko', 'Marković', '064111223', 'MANAGER');
+    (7, 'tijanapetrovicns03@gmail.com', '$2a$10$0yI8ODQXmkWAMc2kUMPR6.XOKTg229VuYywIRgZW0bix5r5CoDfCi', 'Marko', 'Marković', '064111223', 'MANAGER');
 
 
 -- Administrator

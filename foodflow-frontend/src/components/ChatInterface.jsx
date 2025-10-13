@@ -30,9 +30,10 @@ export const ChatInterface = ({ userRole }) => {
   const messagesContainerRef = useRef(null); // Ref za chat kontejner
 
   // Podaci iz tokena
-  const tokenPayload = jwtDecode(localStorage.getItem("jwtToken"));
+  const token = localStorage.getItem("jwtToken");
+  const tokenPayload = token ? jwtDecode(token) : {};
   const userId = tokenPayload.id;
-  const userName = tokenPayload.name;
+  const userName = tokenPayload.name || "Admin";
 
   // Glavni useEffect za dohvatanje podataka i WebSocket konekciju
   useEffect(() => {
@@ -120,8 +121,11 @@ export const ChatInterface = ({ userRole }) => {
 
           default: // Podrazumevano je CHAT
             setMessages((prev) => [...prev, receivedMessage]);
-            if (receivedMessage.senderId !== userId) {
-              setLastReadByOther(false);
+            if (
+              receivedMessage.type === "CHAT" && // Proveravaš 'type' ponovo, a već si u 'default' bloku
+              receivedMessage.senderId !== userId && // Proveravaš 'senderId' ponovo
+              userRole !== "support_administrator"
+            ) {
               if (document.visibilityState === "visible") {
                 const readReceipt = { ticketId, readerId: userId };
                 stompClientRef.current.send(
@@ -136,7 +140,10 @@ export const ChatInterface = ({ userRole }) => {
       });
 
       // Šaljemo "read" na početku samo ako je stranica već vidljiva
-      if (document.visibilityState === "visible") {
+      if (
+        document.visibilityState === "visible" &&
+        userRole !== "support_administrator"
+      ) {
         const initialReadReceipt = { ticketId, readerId: userId };
         client.send(
           "/app/chat.markAsRead",
@@ -215,11 +222,25 @@ export const ChatInterface = ({ userRole }) => {
   };
 
   const isChatDisabled =
-    ticket?.status === "RESOLVED" || ticket?.status === "CLOSED";
+    ticket?.status === "RESOLVED" ||
+    ticket?.status === "CLOSED" ||
+    userRole === "support_administrator"; // <-- KLJUČNI USLOV
+
+  const placeholderText = () => {
+    if (userRole === "support_administrator") {
+      return "Viewing as an administrator. Sending messages is disabled.";
+    }
+    if (ticket?.status === "RESOLVED" || ticket?.status === "CLOSED") {
+      return "This conversation has been closed.";
+    }
+    return "Type your message...";
+  };
 
   if (!ticket) {
     return (
-      <div className="text-center p-10">Loading ticket information...</div>
+      <div className="flex items-center justify-center h-full">
+        <p className="text-gray-500">Loading ticket details...</p>
+      </div>
     );
   }
 
@@ -228,10 +249,13 @@ export const ChatInterface = ({ userRole }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border flex flex-col h-full">
           <h2 className="text-xl font-bold mb-4 flex-shrink-0">
-            Chat with{" "}
-            {userRole === "customer"
-              ? ticket.operatorName
-              : ticket.customerName}
+            {userRole === "support_administrator"
+              ? `Viewing chat between ${ticket?.customerName} and ${ticket?.operatorName}`
+              : `Chat with ${
+                  userRole === "customer"
+                    ? ticket?.operatorName
+                    : ticket?.customerName
+                }`}
           </h2>
 
           <div
@@ -302,11 +326,7 @@ export const ChatInterface = ({ userRole }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               disabled={isChatDisabled}
-              placeholder={
-                isChatDisabled
-                  ? "This conversation has been closed."
-                  : "Type your message..."
-              }
+              placeholder={placeholderText()}
               className="flex-grow"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {

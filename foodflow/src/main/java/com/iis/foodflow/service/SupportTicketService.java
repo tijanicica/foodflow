@@ -17,6 +17,7 @@ import com.iis.foodflow.model.support.ProblemCategory;
 import com.iis.foodflow.model.support.SupportTicket;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Operator;
+import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -284,15 +285,22 @@ public class SupportTicketService {
         SupportTicket ticket = ticketRepository.findByIdWithAllDetails(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
+        boolean isAuthorized = false;
+
         if (principal instanceof Customer customer) {
-            if (!ticket.getOrder().getCustomer().getId().equals(customer.getId())) {
-                throw new SecurityException("Customer can only view their own tickets.");
+            if (ticket.getOrder().getCustomer().getId().equals(customer.getId())) {
+                isAuthorized = true;
             }
         } else if (principal instanceof Operator operator) {
-            if (!ticket.getOperator().getId().equals(operator.getId())) {
-                throw new SecurityException("Operator can only view their assigned tickets.");
+            if (ticket.getOperator() != null && ticket.getOperator().getId().equals(operator.getId())) {
+                isAuthorized = true;
             }
-        } else {
+        } else if (principal instanceof SupportAdministrator) {
+            // Administrator uvek ima pristup!
+            isAuthorized = true;
+        }
+
+        if (!isAuthorized) {
             throw new SecurityException("User does not have permission to view this ticket.");
         }
 
@@ -350,6 +358,46 @@ public class SupportTicketService {
         ticketRepository.save(ticket);
 
     }
+
+    public List<TicketSummaryDTO> getTicketHistory(UserDetails principal) {
+        List<SupportTicket> tickets;
+
+        if (principal instanceof Operator operator) {
+            // Operater vidi svoje zatvorene tikete od poslednjih 30 dana
+            LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+            tickets = ticketRepository.findByOperatorIdAndStatusAndClosingTimeAfterOrderByClosingTimeDesc(
+                    operator.getId(), TicketStatus.CLOSED, thirtyDaysAgo
+            );
+        } else if (principal instanceof SupportAdministrator) {
+            // Administrator vidi SVE zatvorene tikete ikada
+            tickets = ticketRepository.findByStatusOrderByClosingTimeDesc(TicketStatus.CLOSED);
+        } else {
+            // Ako neko drugi pokuša da pristupi, vrati praznu listu
+            return List.of();
+        }
+
+        // Konvertujemo u DTO za prikaz na frontendu
+        return tickets.stream().map(this::convertToSummaryDto).collect(Collectors.toList());
+    }
+    public List<TicketSummaryDTO> getTicketHistoryForOperator(Long operatorId) {
+        List<SupportTicket> tickets = ticketRepository.findByOperatorIdAndStatusOrderByClosingTimeDesc(
+                operatorId, TicketStatus.CLOSED
+        );
+        return tickets.stream().map(this::convertToSummaryDto).collect(Collectors.toList());
+    }
+
+    // Helper metoda za konverziju u DTO
+    private TicketSummaryDTO convertToSummaryDto(SupportTicket ticket) {
+        return new TicketSummaryDTO(
+                ticket.getId(),
+                ticket.getStatus(),
+                ticket.getProblemCategory().getName(),
+                ticket.getOrder().getCustomer().getFirstName() + " " + ticket.getOrder().getCustomer().getLastName(),
+                null // Priority score nije relevantan za zatvorene tikete
+        );
+    }
+
+
 
 
 

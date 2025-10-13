@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion"; // <-- NOVI IMPORT
 const operatorNavLinks = [
   { href: "/operator/dashboard", label: "Dashboard" },
   { href: "/operator/analytics", label: "Analytics" },
+  { href: "/operator/chat-history", label: "Chat History" },
 ];
 
 const NavItem = ({ href, label, onClick }) => {
