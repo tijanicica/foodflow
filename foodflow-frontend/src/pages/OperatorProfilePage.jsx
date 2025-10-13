@@ -15,6 +15,10 @@ import toast from "react-hot-toast";
 import { Edit, Save, X, User, KeyRound } from "lucide-react";
 import { ChangePasswordModalGeneric } from "@/components/modals/ChangePasswordModalGeneric";
 import { motion } from "framer-motion";
+import { updateOperatorStatus } from "@/services/api"; // <-- NOVI IMPORT
+import { Activity } from "lucide-react"; // <-- NOVI IMPORT
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // <-- NOVI IMPORT
+import { Label } from "@/components/ui/label"; // <-- NOVI IMPORT
 
 const ProfileSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -50,6 +54,45 @@ const ProfilePageSkeleton = () => (
     <Footer />
   </div>
 );
+
+const StatusSelector = ({ currentStatus, onStatusChange }) => {
+  const statuses = [
+    {
+      value: "ONLINE",
+      label: "Online",
+      description: "Available for new chats",
+    },
+    {
+      value: "ON_BREAK",
+      label: "On Break",
+      description: "Temporarily unavailable",
+    },
+    { value: "OFFLINE", label: "Offline", description: "Not working" },
+  ];
+
+  return (
+    <RadioGroup
+      defaultValue={currentStatus}
+      onValueChange={onStatusChange}
+      className="space-y-4"
+    >
+      {statuses.map((status) => (
+        <div key={status.value} className="flex items-center space-x-3">
+          <RadioGroupItem value={status.value} id={status.value} />
+          <Label
+            htmlFor={status.value}
+            className="font-semibold cursor-pointer"
+          >
+            {status.label}
+            <p className="font-normal text-sm text-gray-500">
+              {status.description}
+            </p>
+          </Label>
+        </div>
+      ))}
+    </RadioGroup>
+  );
+};
 
 export const OperatorProfilePage = () => {
   const [profile, setProfile] = useState(null);
@@ -127,6 +170,17 @@ export const OperatorProfilePage = () => {
       throw new Error(
         error.response?.data?.message || "Failed to change password."
       );
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      await updateOperatorStatus(newStatus);
+      // Ažuriraj lokalni state da se promena odmah prikaže
+      setProfile((prev) => ({ ...prev, status: newStatus }));
+      toast.success(`Status updated to ${newStatus.toLowerCase()}.`);
+    } catch (error) {
+      toast.error("Failed to update status.");
     }
   };
 
@@ -225,6 +279,15 @@ export const OperatorProfilePage = () => {
                     </Button>
                   </div>
                 )}
+              </div>
+            </ProfileSection>
+
+            <ProfileSection title="My Status" icon={<Activity size={24} />}>
+              <div className="border-t pt-6">
+                <StatusSelector
+                  currentStatus={profile.status}
+                  onStatusChange={handleStatusChange}
+                />
               </div>
             </ProfileSection>
 

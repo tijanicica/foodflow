@@ -835,3 +835,8 @@ export const getRestaurantAnalytics = async () => {
 export const sendAnalyticsToManager = async (restaurantId) => {
   await apiClient.post(`/restaurant-analytics/send-report/${restaurantId}`);
 };
+
+export const updateOperatorStatus = async (status) => {
+  // Šaljemo status kao JSON objekat
+  await apiClient.patch("/operator/profile/status", { status });
+};

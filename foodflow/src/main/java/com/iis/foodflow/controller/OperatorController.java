@@ -7,6 +7,7 @@ import com.iis.foodflow.dto.request.UpdatePhoneRequestDTO;
 import com.iis.foodflow.dto.response.OperatorAnalyticsDTO;
 import com.iis.foodflow.dto.response.OperatorProfileDTO;
 import com.iis.foodflow.dto.response.TicketSummaryDTO;
+import com.iis.foodflow.enums.OperatorStatus;
 import com.iis.foodflow.model.user.Operator;
 import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.OperatorRepository;
@@ -118,7 +119,38 @@ public class OperatorController {
         dto.setFirstName(operator.getFirstName());
         dto.setLastName(operator.getLastName());
         dto.setPhone(operator.getPhone());
+        dto.setStatus(operator.getStatus());
         return dto;
+    }
+
+    @PatchMapping("/profile/status")
+    @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
+    public ResponseEntity<Void> updateOperatorStatus(
+            @RequestBody Map<String, String> payload,
+            Authentication authentication
+    ) {
+        String newStatusStr = payload.get("status");
+        if (newStatusStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            OperatorStatus newStatus = OperatorStatus.valueOf(newStatusStr.toUpperCase());
+
+            Operator operator = (Operator) authentication.getPrincipal();
+
+            // Pronađi "svež" entitet da izbegneš detached/stale greške
+            Operator operatorToUpdate = operatorRepository.findById(operator.getId())
+                    .orElseThrow(() -> new UsernameNotFoundException("Operator not found"));
+
+            operatorToUpdate.setStatus(newStatus);
+            operatorRepository.save(operatorToUpdate);
+
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            // Ako je prosleđen nevalidan status (npr. "INVALID_STATUS")
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/dashboard")
