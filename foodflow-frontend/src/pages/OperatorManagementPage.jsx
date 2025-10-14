@@ -4,16 +4,32 @@ import React, { useState, useEffect, useCallback } from "react";
 import { SupportAdminNavbar } from "@/components/SupportAdminNavbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { getOperators, deleteOperator } from "@/services/api";
+import {
+  getOperators,
+  deleteOperator,
+  downloadOperatorReport,
+} from "@/services/api";
 import toast from "react-hot-toast";
 import { RegisterAgentModal } from "@/components/modals/RegisterOperatorModal";
-import { PlusCircle, Users, Trash2 } from "lucide-react";
+import { PlusCircle, Users, Trash2, Download, ListChecks } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
-import { Download } from "lucide-react";
-import { downloadOperatorReport } from "@/services/api";
-import { ListChecks } from "lucide-react"; // Novi import
-import { OperatorHistoryModal } from "@/components/modals/OperatorHistoryModal"; // Novi import
+import { OperatorHistoryModal } from "@/components/modals/OperatorHistoryModal";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -35,6 +51,7 @@ const AdminSection = ({ title, icon, action, children }) => (
     <div>{children}</div>
   </motion.div>
 );
+
 const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
   const handleDownload = async () => {
     try {
@@ -53,6 +70,7 @@ const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
       toast.error("Could not download report.");
     }
   };
+
   return (
     <motion.div
       layout
@@ -69,11 +87,11 @@ const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
         <Button
           variant="ghost"
           className="text-brand-primary/70 hover:text-brand-primary p-1 h-auto text-base"
-          onClick={() => onViewHistoryClick(agent)} // Poziv nove funkcije
+          onClick={() => onViewHistoryClick(agent)}
         >
           <ListChecks size={16} className="mr-2" />
         </Button>
-        {/* NOVO DUGME ZA IZVEŠTAJ */}
+
         <Button
           variant="ghost"
           className="text-brand-primary/70 hover:text-brand-primary p-1 h-auto text-base"
@@ -85,7 +103,7 @@ const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
         <Button
           variant="ghost"
           className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto text-base"
-          onClick={() => onRemoveClick(agent)} // Prosleđujemo ceo agent objekat
+          onClick={() => onRemoveClick(agent)}
         >
           <Trash2 size={16} className="mr-2" />
         </Button>
@@ -120,13 +138,15 @@ export const OperatorManagementPage = () => {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedOperator, setSelectedOperator] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -144,9 +164,7 @@ export const OperatorManagementPage = () => {
     fetchAgents();
   }, []);
 
-  const handleRegistrationSuccess = () => {
-    fetchAgents();
-  };
+  const handleRegistrationSuccess = () => fetchAgents();
 
   const handleRemoveClick = (agent) => {
     setAgentToDelete(agent);
@@ -155,14 +173,12 @@ export const OperatorManagementPage = () => {
 
   const handleConfirmDelete = async () => {
     if (!agentToDelete) return;
-
     setIsDeleting(true);
     try {
       await deleteOperator(agentToDelete.id);
       toast.success(
         `Operator ${agentToDelete.firstName} ${agentToDelete.lastName} has been removed.`
       );
-
       setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
       setIsConfirmOpen(false);
       setAgentToDelete(null);
@@ -177,6 +193,13 @@ export const OperatorManagementPage = () => {
     setSelectedOperator(operator);
     setIsHistoryModalOpen(true);
   };
+
+  // Pagination logic
+  const totalPages = Math.ceil(agents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentAgents = agents.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => setCurrentPage(1), [itemsPerPage]);
 
   return (
     <>
@@ -197,7 +220,33 @@ export const OperatorManagementPage = () => {
                 </Button>
               }
             >
-              {/* Zaglavlje liste unutar kartice */}
+              {/* Kontrola prikaza */}
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-gray-600 text-sm">
+                  Showing {startIndex + 1}–
+                  {Math.min(startIndex + itemsPerPage, agents.length)} of{" "}
+                  {agents.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 text-sm">Items per page:</span>
+                  <Select
+                    onValueChange={(value) => setItemsPerPage(Number(value))}
+                    defaultValue={String(itemsPerPage)}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="15">15</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Zaglavlje liste */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-3 border-b px-2 mt-4">
                 <span className="font-semibold text-sm text-gray-500 uppercase tracking-wider">
                   Agent Name
@@ -215,8 +264,8 @@ export const OperatorManagementPage = () => {
                 <AnimatePresence>
                   {loading ? (
                     [...Array(3)].map((_, i) => <AgentRowSkeleton key={i} />)
-                  ) : agents.length > 0 ? (
-                    agents.map((agent) => (
+                  ) : currentAgents.length > 0 ? (
+                    currentAgents.map((agent) => (
                       <AgentRow
                         key={agent.id}
                         agent={agent}
@@ -231,6 +280,42 @@ export const OperatorManagementPage = () => {
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Paginacija */}
+              {!loading && agents.length > 0 && (
+                <Pagination className="mt-8">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(p - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                      />
+                    </PaginationItem>
+
+                    {[...Array(totalPages)].map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={currentPage === i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(p + 1, totalPages))
+                        }
+                        disabled={currentPage === totalPages}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
             </AdminSection>
           </div>
         </main>

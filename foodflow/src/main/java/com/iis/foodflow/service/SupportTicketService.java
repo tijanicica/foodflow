@@ -197,7 +197,7 @@ public class SupportTicketService {
 
     private double calculateScoreForOperator(Operator operator, ProblemCategory ticketCategory) {
         // Definišemo težinske faktore. Ovi brojevi se mogu eksterno konfigurisati!
-        // (Vidi predlog za diplomski rad dole)
+
         double specializationWeight = 40.0;
         double ratingWeight = 25.0;
         double resolutionTimeWeight = 20.0;

@@ -3,12 +3,30 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { SupportAdminNavbar } from "@/components/SupportAdminNavbar";
 import { Footer } from "@/components/Footer";
-import { getOperatorRankings } from "@/services/api"; // <-- Novi import
+import { getOperatorRankings } from "@/services/api";
 import toast from "react-hot-toast";
-import { BarChart, Star, Users, CheckSquare } from "lucide-react";
+import { BarChart, Star, CheckSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Pomoćna komponenta za sekcije, ista kao pre
+// -----------------------------------
+// Pomoćne komponente
+// -----------------------------------
+
 const AdminSection = ({ title, icon, children }) => (
   <motion.div
     className="bg-white rounded-2xl shadow-sm border p-6 sm:p-8"
@@ -27,7 +45,6 @@ const AdminSection = ({ title, icon, children }) => (
   </motion.div>
 );
 
-// Pomoćna komponenta za prikaz reda u tabeli sa novim podacima
 const PerformanceRow = ({ rank, agent }) => (
   <motion.div
     layout
@@ -64,13 +81,12 @@ const EmptyState = () => (
       No Performance Data
     </h3>
     <p className="mt-1 text-gray-500">
-      Performance data will be shown here once agents start resolving and
-      getting rated on support tickets.
+      Performance data will appear once agents start resolving and getting rated
+      on tickets.
     </p>
   </div>
 );
 
-// Skeleton za učitavanje
 const PerformanceRowSkeleton = () => (
   <div className="grid grid-cols-12 gap-4 py-4 px-2 items-center animate-pulse">
     <div className="col-span-1 h-5 bg-gray-200 rounded w-1/2 mx-auto"></div>
@@ -80,9 +96,15 @@ const PerformanceRowSkeleton = () => (
   </div>
 );
 
+// -----------------------------------
+// Glavna komponenta
+// -----------------------------------
+
 export const AgentPerformancePage = () => {
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const fetchRankings = useCallback(async () => {
     try {
@@ -100,6 +122,15 @@ export const AgentPerformancePage = () => {
     fetchRankings();
   }, [fetchRankings]);
 
+  const totalPages = Math.ceil(rankings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentAgents = rankings.slice(startIndex, startIndex + itemsPerPage);
+
+  // Ako se broj elemenata po strani promeni, resetuj na prvu stranu
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [itemsPerPage]);
+
   return (
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
       <SupportAdminNavbar />
@@ -107,7 +138,33 @@ export const AgentPerformancePage = () => {
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
         <div className="max-w-5xl mx-auto">
           <AdminSection title="Agent Performance" icon={<BarChart size={24} />}>
-            {/* Zaglavlje liste */}
+            {/* Kontrola prikaza */}
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-gray-600 text-sm">
+                Showing {startIndex + 1}–
+                {Math.min(startIndex + itemsPerPage, rankings.length)} of{" "}
+                {rankings.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 text-sm">Items per page:</span>
+                <Select
+                  onValueChange={(value) => setItemsPerPage(Number(value))}
+                  defaultValue={String(itemsPerPage)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="15">15</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Tabela zaglavlje */}
             <div className="grid grid-cols-12 gap-4 pb-3 border-b px-2 mt-4">
               <span className="col-span-1 text-center font-semibold text-sm text-gray-500 uppercase tracking-wider">
                 Rank
@@ -119,22 +176,22 @@ export const AgentPerformancePage = () => {
                 Average Rating
               </span>
               <span className="col-span-4 font-semibold text-sm text-gray-500 uppercase tracking-wider">
-                Resolved and rated Tickets
+                Resolved and Rated Tickets
               </span>
             </div>
 
-            {/* Lista rangiranja */}
+            {/* Lista agenata */}
             <div className="mt-2 divide-y divide-gray-100">
               <AnimatePresence>
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <PerformanceRowSkeleton key={i} />
                   ))
-                ) : rankings.length > 0 ? (
-                  rankings.map((agent, index) => (
+                ) : currentAgents.length > 0 ? (
+                  currentAgents.map((agent, index) => (
                     <PerformanceRow
                       key={agent.operatorId}
-                      rank={index + 1}
+                      rank={startIndex + index + 1}
                       agent={agent}
                     />
                   ))
@@ -145,6 +202,40 @@ export const AgentPerformancePage = () => {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Paginacija */}
+            {!loading && rankings.length > 0 && (
+              <Pagination className="mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage === 1}
+                    />
+                  </PaginationItem>
+
+                  {[...Array(totalPages)].map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={currentPage === i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(p + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </AdminSection>
         </div>
       </main>
