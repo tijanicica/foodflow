@@ -188,13 +188,40 @@ export const SupportAnalyticsPage = () => {
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
       <SupportAdminNavbar />
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
-        <div className="mb-8 flex justify-end">
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              Support Analytics
+            </h1>
+            {dateRange.from || dateRange.to ? (
+              <p className="text-sm text-gray-600">
+                Period:{" "}
+                {dateRange.from
+                  ? new Date(dateRange.from).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "Start"}{" "}
+                -{" "}
+                {dateRange.to
+                  ? new Date(dateRange.to).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "End"}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">Period: All time</p>
+            )}
+          </div>
           <DateRangePicker onUpdate={handleDateUpdate} />
         </div>
         {/* Key metric cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <MetricCard
-            title="Total Tickets (Period)" // <-- Promenjen naslov
+            title="Total Tickets (Period)"
             value={analytics.totalTickets}
             icon={<Activity size={24} />}
           />

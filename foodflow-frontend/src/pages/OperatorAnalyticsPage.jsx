@@ -72,6 +72,10 @@ export const OperatorAnalyticsPage = () => {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
+        console.log(
+          "OperatorAnalyticsPage: Šaljem dateRange u API poziv:",
+          dateRange
+        );
         const data = await getOperatorAnalytics(dateRange);
         setAnalytics(data);
       } catch (error) {
@@ -84,6 +88,7 @@ export const OperatorAnalyticsPage = () => {
   }, [dateRange]);
 
   const handleDateUpdate = (range) => {
+    console.log("OperatorAnalyticsPage: DateRangePicker je vratio:", range);
     setDateRange(range || { from: undefined, to: undefined });
   };
 
@@ -109,7 +114,34 @@ export const OperatorAnalyticsPage = () => {
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
       <OperatorNavbar />
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
-        <div className="mb-8 flex justify-end">
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              My Performance Analytics
+            </h1>
+            {dateRange.from || dateRange.to ? (
+              <p className="text-sm text-gray-600">
+                Period:{" "}
+                {dateRange.from
+                  ? new Date(dateRange.from).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "Start"}{" "}
+                -{" "}
+                {dateRange.to
+                  ? new Date(dateRange.to).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "End"}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">Period: All time</p>
+            )}
+          </div>
           <DateRangePicker onUpdate={handleDateUpdate} />
         </div>
         {/* Kartice sa ključnim metrikama */}
