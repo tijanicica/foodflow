@@ -220,7 +220,7 @@ public class SupportTicketService {
 
         // --- 3. Bodovi za prosečno vreme rešavanja (0 do 20 poena) ---
         // Što je vreme manje, to je skor veći.
-        Double avgTimeSeconds = ticketRepository.getAverageResolutionTimeInSecondsByOperator(operator.getId());
+        Double avgTimeSeconds = ticketRepository.getAverageResolutionTimeInSecondsByOperatorForPdf(operator.getId());
         if (avgTimeSeconds == null) {
             avgTimeSeconds = 3600.0; // Default 1h ako nema rešenih tiketa
         }

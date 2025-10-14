@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class OperatorAnalyticsDTO {
-    private Long totalTicketsToday;
+    private Long totalTicketsInPeriod;
     private Long totalTicketsAllTime;
     private Double averageRating;
     private String averageResolutionTime;

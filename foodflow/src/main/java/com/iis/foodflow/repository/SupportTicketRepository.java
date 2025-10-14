@@ -16,38 +16,55 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
 
     @Query("SELECT new com.iis.foodflow.dto.request.CategoryTicketsDTO(pc.name, COUNT(t.id)) " +
             "FROM SupportTicket t JOIN t.problemCategory pc " +
+            "WHERE t.status IN (com.iis.foodflow.enums.TicketStatus.RESOLVED, com.iis.foodflow.enums.TicketStatus.CLOSED) " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.closingTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.closingTime <= :endDate) " +
             "GROUP BY pc.name ORDER BY COUNT(t.id) DESC")
-    List<CategoryTicketsDTO> countTicketsPerCategory();
+    List<CategoryTicketsDTO> countTicketsPerCategory(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-    @Query(
-            value = "SELECT AVG(EXTRACT(EPOCH FROM (closing_time - creation_time))) " +
-                    "FROM support_ticket t WHERE t.status = 'CLOSED'",
-            nativeQuery = true
-    )
-    Double getAverageResolutionTimeInSeconds();
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (closing_time - creation_time))) " +
+            "FROM support_ticket t WHERE t.status IN ('RESOLVED', 'CLOSED') " +
+            "AND t.closing_time >= COALESCE(:startDate, '1970-01-01'::timestamp) " +
+            "AND t.closing_time <= COALESCE(:endDate, '9999-12-31'::timestamp)",
+            nativeQuery = true)
+    Double getAverageResolutionTimeInSeconds(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
 
-    @Query("SELECT COUNT(t) FROM SupportTicket t WHERE t.operator.id = :operatorId AND t.status = 'CLOSED'")
-    Long countTotalResolvedTicketsByOperator(@Param("operatorId") Long operatorId);
+    @Query("SELECT COUNT(t) FROM SupportTicket t " +
+            "WHERE t.operator.id = :operatorId AND t.status IN (com.iis.foodflow.enums.TicketStatus.RESOLVED, com.iis.foodflow.enums.TicketStatus.CLOSED) " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.closingTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.closingTime <= :endDate)")
+    Long countResolvedTicketsByOperator(@Param("operatorId") Long operatorId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT COUNT(t) FROM SupportTicket t WHERE t.operator.id = :operatorId AND t.status = 'CLOSED' AND t.closingTime >= :startOfDay")
     Long countResolvedTicketsByOperatorToday(@Param("operatorId") Long operatorId, @Param("startOfDay") LocalDateTime startOfDay);
 
 
     // ovde cemo iskoristiti indeks da ubrzamo pretragu, posto ce u realnom sistemu korisnik imati dosta vise resenih tiketa
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (closing_time - creation_time))) " +
+            "FROM support_ticket t " +
+            "WHERE t.operator_id = :operatorId AND t.status IN ('RESOLVED', 'CLOSED') " +
+            "AND t.closing_time >= COALESCE(:startDate, '1970-01-01'::timestamp) " +
+            "AND t.closing_time <= COALESCE(:endDate, '9999-12-31'::timestamp)",
+            nativeQuery = true)
+    Double getAverageResolutionTimeInSecondsByOperator(@Param("operatorId") Long operatorId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
     @Query(
             value = "SELECT AVG(EXTRACT(EPOCH FROM (closing_time - creation_time))) " +
                     "FROM support_ticket t " +
                     "WHERE t.operator_id = :operatorId AND t.status = 'CLOSED'",
             nativeQuery = true
     )
-    Double getAverageResolutionTimeInSecondsByOperator(@Param("operatorId") Long operatorId);
+    Double getAverageResolutionTimeInSecondsByOperatorForPdf(@Param("operatorId") Long operatorId);
+
 
     @Query("SELECT new com.iis.foodflow.dto.request.CategoryTicketsDTO(pc.name, COUNT(t.id)) " +
             "FROM SupportTicket t JOIN t.problemCategory pc " +
-            "WHERE t.operator.id = :operatorId AND t.status = 'CLOSED' " +
+            "WHERE t.operator.id = :operatorId AND t.status IN (com.iis.foodflow.enums.TicketStatus.RESOLVED, com.iis.foodflow.enums.TicketStatus.CLOSED) " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.closingTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.closingTime <= :endDate) " +
             "GROUP BY pc.name ORDER BY COUNT(t.id) DESC")
-    List<CategoryTicketsDTO> countTicketsPerCategoryByOperator(@Param("operatorId") Long operatorId);
+    List<CategoryTicketsDTO> countTicketsPerCategoryByOperator(@Param("operatorId") Long operatorId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     // PLSQL FUNKCIJA SE KORISTI DRUGI ZADATAK!
         @Query(value = "SELECT " +
@@ -122,19 +139,21 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "ORDER BY COUNT(t.id) DESC")
     List<CategoryTicketsDTO> countTicketsPerCategoryByRestaurant(@Param("restaurantId") Long restaurantId);
 
-    @Query(
-            value = """
-        SELECT 
-            pc.name AS category_name,
-            CAST(AVG(EXTRACT(EPOCH FROM (t.closing_time - t.creation_time))) AS TEXT) AS avg_resolution_time
-        FROM support_ticket t
-        JOIN problem_category pc ON t.problem_category_id = pc.id
-        WHERE t.status = 'CLOSED'
-        GROUP BY pc.name
-    """,
-            nativeQuery = true
-    )
-    List<CategoryPerformanceDTO> getAverageTimePerCategory();
+    @Query(value = """
+            SELECT pc.name AS category_name, CAST(AVG(EXTRACT(EPOCH FROM (t.closing_time - t.creation_time))) AS TEXT) AS avg_resolution_time
+            FROM support_ticket t
+            JOIN problem_category pc ON t.problem_category_id = pc.id
+            WHERE t.status IN ('RESOLVED', 'CLOSED')
+            AND t.closing_time >= COALESCE(:startDate, '1970-01-01'::timestamp)
+            AND t.closing_time <= COALESCE(:endDate, '9999-12-31'::timestamp)
+            GROUP BY pc.name
+            """, nativeQuery = true)
+    List<CategoryPerformanceDTO> getAverageTimePerCategory(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(t) FROM SupportTicket t WHERE t.status IN (com.iis.foodflow.enums.TicketStatus.RESOLVED, com.iis.foodflow.enums.TicketStatus.CLOSED) " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.closingTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.closingTime <= :endDate)")
+    Long countTotalTickets(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
 
 }

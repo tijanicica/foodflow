@@ -7,6 +7,7 @@ import com.iis.foodflow.repository.SupportTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -15,22 +16,21 @@ public class SupportAnalyticsService {
     private final SupportTicketRepository ticketRepository;
     private final OperatorRatingRepository ratingRepository;
 
-    public SupportAnalyticsDTO getAnalytics() {
-        Long totalTickets = ticketRepository.count();
-        Double overallAverageRating = ratingRepository.getOverallAverageRating();
-        Double avgTimeInSeconds = ticketRepository.getAverageResolutionTimeInSeconds();
+    public SupportAnalyticsDTO getAnalytics(LocalDateTime startDate, LocalDateTime endDate) {
+        Long totalTickets = ticketRepository.countTotalTickets(startDate, endDate);
+        Double overallAverageRating = ratingRepository.getOverallAverageRating(); // Ocena je uvek za sve vreme
+        Double avgTimeInSeconds = ticketRepository.getAverageResolutionTimeInSeconds(startDate, endDate);
 
         String formattedAvgTime = formatSeconds(avgTimeInSeconds);
-        List<CategoryPerformanceDTO> performancePerCategory = ticketRepository.getAverageTimePerCategory();
+        List<CategoryPerformanceDTO> performancePerCategory = ticketRepository.getAverageTimePerCategory(startDate, endDate);
 
-        // Formatiraj sekunde u čitljiv format
         performancePerCategory.forEach(p -> p.setAverageResolutionTime(formatSeconds(Double.parseDouble(p.getAverageResolutionTime()))));
 
         return new SupportAnalyticsDTO(
                 totalTickets,
                 overallAverageRating,
                 formattedAvgTime,
-                ticketRepository.countTicketsPerCategory(),
+                ticketRepository.countTicketsPerCategory(startDate, endDate),
                 performancePerCategory
         );
     }

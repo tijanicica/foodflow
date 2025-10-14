@@ -15,6 +15,7 @@ import com.iis.foodflow.service.OperatorAnalyticsService;
 import com.iis.foodflow.service.SupportTicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -37,9 +40,15 @@ public class OperatorController {
 
     @GetMapping("/analytics")
     @PreAuthorize("hasAuthority('ROLE_OPERATOR')")
-    public ResponseEntity<OperatorAnalyticsDTO> getMyAnalytics(Authentication authentication) {
+    public ResponseEntity<OperatorAnalyticsDTO> getMyAnalytics(Authentication authentication,
+                                                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+                                                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         Operator operator = (Operator) authentication.getPrincipal();
-        return ResponseEntity.ok(analyticsService.getAnalyticsForOperator(operator.getId()));
+        // Ako je endDate prosleđen, podesi ga na kraj dana
+        if (endDate != null) {
+            endDate = endDate.with(LocalTime.MAX);
+        }
+        return ResponseEntity.ok(analyticsService.getAnalyticsForOperator(operator.getId(), startDate, endDate));
     }
 
 

@@ -18,6 +18,8 @@ import {
   Cell,
 } from "recharts";
 
+import { DateRangePicker } from "@/components/DateRangePicker";
+
 // Brand-aligned color palette for charts
 const BRAND_COLORS = [
   "#4F4A40", // brand-primary
@@ -134,11 +136,20 @@ const CustomPieLabel = ({
 export const SupportAnalyticsPage = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({
+    from: undefined,
+    to: undefined,
+  });
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setLoading(true);
       try {
-        const data = await getSupportAnalytics();
+        console.log(
+          "SupportAnalyticsPage: Šaljem dateRange u API poziv:",
+          dateRange
+        );
+        const data = await getSupportAnalytics(dateRange);
         setAnalytics(data);
       } catch (error) {
         toast.error("Failed to load analytics data.");
@@ -147,7 +158,12 @@ export const SupportAnalyticsPage = () => {
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [dateRange]);
+
+  const handleDateUpdate = (range) => {
+    console.log("SupportAnalyticsPage: DateRangePicker je vratio:", range);
+    setDateRange(range || { from: undefined, to: undefined });
+  };
 
   if (loading) {
     return (
@@ -172,10 +188,13 @@ export const SupportAnalyticsPage = () => {
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
       <SupportAdminNavbar />
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
+        <div className="mb-8 flex justify-end">
+          <DateRangePicker onUpdate={handleDateUpdate} />
+        </div>
         {/* Key metric cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <MetricCard
-            title="Total Tickets"
+            title="Total Tickets (Period)" // <-- Promenjen naslov
             value={analytics.totalTickets}
             icon={<Activity size={24} />}
           />

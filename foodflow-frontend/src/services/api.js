@@ -1,7 +1,13 @@
 // src/services/api.js
 import axios from 'axios';
+import { format } from 'date-fns';
 import { jwtDecode } from 'jwt-decode'; // Dodajte ovaj import na vrh fajla
 
+const formatForBackend = (date) => {
+  if (!date) return null;
+  // Formatiramo u "yyyy-MM-dd'T'HH:mm:ss", format koji Spring Boot LocalDateTime parser obožava
+  return format(date, "yyyy-MM-dd'T'HH:mm:ss");
+};
 
 // Osnovna konfiguracija za axios
 const apiClient = axios.create({
@@ -718,14 +724,43 @@ export const getManagerLiveTracking = async () => {
     return response.data;
 };
 
-export const getSupportAnalytics = async () => {
+export const getSupportAnalytics = async (dateRange) => {
+  const params = new URLSearchParams();
+  
+  if (dateRange) {
+    if (dateRange.from) {
+      params.append('startDate', dateRange.from.toISOString());
+    }
+    if (dateRange.to) {
+      const endDate = new Date(dateRange.to);
+      endDate.setHours(23, 59, 59, 999);
+      params.append('endDate', endDate.toISOString());
+    }
+  }
+
+  const queryString = params.toString();
+  console.log("Slanje upita na /analytics/support sa query stringom:", queryString);
     
-    const response = await apiClient.get('/support-analytics'); 
+    const response = await apiClient.get(`/support-analytics?${params.toString()}`); 
     return response.data;
 };
 
-export const getOperatorAnalytics = async () => {
-    const response = await apiClient.get('/operator/analytics'); 
+export const getOperatorAnalytics = async (dateRange) => {
+      const params = new URLSearchParams();
+ if (dateRange?.from) {
+    // Postavljamo vreme na početak dana
+    const startDate = new Date(dateRange.from);
+    startDate.setHours(0, 0, 0, 0);
+    params.append('startDate', formatForBackend(startDate));
+  }
+  
+  if (dateRange?.to) {
+    // Postavljamo vreme na kraj dana da bi uključili ceo taj dan u pretragu
+    const endDate = new Date(dateRange.to);
+    endDate.setHours(23, 59, 59, 999);
+    params.append('endDate', formatForBackend(endDate));
+  }
+    const response = await apiClient.get(`/operator/analytics?${params.toString()}`); 
     return response.data;
 };
 

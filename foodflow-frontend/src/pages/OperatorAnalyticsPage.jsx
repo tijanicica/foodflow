@@ -23,6 +23,8 @@ import {
   Cell,
 } from "recharts";
 
+import { DateRangePicker } from "@/components/DateRangePicker";
+
 const BRAND_COLORS = [
   "#4F4A40",
   "#C8B48C",
@@ -61,11 +63,16 @@ const AnalyticsSkeleton = () => (
 export const OperatorAnalyticsPage = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({
+    from: undefined,
+    to: undefined,
+  });
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setLoading(true);
       try {
-        const data = await getOperatorAnalytics();
+        const data = await getOperatorAnalytics(dateRange);
         setAnalytics(data);
       } catch (error) {
         toast.error("Failed to load your analytics data.");
@@ -74,7 +81,11 @@ export const OperatorAnalyticsPage = () => {
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [dateRange]);
+
+  const handleDateUpdate = (range) => {
+    setDateRange(range || { from: undefined, to: undefined });
+  };
 
   if (loading) {
     return (
@@ -98,11 +109,14 @@ export const OperatorAnalyticsPage = () => {
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
       <OperatorNavbar />
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
+        <div className="mb-8 flex justify-end">
+          <DateRangePicker onUpdate={handleDateUpdate} />
+        </div>
         {/* Kartice sa ključnim metrikama */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
-            title="Resolved Today"
-            value={analytics.totalTicketsToday}
+            title="Resolved in Period"
+            value={analytics.totalTicketsInPeriod}
             icon={<Calendar size={24} />}
           />
           <MetricCard

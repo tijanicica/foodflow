@@ -19,20 +19,18 @@ public class OperatorAnalyticsService {
     //private final OperatorRatingRepository ratingRepository;
     private final OperatorRepository operatorRepository;
 
-    public OperatorAnalyticsDTO getAnalyticsForOperator(Long operatorId) {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-
+    public OperatorAnalyticsDTO getAnalyticsForOperator(Long operatorId, LocalDateTime startDate, LocalDateTime endDate) {
         Operator operator = operatorRepository.findById(operatorId)
                 .orElseThrow(() -> new RuntimeException("Operator not found with ID: " + operatorId));
 
-        Double avgTimeInSeconds = ticketRepository.getAverageResolutionTimeInSecondsByOperator(operatorId);
+        Double avgTimeInSeconds = ticketRepository.getAverageResolutionTimeInSecondsByOperator(operatorId, startDate, endDate);
 
         return OperatorAnalyticsDTO.builder()
-                .totalTicketsToday(ticketRepository.countResolvedTicketsByOperatorToday(operatorId, startOfDay))
-                .totalTicketsAllTime(ticketRepository.countTotalResolvedTicketsByOperator(operatorId))
-                .averageRating(operator.getAverageRating())
+                .totalTicketsInPeriod(ticketRepository.countResolvedTicketsByOperator(operatorId, startDate, endDate))
+                .totalTicketsAllTime(ticketRepository.countResolvedTicketsByOperator(operatorId, null, null)) // Uvek računamo all time
+                .averageRating(operator.getAverageRating()) // Prosecna ocena je uvek za sve vreme
                 .averageResolutionTime(formatSeconds(avgTimeInSeconds))
-                .ticketsPerCategory(ticketRepository.countTicketsPerCategoryByOperator(operatorId))
+                .ticketsPerCategory(ticketRepository.countTicketsPerCategoryByOperator(operatorId, startDate, endDate))
                 .build();
     }
 
