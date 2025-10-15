@@ -72,13 +72,15 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
                 "  t.status AS status, " +
                 "  pc.name AS problemCategoryName, " +
                 "  c.first_name || ' ' || c.last_name AS customerName, " +
-                "  calculate_ticket_priority_score(t.id) AS priorityScore " + // plsql funkcija
+                "  calculate_ticket_priority_score(t.id) AS priorityScore, " + // plsql funkcija
+                "    t.creation_time as creationTime, " +
+                "  t.assigned_at as assignedAt " +
                 "FROM support_ticket t " +
                 "JOIN problem_category pc ON t.problem_category_id = pc.id " +
                 "JOIN orders o ON t.order_id = o.id " +
                 "JOIN customer c ON o.customer_id = c.id " +
                 "WHERE t.operator_id = :operatorId AND t.status IN ('OPEN', 'IN_PROGRESS') " +
-                "ORDER BY priorityScore DESC", // sortiraj po prioritetu
+                "ORDER BY priorityScore DESC, t.creation_time ASC", // sortiraj po prioritetu
                 nativeQuery = true)
         List<TicketSummaryProjection> findTicketSummariesForOperatorDashboard(@Param("operatorId") Long operatorId);
 
@@ -89,6 +91,8 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             String getProblemCategoryName();
             String getCustomerName();
             Integer getPriorityScore(); // Tip je Integer
+            LocalDateTime getCreationTime();
+            LocalDateTime getAssignedAt();
         }
 
     @Query("SELECT t FROM SupportTicket t " +

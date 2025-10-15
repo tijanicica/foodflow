@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MessageSquare, PlayCircle, MessageCircleDashed } from "lucide-react";
 import { CircleAlert } from "lucide-react";
+import CountdownTimer from "@/components/CountdownTimer";
 
 const TicketCard = ({ ticket }) => {
+  console.log("Podaci za tiket:", ticket);
+  const isNewTicket = ticket.status === "OPEN";
   const isActiveChat = ticket.status === "IN_PROGRESS";
   const getPriorityColor = (score) => {
     if (score > 8) return "text-red-700";
@@ -16,33 +19,46 @@ const TicketCard = ({ ticket }) => {
     return "text-green-500";
   };
   return (
-    <div className="bg-white p-4 rounded-lg gap-10 shadow-sm border flex justify-between items-center">
-      <div>
-        <div className="flex items-center justify-between gap-9">
-          <p className="font-bold">
-            Ticket #{ticket.id} - {ticket.customerName}
-          </p>
-          <div
-            className={`flex items-center gap-5 font-bold ${getPriorityColor(
-              ticket.priorityScore
-            )}`}
-          >
-            <CircleAlert size={16} />
-            {/* <span>{ticket.priorityScore}</span> */}
-          </div>
-          <p className="text-sm text-gray-500">{ticket.problemCategoryName}</p>
-        </div>
+    <div className="bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center gap-4 min-h-[80px]">
+      {/* 1. DEO: Informacije o tiketu (zauzima sav preostali prostor) */}
+      <div className="flex-grow">
+        <p className="font-bold">
+          Ticket #{ticket.id} - {ticket.customerName}
+        </p>
+        <p className="text-sm text-gray-500">{ticket.problemCategoryName}</p>
       </div>
-      <Button asChild>
-        <Link to={`/operator/chat/${ticket.id}`}>
-          {isActiveChat ? (
-            <MessageSquare className="mr-2 h-4 w-4" />
-          ) : (
-            <PlayCircle className="mr-2 h-4 w-4" />
-          )}
-          {isActiveChat ? "Continue Chat" : "Start Chat"}
-        </Link>
-      </Button>
+
+      {/* 2. DEO: Prioritet i Tajmer (fiksna širina) */}
+      <div className="flex items-center gap-6 flex-shrink-0">
+        <div
+          className={`flex items-center gap-2 font-semibold text-sm ${getPriorityColor(
+            ticket.priorityScore
+          )}`}
+          title={`Priority Score: ${ticket.priorityScore}`}
+        >
+          <CircleAlert size={18} />
+        </div>
+
+        {/* Uslovno renderovanje tajmera SAMO za nove tikete */}
+        {/* Ovo je ključni deo koji ispravno prikazuje tajmer */}
+        {isNewTicket && ticket.assignedAt && (
+          <CountdownTimer assignedAt={ticket.assignedAt} />
+        )}
+      </div>
+
+      {/* 3. DEO: Dugme (fiksna širina) */}
+      <div className="flex-shrink-0">
+        <Button asChild>
+          <Link to={`/operator/chat/${ticket.id}`}>
+            {isActiveChat ? (
+              <MessageSquare className="mr-2 h-4 w-4" />
+            ) : (
+              <PlayCircle className="mr-2 h-4 w-4" />
+            )}
+            {isActiveChat ? "Continue Chat" : "Start Chat"}
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 };

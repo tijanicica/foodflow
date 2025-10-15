@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,12 +17,8 @@ public class TicketSummaryDTO {
     private String problemCategoryName;
     private String customerName;
     private Integer priorityScore;
+    private LocalDateTime creationTime;
+    private LocalDateTime assignedAt;
 
-//    public TicketSummaryDTO(SupportTicket ticket) {
-//        this.id = ticket.getId();
-//        this.status = ticket.getStatus();
-//        this.problemCategoryName = ticket.getProblemCategory().getName();
-//        this.customerName = ticket.getOrder().getCustomer().getFirstName() + " " + ticket.getOrder().getCustomer().getLastName();
-//
-//    }
+
 }

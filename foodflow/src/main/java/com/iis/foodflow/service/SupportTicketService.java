@@ -80,6 +80,7 @@ public class SupportTicketService {
         ticket.setDescription(request.getDescription());
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setCreationTime(LocalDateTime.now());
+        ticket.setAssignedAt(LocalDateTime.now());
 
         SupportTicket savedTicket = ticketRepository.save(ticket);
         assignedOperator.setLastAssignedTicketAt(LocalDateTime.now());
@@ -115,6 +116,7 @@ public class SupportTicketService {
 
         if (newOperator != null) {
             ticket.setOperator(newOperator);
+            ticket.setAssignedAt(LocalDateTime.now());
             ticket.setReassignmentCount(ticket.getReassignmentCount() + 1);
             newOperator.setLastAssignedTicketAt(LocalDateTime.now()); // DODAJEMO I OVO DA RESETUJEMO TAJMER ZA ROUND-ROBIN
             ticketRepository.save(ticket);
@@ -275,7 +277,9 @@ public class SupportTicketService {
                         TicketStatus.valueOf(p.getStatus()),
                         p.getProblemCategoryName(),
                         p.getCustomerName(),
-                        p.getPriorityScore()
+                        p.getPriorityScore(),
+                        p.getCreationTime(),
+                        p.getAssignedAt()
                 ))
                 .collect(Collectors.toList());
     }
@@ -416,7 +420,9 @@ public class SupportTicketService {
                 ticket.getStatus(),
                 ticket.getProblemCategory().getName(),
                 ticket.getOrder().getCustomer().getFirstName() + " " + ticket.getOrder().getCustomer().getLastName(),
-                null // Priority score nije relevantan za zatvorene tikete
+                null, // Priority score nije relevantan za zatvorene tikete,
+                ticket.getCreationTime(),
+                ticket.getAssignedAt()
         );
     }
 

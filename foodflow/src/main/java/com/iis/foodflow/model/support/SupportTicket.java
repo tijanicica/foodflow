@@ -53,4 +53,7 @@ public class SupportTicket {
 
     @Column(name = "reassignment_count", nullable = false, columnDefinition = "int default 0")
     private int reassignmentCount = 0;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
 }
