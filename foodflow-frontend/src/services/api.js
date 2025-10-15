@@ -867,8 +867,18 @@ export const getTicketHistory = async () => {
 };
 
 // Funkcija za admina (dohvata istoriju specifičnog operatera)
-export const getOperatorTicketHistory = async (operatorId) => {
-  const response = await apiClient.get(`/ticket-history/operator/${operatorId}`);
+export const getOperatorTicketHistory = async (operatorId, startDate = null, endDate = null) => {
+  let url = `/ticket-history/operator/${operatorId}`;
+  
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+  
+  const response = await apiClient.get(url);
   return response.data;
 };
 

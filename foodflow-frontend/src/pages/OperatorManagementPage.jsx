@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateRangeModal } from "@/components/modals/DateRangeModal";
+import { useNavigate } from "react-router-dom";
 
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -140,6 +141,8 @@ export const OperatorManagementPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
+  const navigate = useNavigate();
+
   const fetchAgents = useCallback(async () => {
     try {
       if (agents.length === 0) setLoading(true);
@@ -182,8 +185,7 @@ export const OperatorManagementPage = () => {
   };
 
   const handleViewHistoryClick = (operator) => {
-    setSelectedOperator(operator);
-    setIsHistoryModalOpen(true);
+    navigate(`/operator-history/${operator.id}`);
   };
 
   const handleDownloadClick = (agent) => {

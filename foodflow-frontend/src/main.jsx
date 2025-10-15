@@ -69,6 +69,7 @@ import { OperatorChatPage } from "./pages/OperatorChatPage.jsx";
 import { OperatorChatHistoryPage } from "./pages/OperatorChatHistory";
 import { AdminChatViewPage } from "./pages/AdminChatViewPage";
 import { RestaurantAnalyticsPage } from "./pages/RestaurantAnalyticsPage";
+import { OperatorHistoryPage } from "@/pages/OperatorHistoryPage";
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
   // Rute za kupce (Customer) unutar CustomerLayout-a i AppLayout-a
@@ -195,6 +196,7 @@ const router = createBrowserRouter([
     path: "/support/restaurant-analytics/",
     element: <RestaurantAnalyticsPage />,
   },
+  { path: "/operator-history/:operatorId", element: <OperatorHistoryPage /> },
 
   // Support operator
   { path: "/operator/analytics", element: <OperatorAnalyticsPage /> },

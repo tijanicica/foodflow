@@ -388,11 +388,25 @@ public class SupportTicketService {
         // Konvertujemo u DTO za prikaz na frontendu
         return tickets.stream().map(this::convertToSummaryDto).collect(Collectors.toList());
     }
-    public List<TicketSummaryDTO> getTicketHistoryForOperator(Long operatorId) {
-        List<SupportTicket> tickets = ticketRepository.findByOperatorIdAndStatusOrderByClosingTimeDesc(
-                operatorId, TicketStatus.CLOSED
+// SupportTicketService.java - ažuriraj metodu
+
+    public List<TicketSummaryDTO> getTicketHistoryForOperator(
+            Long operatorId,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+
+        List<SupportTicket> tickets = ticketRepository.findByOperatorIdAndStatusAndDateRange(
+                operatorId,
+                TicketStatus.CLOSED,
+                startDate,
+                endDate
         );
         return tickets.stream().map(this::convertToSummaryDto).collect(Collectors.toList());
+    }
+
+    // Overload za kompatibilnost
+    public List<TicketSummaryDTO> getTicketHistoryForOperator(Long operatorId) {
+        return getTicketHistoryForOperator(operatorId, null, null);
     }
 
     // Helper metoda za konverziju u DTO

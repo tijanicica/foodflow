@@ -250,7 +250,7 @@ export const ChatInterface = ({ userRole }) => {
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border flex flex-col h-full">
           <h2 className="text-xl font-bold mb-4 flex-shrink-0">
             {userRole === "support_administrator"
-              ? `Viewing chat between ${ticket?.customerName} and ${ticket?.operatorName}`
+              ? `Chat between ${ticket?.customerName} and ${ticket?.operatorName}`
               : `Chat with ${
                   userRole === "customer"
                     ? ticket?.operatorName

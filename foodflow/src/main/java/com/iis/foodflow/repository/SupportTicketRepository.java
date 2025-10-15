@@ -192,4 +192,19 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             @Param("endDate") LocalDateTime endDate
     );
 
+    // SupportTicketRepository.java - dodaj novu metodu
+
+    @Query("SELECT t FROM SupportTicket t " +
+            "WHERE t.operator.id = :operatorId " +
+            "AND t.status = :status " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.closingTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.closingTime <= :endDate) " +
+            "ORDER BY t.closingTime DESC")
+    List<SupportTicket> findByOperatorIdAndStatusAndDateRange(
+            @Param("operatorId") Long operatorId,
+            @Param("status") TicketStatus status,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
 }
