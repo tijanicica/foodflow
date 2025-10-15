@@ -1,6 +1,6 @@
 // src/pages/AgentManagementPage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { SupportAdminNavbar } from "@/components/SupportAdminNavbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,14 @@ import {
 } from "@/services/api";
 import toast from "react-hot-toast";
 import { RegisterAgentModal } from "@/components/modals/RegisterOperatorModal";
-import { PlusCircle, Users, Trash2, Download, ListChecks } from "lucide-react";
+import {
+  PlusCircle,
+  Users,
+  Trash2,
+  Download,
+  ListChecks,
+  Search,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConfirmDialog } from "@/components/modals/ConfirmDialog";
 import { OperatorHistoryModal } from "@/components/modals/OperatorHistoryModal";
@@ -101,14 +108,16 @@ const AgentRow = ({
   );
 };
 
-const EmptyState = () => (
+const EmptyState = ({ isSearchActive }) => (
   <div className="text-center py-16 px-6 bg-gray-50 rounded-lg border-2 border-dashed">
     <Users className="mx-auto h-12 w-12 text-gray-400" />
     <h3 className="mt-4 text-xl font-semibold text-gray-800">
-      No Agents Found
+      {isSearchActive ? "No Agents Match Your Search" : "No Agents Found"}
     </h3>
     <p className="mt-1 text-gray-500">
-      Click "Register New Agent" to add the first one.
+      {isSearchActive
+        ? "Try searching for a different name."
+        : 'Click "Register New Agent" to add the first one.'}
     </p>
   </div>
 );
@@ -136,6 +145,8 @@ export const OperatorManagementPage = () => {
   // Date range modal states
   const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
   const [selectedAgentForReport, setSelectedAgentForReport] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -195,7 +206,6 @@ export const OperatorManagementPage = () => {
 
   const handleDateRangeSubmit = async (startDate, endDate) => {
     try {
-      // Format dates to ISO string if they exist
       const formattedStartDate = startDate
         ? new Date(startDate).toISOString()
         : null;
@@ -230,12 +240,28 @@ export const OperatorManagementPage = () => {
     }
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(agents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentAgents = agents.slice(startIndex, startIndex + itemsPerPage);
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery) {
+      return agents;
+    }
+    return agents.filter((agent) => {
+      const fullName = `${agent.firstName} ${agent.lastName}`.toLowerCase();
+      return fullName.includes(searchQuery.toLowerCase());
+    });
+  }, [agents, searchQuery]);
 
-  useEffect(() => setCurrentPage(1), [itemsPerPage]);
+  // Pagination logic now uses 'filteredAgents'
+  const totalPages = Math.ceil(filteredAgents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentAgents = filteredAgents.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // Reset to page 1 on search or items per page change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
 
   return (
     <>
@@ -256,12 +282,24 @@ export const OperatorManagementPage = () => {
                 </Button>
               }
             >
-              {/* Kontrola prikaza */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-between items-center mb-4">
                 <span className="text-gray-600 text-sm">
-                  Showing {startIndex + 1}–
-                  {Math.min(startIndex + itemsPerPage, agents.length)} of{" "}
-                  {agents.length}
+                  Showing {filteredAgents.length > 0 ? startIndex + 1 : 0}–
+                  {Math.min(startIndex + itemsPerPage, filteredAgents.length)}{" "}
+                  of {filteredAgents.length}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600 text-sm">Items per page:</span>
@@ -282,7 +320,6 @@ export const OperatorManagementPage = () => {
                 </div>
               </div>
 
-              {/* Zaglavlje liste */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-3 border-b px-2 mt-4">
                 <span className="font-semibold text-sm text-gray-500 uppercase tracking-wider">
                   Agent Name
@@ -295,7 +332,6 @@ export const OperatorManagementPage = () => {
                 </span>
               </div>
 
-              {/* Lista agenata */}
               <div className="mt-2 divide-y divide-gray-100">
                 <AnimatePresence>
                   {loading ? (
@@ -312,14 +348,13 @@ export const OperatorManagementPage = () => {
                     ))
                   ) : (
                     <div className="pt-6">
-                      <EmptyState />
+                      <EmptyState isSearchActive={searchQuery.length > 0} />
                     </div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* Paginacija */}
-              {!loading && agents.length > 0 && (
+              {!loading && filteredAgents.length > itemsPerPage && (
                 <Pagination className="mt-8">
                   <PaginationContent>
                     <PaginationItem>
