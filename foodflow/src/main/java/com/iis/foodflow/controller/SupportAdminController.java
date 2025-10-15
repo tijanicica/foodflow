@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -158,8 +160,12 @@ public class SupportAdminController {
 
     @GetMapping("/operators/{operatorId}/report")
     @PreAuthorize("hasAuthority('ROLE_SUPPORT_ADMINISTRATOR')")
-    public ResponseEntity<InputStreamResource> downloadOperatorReport(@PathVariable Long operatorId) {
-        JsonNode reportData = reportRepository.getOperatorReportData(operatorId);
+    public ResponseEntity<InputStreamResource> downloadOperatorReport(
+            @PathVariable Long operatorId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+
+        JsonNode reportData = reportRepository.getOperatorReportData(operatorId, startDate, endDate);
 
         if (reportData.has("error")) {
             return ResponseEntity.notFound().build();

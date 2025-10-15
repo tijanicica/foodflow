@@ -155,5 +155,41 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             "AND (CAST(:endDate AS timestamp) IS NULL OR t.closingTime <= :endDate)")
     Long countTotalTickets(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
+    // SupportTicketRepository.java - dodaj nove metode
+
+    @Query("SELECT t FROM SupportTicket t " +
+            "JOIN t.order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "WHERE m.restaurant.id = :restaurantId " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.creationTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.creationTime <= :endDate) " +
+            "GROUP BY t.id")
+    List<SupportTicket> findTicketsByRestaurantIdAndDateRange(
+            @Param("restaurantId") Long restaurantId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
+    @Query("SELECT new com.iis.foodflow.dto.request.CategoryTicketsDTO(pc.name, COUNT(t.id)) " +
+            "FROM SupportTicket t " +
+            "JOIN t.problemCategory pc " +
+            "JOIN t.order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "WHERE m.restaurant.id = :restaurantId " +
+            "AND (CAST(:startDate AS timestamp) IS NULL OR t.creationTime >= :startDate) " +
+            "AND (CAST(:endDate AS timestamp) IS NULL OR t.creationTime <= :endDate) " +
+            "GROUP BY pc.name " +
+            "ORDER BY COUNT(t.id) DESC")
+    List<CategoryTicketsDTO> countTicketsPerCategoryByRestaurantAndDateRange(
+            @Param("restaurantId") Long restaurantId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 
 }

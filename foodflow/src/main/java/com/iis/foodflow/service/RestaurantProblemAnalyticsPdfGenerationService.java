@@ -14,13 +14,17 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
 public class RestaurantProblemAnalyticsPdfGenerationService {
-    public ByteArrayInputStream generateAnalyticsPdf(RestaurantProblemAnalyticsDTO analytics) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+    public ByteArrayInputStream generateAnalyticsPdf(
+            RestaurantProblemAnalyticsDTO analytics,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
 
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfWriter writer = new PdfWriter(out);
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf);
@@ -32,6 +36,10 @@ public class RestaurantProblemAnalyticsPdfGenerationService {
                 .setFontSize(16).setTextAlignment(TextAlignment.CENTER));
         document.add(new Paragraph("Generated on: " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")))
                 .setTextAlignment(TextAlignment.CENTER).setFontColor(ColorConstants.GRAY));
+        if (startDate != null && endDate != null) {
+            document.add(new Paragraph("For Period: " + startDate.toLocalDate() + " to " + endDate.toLocalDate())
+                    .setItalic());
+        }
 
         document.add(new Paragraph("\n"));
 

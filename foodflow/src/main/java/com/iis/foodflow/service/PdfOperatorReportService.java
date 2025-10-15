@@ -45,6 +45,16 @@ public class PdfOperatorReportService {
 
         document.add(new Paragraph("\n"));
 
+        // date range
+        JsonNode dateRange = reportData.get("dateRange");
+        if (dateRange != null && !dateRange.get("startDate").isNull()) {
+            String startDate = dateRange.get("startDate").asText();
+            String endDate = dateRange.get("endDate").asText();
+            document.add(new Paragraph("Period: " + startDate + " to " + endDate).setItalic());
+        }
+
+        document.add(new Paragraph("\n"));
+
         // metrike overall
         JsonNode metrics = reportData.get("overallMetrics");
         document.add(new Paragraph("Overall Summary").setBold().setFontSize(16));

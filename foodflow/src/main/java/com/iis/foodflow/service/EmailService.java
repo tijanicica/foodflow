@@ -13,6 +13,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -23,36 +24,46 @@ public class EmailService {
     private final RestaurantProblemAnalyticsPdfGenerationService pdfGenerationService; // Dodaj novi servis
     private final RestaurantRepository restaurantRepository; // Treba nam i ovaj repo
 
-    public void sendAnalyticsReport(Long restaurantId) throws Exception { // Dodaj throws Exception
+// EmailService.java
+
+    public void sendAnalyticsReport(Long restaurantId, LocalDateTime startDate, LocalDateTime endDate) throws Exception {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found"));
-        RestaurantProblemAnalyticsDTO analytics = analyticsService.getAnalyticsForRestaurant(restaurant);
+
+        RestaurantProblemAnalyticsDTO analytics = analyticsService.getAnalyticsForRestaurant(
+                restaurant,
+                startDate,
+                endDate
+        );
 
         if (analytics.getManagerEmail().equals("N/A") || analytics.getManagerEmail().isBlank()) {
             throw new IllegalStateException("Restaurant manager does not have an email address.");
         }
 
-        // Generiši PDF u memoriji
-        ByteArrayInputStream pdf = pdfGenerationService.generateAnalyticsPdf(analytics);
+        ByteArrayInputStream pdf = pdfGenerationService.generateAnalyticsPdf(analytics, startDate, endDate);
 
         MimeMessage message = mailSender.createMimeMessage();
-        // true znači da je poruka multipart (za priloge)
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
         helper.setTo(analytics.getManagerEmail());
-        helper.setFrom("tvoj.gmail@gmail.com"); // Mora biti isti kao u properties
-        helper.setSubject("Support Analytics Report for " + analytics.getRestaurantName());
+        helper.setFrom("tvoj.gmail@gmail.com");
 
-        // Telo emaila
+        String dateRangeText = startDate != null && endDate != null
+                ? " for period " + startDate.toLocalDate() + " to " + endDate.toLocalDate()
+                : "";
+
+        helper.setSubject("Support Analytics Report for " + analytics.getRestaurantName() + dateRangeText);
+
         String emailBody = String.format(
-                "Dear %s,\n\nPlease find the latest customer support analytics report for your restaurant, %s, attached to this email.\n\nBest regards,\nFoodFlow Support Team",
+                "Dear %s,\n\nPlease find the latest customer support analytics report%s for your restaurant, %s, attached to this email.\n\nBest regards,\nFoodFlow Support Team",
                 analytics.getManagerName(),
+                dateRangeText,
                 analytics.getRestaurantName()
         );
         helper.setText(emailBody);
 
-        // Dodaj prilog (attachment)
-        String pdfName = "Analytics_Report_" + analytics.getRestaurantName().replace(" ", "_") + ".pdf";
+        String pdfName = "Analytics_Report_" + analytics.getRestaurantName().replace(" ", "_") +
+                (startDate != null ? "_" + startDate.toLocalDate() + "_to_" + endDate.toLocalDate() : "") + ".pdf";
         helper.addAttachment(pdfName, new ByteArrayResource(pdf.readAllBytes()));
 
         mailSender.send(message);

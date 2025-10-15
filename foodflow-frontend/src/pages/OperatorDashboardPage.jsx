@@ -11,8 +11,8 @@ import { CircleAlert } from "lucide-react";
 const TicketCard = ({ ticket }) => {
   const isActiveChat = ticket.status === "IN_PROGRESS";
   const getPriorityColor = (score) => {
-    if (score > 150) return "text-red-700";
-    if (score > 80) return "text-orange-500";
+    if (score > 8) return "text-red-700";
+    if (score > 4) return "text-orange-500";
     return "text-green-500";
   };
   return (

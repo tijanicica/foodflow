@@ -30,6 +30,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+import { DateRangeModal } from "@/components/modals/DateRangeModal";
 
 const AdminSection = ({ title, icon, action, children }) => (
   <motion.div
@@ -52,25 +53,12 @@ const AdminSection = ({ title, icon, action, children }) => (
   </motion.div>
 );
 
-const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
-  const handleDownload = async () => {
-    try {
-      const blob = await downloadOperatorReport(agent.id);
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `report_${agent.firstName}_${agent.lastName}.pdf`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-    } catch (error) {
-      toast.error("Could not download report.");
-    }
-  };
-
+const AgentRow = ({
+  agent,
+  onRemoveClick,
+  onViewHistoryClick,
+  onDownloadClick,
+}) => {
   return (
     <motion.div
       layout
@@ -95,7 +83,7 @@ const AgentRow = ({ agent, onRemoveClick, onViewHistoryClick }) => {
         <Button
           variant="ghost"
           className="text-brand-primary/70 hover:text-brand-primary p-1 h-auto text-base"
-          onClick={handleDownload}
+          onClick={() => onDownloadClick(agent)}
         >
           <Download size={16} className="mr-2" />
         </Button>
@@ -143,6 +131,10 @@ export const OperatorManagementPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedOperator, setSelectedOperator] = useState(null);
+
+  // Date range modal states
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
+  const [selectedAgentForReport, setSelectedAgentForReport] = useState(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -192,6 +184,48 @@ export const OperatorManagementPage = () => {
   const handleViewHistoryClick = (operator) => {
     setSelectedOperator(operator);
     setIsHistoryModalOpen(true);
+  };
+
+  const handleDownloadClick = (agent) => {
+    setSelectedAgentForReport(agent);
+    setIsDateRangeModalOpen(true);
+  };
+
+  const handleDateRangeSubmit = async (startDate, endDate) => {
+    try {
+      // Format dates to ISO string if they exist
+      const formattedStartDate = startDate
+        ? new Date(startDate).toISOString()
+        : null;
+      const formattedEndDate = endDate
+        ? new Date(endDate + "T23:59:59").toISOString()
+        : null;
+
+      const blob = await downloadOperatorReport(
+        selectedAgentForReport.id,
+        formattedStartDate,
+        formattedEndDate
+      );
+
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      const dateRangeSuffix =
+        startDate && endDate ? `_${startDate}_to_${endDate}` : "";
+
+      link.setAttribute(
+        "download",
+        `report_${selectedAgentForReport.firstName}_${selectedAgentForReport.lastName}${dateRangeSuffix}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+
+      toast.success("Report downloaded successfully!");
+    } catch (error) {
+      toast.error("Could not download report.");
+    }
   };
 
   // Pagination logic
@@ -271,6 +305,7 @@ export const OperatorManagementPage = () => {
                         agent={agent}
                         onRemoveClick={handleRemoveClick}
                         onViewHistoryClick={handleViewHistoryClick}
+                        onDownloadClick={handleDownloadClick}
                       />
                     ))
                   ) : (
@@ -340,6 +375,19 @@ export const OperatorManagementPage = () => {
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
         operator={selectedOperator}
+      />
+      <DateRangeModal
+        isOpen={isDateRangeModalOpen}
+        onClose={() => {
+          setIsDateRangeModalOpen(false);
+          setSelectedAgentForReport(null);
+        }}
+        onSubmit={handleDateRangeSubmit}
+        operatorName={
+          selectedAgentForReport
+            ? `${selectedAgentForReport.firstName} ${selectedAgentForReport.lastName}`
+            : ""
+        }
       />
     </>
   );

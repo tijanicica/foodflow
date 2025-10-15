@@ -1,3 +1,5 @@
+// RestaurantProblemAnalyticsService.java
+
 package com.iis.foodflow.service;
 
 import com.iis.foodflow.dto.response.RestaurantProblemAnalyticsDTO;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,16 +24,28 @@ public class RestaurantProblemAnalyticsService {
 
     public List<RestaurantProblemAnalyticsDTO> getAllRestaurantsAnalytics() {
         return restaurantRepository.findAll().stream()
-                .map(this::getAnalyticsForRestaurant)
+                .map(restaurant -> getAnalyticsForRestaurant(restaurant, null, null))
                 .collect(Collectors.toList());
     }
 
-    public RestaurantProblemAnalyticsDTO getAnalyticsForRestaurant(Restaurant restaurant) {
-        List<SupportTicket> tickets = ticketRepository.findTicketsByRestaurantId(restaurant.getId());
+    public RestaurantProblemAnalyticsDTO getAnalyticsForRestaurant(
+            Restaurant restaurant,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+
+        List<SupportTicket> tickets = ticketRepository.findTicketsByRestaurantIdAndDateRange(
+                restaurant.getId(),
+                startDate,
+                endDate
+        );
 
         long totalTickets = tickets.size();
-        long closedTickets = tickets.stream().filter(t -> t.getStatus() == TicketStatus.CLOSED).count();
-        long openTickets = totalTickets - closedTickets;
+        long closedTickets = tickets.stream()
+                .filter(t -> t.getStatus() == TicketStatus.CLOSED)
+                .count();
+        long openTickets = tickets.stream()
+                .filter(t -> t.getStatus() == TicketStatus.OPEN || t.getStatus() == TicketStatus.IN_PROGRESS)
+                .count();
 
         double avgSeconds = tickets.stream()
                 .filter(t -> t.getStatus() == TicketStatus.CLOSED && t.getClosingTime() != null)
@@ -38,19 +53,24 @@ public class RestaurantProblemAnalyticsService {
                 .average()
                 .orElse(0.0);
 
-        List<RestaurantProblemAnalyticsDTO.CategoryAnalytics> categoryBreakdown = ticketRepository
-                .countTicketsPerCategoryByRestaurant(restaurant.getId())
-                .stream()
-                .map(dto -> RestaurantProblemAnalyticsDTO.CategoryAnalytics.builder()
-                        .categoryName(dto.getCategoryName())
-                        .ticketCount(dto.getTicketCount())
-                        .build())
-                .collect(Collectors.toList());
+        List<RestaurantProblemAnalyticsDTO.CategoryAnalytics> categoryBreakdown =
+                ticketRepository.countTicketsPerCategoryByRestaurantAndDateRange(
+                                restaurant.getId(),
+                                startDate,
+                                endDate
+                        )
+                        .stream()
+                        .map(dto -> RestaurantProblemAnalyticsDTO.CategoryAnalytics.builder()
+                                .categoryName(dto.getCategoryName())
+                                .ticketCount(dto.getTicketCount())
+                                .build())
+                        .collect(Collectors.toList());
 
         return RestaurantProblemAnalyticsDTO.builder()
                 .restaurantId(restaurant.getId())
                 .restaurantName(restaurant.getName())
-                .managerName(restaurant.getManager() != null ? restaurant.getManager().getFirstName() + " " + restaurant.getManager().getLastName() : "N/A")
+                .managerName(restaurant.getManager() != null ?
+                        restaurant.getManager().getFirstName() + " " + restaurant.getManager().getLastName() : "N/A")
                 .managerEmail(restaurant.getManager() != null ? restaurant.getManager().getEmail() : "N/A")
                 .totalTickets(totalTickets)
                 .openTickets(openTickets)

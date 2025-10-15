@@ -843,12 +843,22 @@ export const deleteOperator = async (operatorId) => {
     await apiClient.delete(`/support-admin/operators/${operatorId}`);
 };
 
-export const downloadOperatorReport = async (operatorId) => {
-    const response = await apiClient.get(`/support-admin/operators/${operatorId}/report`, {
-        responseType: 'blob', // Važno: govorimo axios-u da očekuje fajl
-    });
-    return response.data;
+export const downloadOperatorReport = async (operatorId, startDate = null, endDate = null) => {
+  let url = `/support-admin/operators/${operatorId}/report`;
+  
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+  
+  const response = await apiClient.get(url, { responseType: "blob" });
+  return response.data;
 };
+
+
 
 // Funkcija za operatera (dohvata svoju istoriju) i admina (dohvata celu istoriju)
 export const getTicketHistory = async () => {
@@ -862,13 +872,31 @@ export const getOperatorTicketHistory = async (operatorId) => {
   return response.data;
 };
 
-export const getRestaurantAnalytics = async () => {
+export const getRestaurantAnalytics = async (restaurantId = null, startDate = null, endDate = null) => {
+  if (restaurantId) {
+    let url = `/restaurant-analytics/${restaurantId}`;
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await apiClient.get(url);
+    return response.data;
+  } else {
   const response = await apiClient.get("/restaurant-analytics");
   return response.data;
+  }
 };
 
-export const sendAnalyticsToManager = async (restaurantId) => {
-  await apiClient.post(`/restaurant-analytics/send-report/${restaurantId}`);
+export const sendAnalyticsToManager = async (restaurantId, startDate = null, endDate = null) => {
+  let url = `/restaurant-analytics/send-report/${restaurantId}`;
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (params.toString()) url += `?${params.toString()}`;
+  
+  const response = await apiClient.post(url);
+  return response.data;
 };
 
 export const updateOperatorStatus = async (status) => {
