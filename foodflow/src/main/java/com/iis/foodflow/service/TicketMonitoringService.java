@@ -43,18 +43,30 @@ public class TicketMonitoringService {
     }
 
     private boolean isTicketStale(SupportTicket ticket, LocalDateTime cutoffTime) {
-        if (ticket.getMessages().isEmpty()) {
-            // Ako nema poruka, gleda se vreme kreiranja tiketa
-            return ticket.getCreationTime().isBefore(cutoffTime);
-        } else {
-            // Ako ima poruka, nađi poslednju
-            Message lastMessage = ticket.getMessages().stream()
-                    .max(Comparator.comparing(Message::getSentAt))
-                    .orElse(null);
+        // Nađi poslednju poruku, ako postoji
+        Message lastMessage = ticket.getMessages().stream()
+                .max(Comparator.comparing(Message::getSentAt))
+                .orElse(null);
 
-            // Tiket je "stale" samo ako je poslednja poruka od kupca i starija je od 2 min
-            return lastMessage != null && lastMessage.getSenderCustomer() != null && lastMessage.getSentAt().isBefore(cutoffTime);
+        // Ako je poslednja poruka od operatera, tiket NIJE ustajao. Izlazimo odmah.
+        if (lastMessage != null && lastMessage.getSenderOperator() != null) {
+            return false;
         }
+
+        // Od ovog trenutka, znamo da operater nije poslednji odgovorio.
+        // Referentno vreme je vreme poslednjeg relevantnog događaja.
+        // Početna pretpostavka je vreme dodele.
+        LocalDateTime referenceTime = ticket.getAssignedAt();
+
+        // Ako postoji poslednja poruka (koja je sigurno od korisnika),
+        // i ako je ona poslata NAKON dodele tiketa, ona postaje novo referentno vreme.
+        if (lastMessage != null && lastMessage.getSentAt().isAfter(referenceTime)) {
+            referenceTime = lastMessage.getSentAt();
+        }
+
+        // Sada je provera jednostavna i tačna:
+        // Da li je referentno vreme (najnoviji događaj) starije od 2 minuta?
+        return referenceTime.isBefore(cutoffTime);
     }
 
     private void handleStaleTicket(Long ticketId, int currentReassignments) {
