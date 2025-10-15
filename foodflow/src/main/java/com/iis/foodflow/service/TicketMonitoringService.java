@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -17,15 +18,18 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class TicketMonitoringService {
 
     private final SupportTicketRepository ticketRepository;
-    private final SupportTicketService supportTicketService; // Koristimo logiku iz postojećeg servisa
+    private final SupportTicketService supportTicketService;
+    public TicketMonitoringService(SupportTicketRepository ticketRepository, @Lazy SupportTicketService supportTicketService) {
+        this.ticketRepository = ticketRepository;
+        this.supportTicketService = supportTicketService;
+    }
 
     private static final int WAIT_TIME_MINUTES = 2;
 
-    @Scheduled(fixedRate = 30000) // Provera na svakih 30 sekundi
+    @Scheduled(fixedRate = 30000)
     @Transactional
     public void checkForStaleTickets() {
         LocalDateTime cutoffTime = LocalDateTime.now().minus(WAIT_TIME_MINUTES, ChronoUnit.MINUTES);
@@ -36,36 +40,39 @@ public class TicketMonitoringService {
 
         for (SupportTicket ticket : candidates) {
             if (isTicketStale(ticket, cutoffTime)) {
-                // NE PROSLEĐUJEMO CEO OBJEKAT, VEĆ SAMO ID
                 handleStaleTicket(ticket.getId(), ticket.getReassignmentCount());
             }
         }
     }
 
+    @Transactional
+    public void checkSingleTicket(Long ticketId) {
+        SupportTicket ticket = ticketRepository.findById(ticketId).orElse(null);
+
+        if (ticket == null || ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.RESOLVED) {
+            return;
+        }
+
+        LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(WAIT_TIME_MINUTES);
+
+        if (isTicketStale(ticket, cutoffTime)) {
+            handleStaleTicket(ticket.getId(), ticket.getReassignmentCount());
+        }
+    }
+
     private boolean isTicketStale(SupportTicket ticket, LocalDateTime cutoffTime) {
-        // Nađi poslednju poruku, ako postoji
         Message lastMessage = ticket.getMessages().stream()
                 .max(Comparator.comparing(Message::getSentAt))
                 .orElse(null);
 
-        // Ako je poslednja poruka od operatera, tiket NIJE ustajao. Izlazimo odmah.
         if (lastMessage != null && lastMessage.getSenderOperator() != null) {
             return false;
         }
 
-        // Od ovog trenutka, znamo da operater nije poslednji odgovorio.
-        // Referentno vreme je vreme poslednjeg relevantnog događaja.
-        // Početna pretpostavka je vreme dodele.
         LocalDateTime referenceTime = ticket.getAssignedAt();
-
-        // Ako postoji poslednja poruka (koja je sigurno od korisnika),
-        // i ako je ona poslata NAKON dodele tiketa, ona postaje novo referentno vreme.
         if (lastMessage != null && lastMessage.getSentAt().isAfter(referenceTime)) {
             referenceTime = lastMessage.getSentAt();
         }
-
-        // Sada je provera jednostavna i tačna:
-        // Da li je referentno vreme (najnoviji događaj) starije od 2 minuta?
         return referenceTime.isBefore(cutoffTime);
     }
 

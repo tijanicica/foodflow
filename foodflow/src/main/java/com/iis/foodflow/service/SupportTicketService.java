@@ -21,12 +21,15 @@ import com.iis.foodflow.model.user.SupportAdministrator;
 import com.iis.foodflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +49,8 @@ public class SupportTicketService {
     private final OrderRatingRepository orderRatingRepository;
     private final DriverRepository driverRepository;
     private final DriverRatingRepository driverRatingRepository;
+    private final TaskScheduler taskScheduler;
+    private final TicketMonitoringService ticketMonitoringService;
 
     @Transactional
     public SupportTicketResponseDTO createTicket(CreateTicketRequestDTO request, Customer customer) {
@@ -83,6 +88,7 @@ public class SupportTicketService {
         ticket.setAssignedAt(LocalDateTime.now());
 
         SupportTicket savedTicket = ticketRepository.save(ticket);
+        scheduleStaleCheck(savedTicket.getId());
         assignedOperator.setLastAssignedTicketAt(LocalDateTime.now());
         operatorRepository.save(assignedOperator);
         return convertToDto(savedTicket);
@@ -119,8 +125,9 @@ public class SupportTicketService {
             ticket.setAssignedAt(LocalDateTime.now());
             ticket.setReassignmentCount(ticket.getReassignmentCount() + 1);
             newOperator.setLastAssignedTicketAt(LocalDateTime.now()); // DODAJEMO I OVO DA RESETUJEMO TAJMER ZA ROUND-ROBIN
-            ticketRepository.save(ticket);
+            SupportTicket savedTicket = ticketRepository.save(ticket);
 
+            scheduleStaleCheck(savedTicket.getId());
             ChatMessageDTO reassignmentMsg = ChatMessageDTO.builder()
                     .type(ChatMessageDTO.MessageType.REASSIGNMENT)
                     .ticketId(ticket.getId())
@@ -132,13 +139,23 @@ public class SupportTicketService {
         } else {
             closeTicketAsUnavailable(ticketId); // Prosledi ID
         }
+
+    }
+
+    private void scheduleStaleCheck(Long ticketId) {
+        Instant executionTime = Instant.now().plus(2, ChronoUnit.MINUTES);
+
+        taskScheduler.schedule(() -> {
+            // Ova lambda funkcija će se izvršiti tačno nakon 2 minuta
+            // Potrebno je da se provera izvrši u novoj transakciji
+            ticketMonitoringService.checkSingleTicket(ticketId);
+        }, executionTime);
     }
 
 // u SupportTicketService.java
 
     @Transactional
     public void closeTicketAsUnavailable(Long ticketId) {
-        // try-catch više nije neophodan jer smo locirali problem, ali može ostati za svaki slučaj
         try {
             SupportTicket ticket = ticketRepository.findById(ticketId)
                     .orElseThrow(() -> new RuntimeException("Stale ticket not found for closing: " + ticketId));
@@ -169,27 +186,17 @@ public class SupportTicketService {
                 System.out.println("Deleted DriverRating for order ID: " + order.getId());
             });
 
-            // ======================================================================
-            // ===== KLJUČNI DEO: RASKIDANJE SVIH REFERENCI KA TIKETU =====
-            // ======================================================================
-
-            // 4. Raskini vezu iz Order entiteta
             if (order.getSupportTicket() != null && order.getSupportTicket().getId().equals(ticketId)) {
                 order.setSupportTicket(null);
             }
 
-            // 5. Raskini vezu iz Operator entiteta
             if (operator != null && operator.getTickets() != null) {
-                // Ukloni tiket iz kolekcije unutar Operator objekta
                 operator.getTickets().remove(ticket);
             }
 
-            // 6. Sada kada su sve veze raskinute, obriši tiket
             ticketRepository.delete(ticket);
             System.out.println("Deleted SupportTicket with ID: " + ticketId);
 
-            // Nije potrebno eksplicitno čuvati order i operator,
-            // jer će @Transactional na kraju metode sačuvati sve promene na "managed" entitetima.
 
         } catch (Exception e) {
             System.err.println("!!! CRITICAL ERROR DURING closeTicketAsUnavailable !!!");
@@ -198,51 +205,48 @@ public class SupportTicketService {
     }
 
     private double calculateScoreForOperator(Operator operator, ProblemCategory ticketCategory) {
-        // Definišemo težinske faktore. Ovi brojevi se mogu eksterno konfigurisati!
 
         double specializationWeight = 40.0;
         double ratingWeight = 25.0;
         double resolutionTimeWeight = 20.0;
         double workloadWeight = 15.0;
 
-        // --- 1. Bodovi za specijalizaciju (0 do 40 poena) ---
+        //bodovi za specijalizaciju operatora
         double specializationScore = 0;
         if (operator.getSpecializations().contains(ticketCategory)) {
             specializationScore = specializationWeight;
         } else if (ticketCategory.getParentCategory() != null && operator.getSpecializations().contains(ticketCategory.getParentCategory())) {
-            // Ako je specijalizovan za nadkategoriju (npr. "Problem sa dostavom")
-            specializationScore = specializationWeight / 2.0; // Dobija pola poena
+            // Ako je specijalizovan za nadkategoriju dobija pola poena
+            specializationScore = specializationWeight / 2.0;
         }
 
-        // --- 2. Bodovi za prosečnu ocenu (0 do 25 poena) ---
-        // Normalizujemo ocenu sa skale (1-5) na skalu (0-1) i množimo težinom
+        // bodovi za prosecnu ocenu
+        // Normalizujemo ocenu sa skale (1-5) na skalu (0-1) i mnozim tezinama
         double rating = operator.getAverageRating() != null ? operator.getAverageRating() : 3.0; // Default ocena 3 ako nema ocena
         double normalizedRating = (rating - 1) / 4.0;
         double ratingScore = normalizedRating * ratingWeight;
 
-        // --- 3. Bodovi za prosečno vreme rešavanja (0 do 20 poena) ---
-        // Što je vreme manje, to je skor veći.
+        // bodovi za prosecno vreme resavanja
+        // vreme manje, skor veci
         Double avgTimeSeconds = ticketRepository.getAverageResolutionTimeInSecondsByOperatorForPdf(operator.getId());
         if (avgTimeSeconds == null) {
-            avgTimeSeconds = 3600.0; // Default 1h ako nema rešenih tiketa
+            avgTimeSeconds = 3600.0; // Default 1h ako nema resenih
         }
-        // Primer inverzne logike: Postavimo cilj od 5 minuta kao idealno (100% poena)
-        // a 2 sata kao najgore (0% poena).
+
         double maxTimeThreshold = 7200.0; // 2 sata
         double idealTime = 300.0; // 5 minuta
         double timePenalty = Math.max(0, (avgTimeSeconds - idealTime) / (maxTimeThreshold - idealTime));
         double resolutionTimeScore = (1 - Math.min(1, timePenalty)) * resolutionTimeWeight;
 
-        // --- 4. Bodovi za opterećenje (0 do 15 poena) ---
-        // Što je manje tiketa, to je veći skor
+        // sto je manje tiketa, veci je skor
         long openTickets = operator.getTickets().stream()
                 .filter(t -> t.getStatus() == TicketStatus.OPEN || t.getStatus() == TicketStatus.IN_PROGRESS)
                 .count();
         // Primer: 0 tiketa = 15 poena, 5+ tiketa = 0 poena
         double workloadScore = Math.max(0, 1 - (double)openTickets / 5.0) * workloadWeight;
 
-        // --- Bonus poeni za "Round Robin" (tie-breaker) ---
-        // Dajemo mali bonus onome ko je najduže čekao
+
+        // round robin, dajemo bonus onome ko najduze ceka da dobije tiket, da bi svi imali sansu
         double fairnessBonus = 0.0;
         if (operator.getLastAssignedTicketAt() != null) {
             long secondsSinceLastAssignment = Duration.between(operator.getLastAssignedTicketAt(), LocalDateTime.now()).getSeconds();
@@ -251,7 +255,6 @@ public class SupportTicketService {
             fairnessBonus = 0.1; // max bonus ako nikad nije dobio tiket
         }
 
-        // Sabiranje svih poena
         return specializationScore + ratingScore + resolutionTimeScore + workloadScore + fairnessBonus;
     }
 
