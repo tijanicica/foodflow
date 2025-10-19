@@ -1,11 +1,11 @@
 // src/pages/AgentPerformancePage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { SupportAdminNavbar } from "@/components/SupportAdminNavbar";
 import { Footer } from "@/components/Footer";
 import { getOperatorRankings } from "@/services/api";
 import toast from "react-hot-toast";
-import { BarChart, Star, CheckSquare } from "lucide-react";
+import { BarChart, Star, CheckSquare, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Pagination,
@@ -74,15 +74,16 @@ const PerformanceRow = ({ rank, agent }) => (
   </motion.div>
 );
 
-const EmptyState = () => (
+const EmptyState = ({ isSearchActive }) => (
   <div className="text-center py-16 px-6 bg-gray-50 rounded-lg border-2 border-dashed">
     <BarChart className="mx-auto h-12 w-12 text-gray-400" />
     <h3 className="mt-4 text-xl font-semibold text-gray-800">
-      No Performance Data
+      {isSearchActive ? "No Agents Match Your Search" : "No Performance Data"}
     </h3>
     <p className="mt-1 text-gray-500">
-      Performance data will appear once agents start resolving and getting rated
-      on tickets.
+      {isSearchActive
+        ? "Try searching for a different name."
+        : "Performance data will appear once agents start resolving and getting rated on tickets."}
     </p>
   </div>
 );
@@ -105,6 +106,7 @@ export const AgentPerformancePage = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchRankings = useCallback(async () => {
     try {
@@ -122,14 +124,27 @@ export const AgentPerformancePage = () => {
     fetchRankings();
   }, [fetchRankings]);
 
-  const totalPages = Math.ceil(rankings.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentAgents = rankings.slice(startIndex, startIndex + itemsPerPage);
+  const filteredRankings = useMemo(() => {
+    if (!searchQuery) {
+      return rankings;
+    }
+    return rankings.filter((agent) => {
+      const fullName = `${agent.firstName} ${agent.lastName}`.toLowerCase();
+      return fullName.includes(searchQuery.toLowerCase());
+    });
+  }, [rankings, searchQuery]);
 
-  // Ako se broj elemenata po strani promeni, resetuj na prvu stranu
+  const totalPages = Math.ceil(filteredRankings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentAgents = filteredRankings.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // Resetuj na prvu stranu kada se promeni search ili broj elemenata po strani
   useEffect(() => {
     setCurrentPage(1);
-  }, [itemsPerPage]);
+  }, [searchQuery, itemsPerPage]);
 
   return (
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
@@ -138,12 +153,26 @@ export const AgentPerformancePage = () => {
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
         <div className="max-w-5xl mx-auto">
           <AdminSection title="Agent Performance" icon={<BarChart size={24} />}>
+            {/* Search bar */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+
             {/* Kontrola prikaza */}
             <div className="flex justify-between items-center mb-4">
               <span className="text-gray-600 text-sm">
-                Showing {startIndex + 1}–
-                {Math.min(startIndex + itemsPerPage, rankings.length)} of{" "}
-                {rankings.length}
+                Showing {filteredRankings.length > 0 ? startIndex + 1 : 0}–
+                {Math.min(startIndex + itemsPerPage, filteredRankings.length)}{" "}
+                of {filteredRankings.length}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 text-sm">Items per page:</span>
@@ -197,14 +226,14 @@ export const AgentPerformancePage = () => {
                   ))
                 ) : (
                   <div className="pt-6">
-                    <EmptyState />
+                    <EmptyState isSearchActive={searchQuery.length > 0} />
                   </div>
                 )}
               </AnimatePresence>
             </div>
 
             {/* Paginacija */}
-            {!loading && rankings.length > 0 && (
+            {!loading && filteredRankings.length > itemsPerPage && (
               <Pagination className="mt-8">
                 <PaginationContent>
                   <PaginationItem>

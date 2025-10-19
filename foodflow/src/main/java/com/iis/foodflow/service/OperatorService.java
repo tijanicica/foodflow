@@ -42,6 +42,7 @@ public class OperatorService {
         newOperator.setPhone(registrationDto.getPhone());
         newOperator.setRole(Role.OPERATOR);
         newOperator.setCreatedBySupportAdmin(admin);
+        newOperator.setSpecializations(registrationDto.getSpecializations());
 
         return operatorRepository.save(newOperator);
     }

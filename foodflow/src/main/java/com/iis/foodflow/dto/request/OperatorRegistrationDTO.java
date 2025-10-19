@@ -1,10 +1,12 @@
 package com.iis.foodflow.dto.request;
 
+import com.iis.foodflow.model.support.ProblemCategory;
+import jakarta.validation.constraints.*;
 import lombok.Data;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class OperatorRegistrationDTO {
@@ -25,4 +27,8 @@ public class OperatorRegistrationDTO {
 
     @NotBlank(message = "Phone number is required")
     private String phone;
+
+    @NotNull(message = "Specializations are required")
+    @NotEmpty(message = "At least one specialization must be selected")
+    private Set<ProblemCategory> specializations = new HashSet<>();
 }
