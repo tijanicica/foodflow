@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +47,7 @@ public class DriverController {
         DriverLocationResponse locationData = driverService.getDriverLocation(driverId);
         return ResponseEntity.ok(locationData);
     }
+
 
     @PutMapping("/location")
     @PreAuthorize("hasRole('DRIVER')")
@@ -196,14 +198,17 @@ public class DriverController {
 
     @PostMapping("/orders/{orderId}/report-delay")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<Void> reportDeliveryDelay(
+    public ResponseEntity<Void> reportDelay(
             @PathVariable Long orderId,
-            @Valid @RequestBody ReportDelayRequest request, // 
+            @Valid @RequestBody ReportDelayRequest request, // Koristimo novi DTO
             @AuthenticationPrincipal Driver driverPrincipal) {
 
+        driverService.reportDelay(
+                driverPrincipal.getEmail(),
+                orderId,
+                request.getDelayMinutes()
+        );
 
-
-        driverService.reportDelay(driverPrincipal.getEmail(), orderId, request.getDelayMinutes());
         return ResponseEntity.ok().build();
     }
 

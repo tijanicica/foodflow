@@ -4,12 +4,16 @@ import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { MapComponent } from '../components/MapComponent';
+import { DriverFooter } from '../components/DriverFooter'; 
 import { getOrderDetails, cancelDelivery,startSimulation,markOrderAsPickedUp , getDriverInfo } from '../services/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { EtaCountdown } from '../components/EtaCountdown';
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
 import {
+    FiFlag ,
+    FiArchive ,
+    FiShoppingBag ,
+    FiHome ,
   FiMapPin,
   FiUser,
   FiAlertTriangle,
@@ -178,82 +182,70 @@ export function ViewOrderPage() {
     const [driverLocation, setDriverLocation] = useState(null);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const navigate = useNavigate();
-
         const refreshOrderDetails = async () => {
         try {
-            const updatedOrderDetails = await getOrderDetails(orderId);
-            setOrder(updatedOrderDetails);
-        } catch (error) {
-            console.error("Failed to refresh order details:", error);
+            const updatedOrder = await getOrderDetails(orderId);
+            setOrder(updatedOrder);
+        } catch (err) {
             toast.error("Could not refresh order details.");
         }
     };
 
 
-useEffect(() => {
-    let stompClient = null;
+ useEffect(() => {
+        let stompClient = null;
 
-    const fetchPageData = async () => {
-        try {
-            setLoading(true);
-            const [orderDetails, driverInfo] = await Promise.all([
-                getOrderDetails(orderId),
-                getDriverInfo()
-            ]);
+        const fetchPageData = async () => {
+            try {
+                setLoading(true);
+                const [orderDetails, driverInfo] = await Promise.all([
+                    getOrderDetails(orderId),
+                    getDriverInfo()
+                ]);
 
-            setOrder(orderDetails);
-            setVehicleType(driverInfo.vehicleType);
+                setOrder(orderDetails);
+                setVehicleType(driverInfo.vehicleType);
 
-            // ✅ Postavljamo POČETNU lokaciju vozača iz driverInfo (backend DTO)
-            if (driverInfo.latitude && driverInfo.longitude) {
-                setDriverLocation({
-                    lat: driverInfo.latitude,
-                    lng: driverInfo.longitude
-                });
-            } 
-            // Fallback ako backend ne pošalje koordinate
-            else if (orderDetails.driverCoordinates) {
-                setDriverLocation(orderDetails.driverCoordinates);
+                if (driverInfo.latitude && driverInfo.longitude) {
+                    setDriverLocation({
+                        lat: driverInfo.latitude,
+                        lng: driverInfo.longitude
+                    });
+                } else if (orderDetails.driverCoordinates) {
+                    setDriverLocation(orderDetails.driverCoordinates);
+                }
+                return true;
+            } catch (err) {
+                setError('Failed to load page data.');
+                return false;
+            } finally {
+                setLoading(false);
             }
+        };
 
-            return true; // Signaliziramo uspeh
-        } catch (err) {
-            setError('Failed to load page data. The order might not be assigned to you.');
-            return false; // Signaliziramo neuspeh
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    fetchPageData().then((isDataLoaded) => {
-        // WebSocket konekciju uspostavljamo samo ako su podaci uspešno učitani
-        if (isDataLoaded) {
-            const socket = new SockJS('http://localhost:8088/ws'); // Proveri port
-            stompClient = Stomp.over(socket);
-            stompClient.debug = null; // Isključi debug poruke
-
-            stompClient.connect({}, () => {
-                console.log('Connected to WebSocket');
-                stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
-                    const newLocation = JSON.parse(message.body);
-                    // Ažuriramo stanje sa novom lokacijom
-                    setDriverLocation({ 
-                        lat: newLocation.lat, 
-                        lng: newLocation.lng 
+        fetchPageData().then((isDataLoaded) => {
+            if (isDataLoaded) {
+                const socket = new SockJS('http://localhost:8088/ws');
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+                stompClient.connect({}, () => {
+                    stompClient.subscribe(`/topic/driver-location/${orderId}`, (message) => {
+                        const newLocation = JSON.parse(message.body);
+                        setDriverLocation({ 
+                            lat: newLocation.lat, 
+                            lng: newLocation.lng 
+                        });
                     });
                 });
-            });
-        }
-    });
+            }
+        });
 
-    // Cleanup funkcija za prekid konekcije
-    return () => {
-        if (stompClient && stompClient.connected) {
-            stompClient.disconnect(() => console.log('Disconnected from WebSocket'));
-        }
-    };
-}, [orderId]);
+        return () => {
+            if (stompClient && stompClient.connected) {
+                stompClient.disconnect();
+            }
+        };
+    }, [orderId]);
 
 
     // --- KLJUČNA IZMENA: MEMOIZACIJA PROPS-OVA ZA MAPU ---
@@ -362,7 +354,6 @@ const handleMarkAsPickedUp = async () => {
     // Glavni return blok sa izmenjenim pozivom MapComponent
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
-             <Toaster position="top-center" />
             
             {/* OVERLAY I MODAL */}
             {isCancelModalOpen && (
@@ -379,9 +370,9 @@ const handleMarkAsPickedUp = async () => {
                 </div>
             )}
             <NavbarDriver />
-            <main style={{ maxWidth: '1500px', margin: '20px 90px' }}>
+            <main style={{ maxWidth: '1900px', margin: '20px 90px' }}>
                 <div style={{
-                    backgroundColor: '#FDFDF5',
+                    backgroundColor: '#fffff9ff',
                     padding: '2rem', borderRadius: '24px',
                     border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)',
                     display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start'
@@ -402,31 +393,159 @@ const handleMarkAsPickedUp = async () => {
 
                     {/* VRAĆEN STARI DIZAJN DESNE KOLONE SA IKONICAMA */}
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
-                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0, letterSpacing: '0.5px' }}>Estimated Arrival (ETA)</p>
-                            <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
-                                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                            </p>
-                            {order.eta && <EtaCountdown eta={order.eta} />}
+                                                <div style={{
+                            display: 'flex', // Omogućava poravnanje ikonice i teksta
+                            alignItems: 'center', // Vertikalno centrira
+                            gap: '1rem', // Razmak između ikonice i teksta
+                            paddingBottom: '1.25rem',
+                            borderBottom: '1px solid #EAEAEA'
+                        }}>
+                            <div style={{
+                                color: '#8A643B', // Brend boja za ikonicu
+                                fontSize: '2rem' // Veličina ikonice
+                            }}>
+                                <FiClock />
+                            </div>
+                            <div>
+                                <p style={{
+                                    textTransform: 'uppercase',
+                                    color: '#6B7280',
+                                    fontSize: '0.8rem', // Malo manji font za labelu
+                                    fontWeight: '600', // Malo jači font
+                                    margin: 0,
+                                    letterSpacing: '0.5px'
+                                }}>
+                                    Estimated Arrival (ETA)
+                                </p>
+                                <p style={{
+                                    fontSize: '1.75rem', // Malo veći font za vreme
+                                    fontWeight: '700', // Jači font
+                                    margin: '0.25rem 0 0 0',
+                                    color: '#1F2937' // Malo tamnija boja za bolji kontrast
+                                }}>
+                                    {'N/A'}
+                                </p>
+                            </div>
                         </div>
                         
-                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA' , opacity: 1.6,}}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#8A643B', display: 'flex', alignItems: 'center' }}>
-                                <FiMapPin style={{ marginRight: '0.5rem' }} /> Step 1: Pickup
-                            </p>
-                            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>{order.restaurantName}</p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>{order.restaurantAddress}</p>
-                        </div>
+                       {/* === KORAK 1: PREUZIMANJE (Novi dizajn) === */}
+<div style={{
+    marginTop: '1.5rem',
+    paddingBottom: '1.5rem',
+    borderBottom: '1px solid #EAEAEA'
+}}>
+    {/* === Naslov koraka - sada je veći i uočljiviji === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1.2rem', // Povećan font
+        color: '#8A643B',
+        margin: '0 0 1rem 0' // Dodat razmak ispod naslova
+    }}>
+        <FiShoppingBag size={22} /> {/* Ikonica za "preuzimanje" */}
+        Step 1: Pickup
+    </p>
 
-                        <div style={{ marginTop: '1.5rem' ,opacity: isPickedUp ? 1 : 0.6, transition: 'opacity 0.3s ease'}}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
-                                <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
-                            </p>
-                            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>
-                                {order.customerFirstName} {order.customerLastName}
-                            </p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
-                        </div>
+    {/* === Detalji o restoranu - grupisani === */}
+    <div style={{ paddingLeft: '0.5rem' /* Malo uvučeno radi preglednosti */ }}>
+        {/* Ime restorana sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#1F2937' }}><FiArchive size={18} /></span> {/* Ikonica koja predstavlja objekat/izvor */}
+            <h4 style={{
+                fontSize: '1.2rem',
+                fontWeight: '600',
+                color: '#2e2e2eff',
+                margin: 0
+            }}>
+                {order.restaurantName}
+            </h4>
+        </div>
+
+        {/* Adresa restorana */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#6B7280' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#646464ff',
+                fontSize: '0.95rem',
+                margin: 0,
+            }}>
+                {order.restaurantAddress}
+            </p>
+        </div>
+    </div>
+</div>
+
+{/* === KORAK 2: DOSTAVA (Novi, konzistentan dizajn) === */}
+<div style={{
+    marginTop: '1.5rem',
+    
+    opacity: isPickedUp ? 1 : 0.6, // Zadržana postojeća opacity logika
+    transition: 'opacity 0.3s ease'
+}}>
+    {/* === Naslov koraka - sada je veći i uočljiviji === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1.2rem', // Isti font-size kao kod Step 1
+        color: '#2F855A', // Zadržana zelena boja za "Deliver"
+        margin: '0 0 1rem 0'
+    }}>
+        <FiFlag size={20} /> {/* Ikonica za cilj/dostavu */}
+        Step 2: Deliver
+    </p>
+
+    {/* === Detalji o dostavi - ista struktura kao kod Step 1 === */}
+    <div style={{ paddingLeft: '0.5rem' }}>
+        {/* Ime kupca sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#1F2937' }}><FiUser size={18} /></span>
+            <h4 style={{
+                fontSize: '1.2rem', // Isti font kao ime restorana
+                fontWeight: '600',
+                color: '#2e2e2eff', // Ista boja kao ime restorana
+                margin: 0
+            }}>
+                {order.customerFirstName} {order.customerLastName}
+            </h4>
+        </div>
+
+        {/* Adresa dostave */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#6B7280' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#646464ff', // Ista boja kao adresa restorana
+                fontSize: '0.95rem', // Isti font kao adresa restorana
+                margin: 0,
+            }}>
+                {order.deliveryAddress}
+            </p>
+        </div>
+    </div>
+</div>
 
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
     
@@ -447,7 +566,7 @@ const handleMarkAsPickedUp = async () => {
                                 <button
                                     onClick={handleMarkAsPickedUp}
                                     style={{ ...primaryButtonStyle, backgroundColor: '#1F2937' }}
-                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#111827'}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#000000ff'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1F2937'}
                                 >
                                     <FiCheckCircle /> Mark as Picked Up
@@ -510,6 +629,7 @@ const handleMarkAsPickedUp = async () => {
                     </div>
                 </div>
             </main>
+             <DriverFooter />
         </div>
     );
 }

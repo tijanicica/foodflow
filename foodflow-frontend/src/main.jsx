@@ -1,144 +1,219 @@
+// Datoteka: src/main.jsx
+
 window.global = window;
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from "react-router-dom"; // Uvezi ruter
-import './index.css';
-import { CartProvider } from './context/CartContext'; // Importuj
-import { Toaster } from 'react-hot-toast'; // Importuj
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; // <-- DODAJTE OVU LINIJU
-import 'leaflet/dist/leaflet.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
+// CSS Imports
+import "./index.css";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+import "leaflet/dist/leaflet.css";
 
+// Context Providers
+import { CartProvider } from "./context/CartContext";
+import { NotificationProvider } from "./context/NotificationContext";
 
+// Layouts
+import { AppLayout } from "./components/AppLayout";
+import { DriverLayout } from "./layouts/DriverLayout.jsx";
+import { ManagerLayout } from "./layouts/ManagerLayout.jsx";
+import { CustomerLayout } from "./layouts/CustomerLayout.jsx";
 
+// Components
+import { MiniCart } from "./components/MiniCart";
 
-// Uvezi sve tvoje stranice
-import { LoginPage } from './pages/LoginPage.jsx';
-import { RegisterPage } from './pages/RegisterPage.jsx';
-import { HomePage } from './pages/HomePage.jsx';
-import { MenuPage } from './pages/MenuPage.jsx';
-import { DriverDashboard } from './pages/DriverDashboard.jsx';
-import { CheckoutPage } from './pages/CheckoutPage.jsx';
-import { MyOrdersPage } from './pages/MyOrdersPage.jsx';
-import { DriverProfilePage } from './pages/DriverProfilePage.jsx'; 
-import { OrderDetailPage } from './pages/OrderDetailPage.jsx';
-import { ViewOrderPage } from './pages/ViewOrderPage'; 
-import { TrackOrderPage } from './pages/TrackOrderPage.jsx';
-import { AnalyticsPage } from './pages/AnalyticsPage.jsx';
-import { PickedUpOrderPage } from './pages/PickedUpOrderPage';
-import { MyProfilePage } from './pages/MyProfilePage';
-import { AboutUsPage } from './pages/AboutUsPage.jsx';
-import { FaqPage } from './pages/FaqPage.jsx';
-import { ContactPage } from './pages/ContactPage.jsx';
-import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage.jsx';
-import { TermsOfServicePage } from './pages/TermsOfServicePage.jsx';
+// Pages
+import { AboutUsPage } from "./pages/AboutUsPage.jsx";
+import { AdminDriverPerformancePage } from "./pages/AdminDriverPerformancePage.jsx";
+import { AdminLiveTrackingPage } from "./pages/AdminLiveTrackingPage.jsx";
+import { AdminManagerManagementPage } from "./pages/AdminManagerManagementPage.jsx";
+import { AnalyticsPage } from "./pages/AnalyticsPage.jsx";
+import { CheckoutPage } from "./pages/CheckoutPage.jsx";
+import { ContactPage } from "./pages/ContactPage.jsx";
+import { DriverDashboard } from "./pages/DriverDashboard.jsx";
+import { DriverProfilePage } from "./pages/DriverProfilePage.jsx";
+import { FaqPage } from "./pages/FaqPage.jsx";
+import { HomePage } from "./pages/HomePage.jsx";
+import { LoginPage } from "./pages/LoginPage.jsx";
+import { ManagerDashboard } from "./pages/ManagerDashboard.jsx";
+import { ManagerDeliveriesPage } from "./pages/ManagerDeliveriesPage.jsx";
+import { ManagerEditMenuPage } from "./pages/ManagerEditMenuPage.jsx";
+import { ManagerLiveTrackingPage } from "./pages/ManagerLiveTrackingPage";
+import { DriverSupport } from "./pages/DriverSupport";
+import { DriverEarnings } from "./pages/DriverEarnings";
+import { ManagerMenuPage } from "./pages/ManagerMenuPage.jsx";
+import { ManagerOrdersPage } from "./pages/ManagerOrdersPage.jsx";
+import { ManagerProfilePage } from "./pages/ManagerProfilePage.jsx";
+import { ManagerTrackOrderPage } from "./pages/ManagerTrackOrderPage.jsx";
+import { MenuPage } from "./pages/MenuPage.jsx";
+import { MyOrdersPage } from "./pages/MyOrdersPage.jsx";
+import { MyProfilePage } from "./pages/MyProfilePage";
+import { OperatorManagementPage } from "./pages/OperatorManagementPage.jsx";
+import { OrderDetailPage } from "./pages/OrderDetailPage.jsx";
+import { PickedUpOrderPage } from "./pages/PickedUpOrderPage";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage.jsx";
+import { RegisterPage } from "./pages/RegisterPage.jsx";
+import { SupportAdminProfilePage } from "./pages/SupportAdminProfilePage.jsx";
+import { AgentPerformancePage } from "./pages/AgentPerformancePage.jsx";
+import { TermsOfServicePage } from "./pages/TermsOfServicePage.jsx";
+import { TrackOrderPage } from "./pages/TrackOrderPage.jsx";
+import { ViewOrderPage } from "./pages/ViewOrderPage";
+import { SupportAnalyticsPage } from "./pages/SupportAnalyticsPage";
+import { OperatorAnalyticsPage } from "./pages/OperatorAnalyticsPage.jsx";
+import { OperatorProfilePage } from "./pages/OperatorProfilePage";
+import { SupportChatPage } from "./pages/SupportChatPage.jsx";
+import { OperatorDashboardPage } from "./pages/OperatorDashboardPage.jsx";
+import { OperatorChatPage } from "./pages/OperatorChatPage.jsx";
+import { FinancialReportPage } from './pages/FinancialReportPage'; 
 
-// Ovde ćeš kasnije dodavati i druge stranice (npr. DashboardPage)
 
 // Kreiraj ruter i definiši putanje (rute)
 const router = createBrowserRouter([
+  // Rute za kupce (Customer) unutar CustomerLayout-a i AppLayout-a
   {
-    path: "/", // Početna stranica (obično login)
-    element: <LoginPage />,
-  },
-  {
-    path: "/login", // Putanja za login stranicu
-    element: <LoginPage />,
-  },
-  {
-    path: "/register", // Putanja za register stranicu
-    element: <RegisterPage />,
-  },
-  {
-    path: "/home",
-    element: <HomePage />,
-  },
+    // Glavni layout koji obmotava sve stranice koje treba da imaju MiniCart
+    element: <AppLayout />,
 
+    //Customer
+    children: [
+      { path: "/home", element: <HomePage /> },
+      { path: "/restaurant/:restaurantId", element: <MenuPage /> },
+      { path: "/checkout", element: <CheckoutPage /> },
+      { path: "/orders", element: <MyOrdersPage /> },
+      { path: "/order/:orderId", element: <OrderDetailPage /> },
+      { path: "/track/:orderId", element: <TrackOrderPage /> },
+      { path: "/analytics", element: <AnalyticsPage /> },
+      { path: "/profile", element: <MyProfilePage /> },
+      { path: "/about", element: <AboutUsPage /> },
+      { path: "/faq", element: <FaqPage /> },
+      { path: "/contact", element: <ContactPage /> },
+      { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
+      { path: "/terms-of-service", element: <TermsOfServicePage /> },
+      { path: "/support/chat/:ticketId", element: <SupportChatPage /> },
+       { path: "/financial-report", element: <FinancialReportPage /> },
+    ],
+  },
+  // Driver
+  { path: "/driver", element: <DriverDashboard /> },
+  { path: "/driver/profile", element: <DriverProfilePage /> },
+  { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
+  { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
+
+  // Manager
+  { path: "/manager/dashboard", element: <ManagerDashboard /> },
+  { path: "/manager/profile", element: <ManagerProfilePage /> },
+  { path: "/manager/menu", element: <ManagerMenuPage /> },
+  { path: "/manager/menu/:menuVersionId", element: <ManagerEditMenuPage /> },
+  { path: "/manager/orders", element: <ManagerOrdersPage /> },
+  { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
   {
-    path: "/restaurant/:restaurantId", // Dvotačka označava dinamički segment
-    element: <MenuPage />,
+    path: "/manager/deliveries/track/:orderId",
+    element: <ManagerTrackOrderPage />,
   },
-   {
-    path: "/checkout",
-    element: <CheckoutPage />,
-  },
+  { path: "/admin/managers", element: <AdminManagerManagementPage /> },
+
+  // Support Admin
+  { path: "/support/agent-management", element: <OperatorManagementPage /> },
+  { path: "/support/profile", element: <SupportAdminProfilePage /> },
+  { path: "/support/agent-performance", element: <AgentPerformancePage /> },
+
+  // All
   {
-    path: "/orders",
-    element: <MyOrdersPage />,
-  },
+    element: <CustomerLayout />,
+    children: [
       {
-    path: "/order/:orderId", // Dinamička ruta sa ID-jem porudžbine
-    element: <OrderDetailPage />,
+        element: <AppLayout />,
+        children: [
+          { path: "/home", element: <HomePage /> },
+          { path: "/restaurant/:restaurantId", element: <MenuPage /> },
+          { path: "/checkout", element: <CheckoutPage /> },
+          { path: "/orders", element: <MyOrdersPage /> },
+          { path: "/order/:orderId", element: <OrderDetailPage /> },
+          { path: "/track/:orderId", element: <TrackOrderPage /> },
+          { path: "/analytics", element: <AnalyticsPage /> },
+          { path: "/profile", element: <MyProfilePage /> },
+          { path: "/about", element: <AboutUsPage /> },
+          { path: "/faq", element: <FaqPage /> },
+          { path: "/contact", element: <ContactPage /> },
+          { path: "/privacy-policy", element: <PrivacyPolicyPage /> },
+          { path: "/terms-of-service", element: <TermsOfServicePage /> },
+        ],
+      },
+    ],
   },
+  // Rute za vozače (Driver) unutar DriverLayout-a
+  {
+    element: <DriverLayout />,
+    children: [
+      { path: "/driver", element: <DriverDashboard /> },
+      { path: "/driver/profile", element: <DriverProfilePage /> },
+      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> },
+      { path: "/delivery/:orderId", element: <PickedUpOrderPage /> },
+      { path: "/driver/profile", element: <DriverProfilePage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/driver/orders/:orderId", element: <ViewOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/delivery/:orderId", element: <PickedUpOrderPage /> }, // <-- PREMEŠTENO UNUTRA
+      { path: "/driver/support", element: <DriverSupport /> },
+      { path: "/driver/earnings", element: <DriverEarnings /> },
+    ],
+  },
+  // Rute za menadžere (Manager) unutar ManagerLayout-a
+  {
+    element: <ManagerLayout />,
+    children: [
+      { path: "/manager/dashboard", element: <ManagerDashboard /> },
+      { path: "/manager/profile", element: <ManagerProfilePage /> },
+      { path: "/manager/menu", element: <ManagerMenuPage /> },
+      {
+        path: "/manager/menu/:menuVersionId",
+        element: <ManagerEditMenuPage />,
+      },
+      { path: "/manager/orders", element: <ManagerOrdersPage /> },
+      { path: "/manager/deliveries", element: <ManagerDeliveriesPage /> },
+      {
+        path: "/manager/deliveries/track/:orderId",
+        element: <ManagerTrackOrderPage />,
+      },
+      { path: "/manager/live-tracking", element: <ManagerLiveTrackingPage /> },
+    ],
+  },
+  // Rute za administratora (Admin)
+  { path: "/admin/dashboard", element: <AdminManagerManagementPage /> },
+  { path: "/admin/managers", element: <AdminManagerManagementPage /> },
+  {
+    path: "/admin/driver-performance",
+    element: <AdminDriverPerformancePage />,
+  },
+  { path: "/admin/live-tracking", element: <AdminLiveTrackingPage /> },
 
-    {
-    path: "/delivery/:orderId", 
-    element: <PickedUpOrderPage />,
-  },
+  // Rute za podršku (Support Admin)
+  { path: "/support/agent-management", element: <OperatorManagementPage /> },
+  { path: "/support/profile", element: <SupportAdminProfilePage /> },
+  { path: "/support/analytics", element: <SupportAnalyticsPage /> },
 
+  // Support operator
+  { path: "/operator/analytics", element: <OperatorAnalyticsPage /> },
+  { path: "operator/profile", element: <OperatorProfilePage /> },
+  { path: "/operator/dashboard", element: <OperatorDashboardPage /> },
+  { path: "/operator/chat/:ticketId", element: <OperatorChatPage /> },
 
-  {
-  path: "/driver",
-  element: <DriverDashboard />,
-  },
- 
-  {
-    path: "/driver/profile",
-    element: <DriverProfilePage />,
-  },
-   {
-        path: "/driver/orders/:orderId",
-        element: <ViewOrderPage />,
-    },
-
-  {
-    path: "/track/:orderId",
-    element: <TrackOrderPage />,
-  },
-
-  {
-    path: "/analytics",
-    element: <AnalyticsPage />,
-  },
-    {
-    path: "/profile",
-    element: <MyProfilePage />,
-  },
-   {
-    path: "/about",
-    element: <AboutUsPage />,
-  },
-  {
-    path: "/faq",
-    element: <FaqPage />,
-  },
-  {
-    path: "/contact",
-    element: <ContactPage />,
-  },
-  {
-    path: "/privacy-policy",
-    element: <PrivacyPolicyPage />,
-  },
-  {
-    path: "/terms-of-service",
-    element: <TermsOfServicePage />,
-  },
-  // Ovde ćeš kasnije dodavati i druge rute
-  // {
-  //   path: "/dashboard",
-  //   element: <DashboardPage />,
-  // },
+  // Rute koje nemaju poseban layout (Login, Register)
+  { path: "/", element: <LoginPage /> },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
 ]);
-ReactDOM.createRoot(document.getElementById('root')).render(
+
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {/* 
-      CartProvider mora da obmota RouterProvider kako bi sve stranice
-      unutar rutera imale pristup kontekstu korpe.
-    */}
-    <CartProvider>
-      <RouterProvider router={router} />
-      <Toaster position="bottom-right" /> {/* Toaster može biti unutar ili van, ali ovako je čistije */}
-    </CartProvider>
+    {/* Context Provideri obmotavaju celu aplikaciju */}
+    <NotificationProvider>
+      <CartProvider>
+        {/* RouterProvider pruža definisane rute aplikaciji */}
+        <RouterProvider router={router} />
+        {/* Toaster za prikaz notifikacija, sada samo jedan */}
+        <Toaster position="bottom-right" />
+      </CartProvider>
+    </NotificationProvider>
   </React.StrictMode>
 );

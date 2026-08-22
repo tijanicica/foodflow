@@ -18,6 +18,8 @@ public class MenuItem {
     private Long id;
     private String name;
     private String description;
+
+    @Column(length = 1024) // <-- DODAJ OVU LINIJU
     private String imageUrl;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -31,13 +33,16 @@ public class MenuItem {
     )
     @ToString.Exclude
     private Set<DietType> dietTypes = new HashSet<>();
-
+    // NOVO POLJE
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
     @ManyToMany
     @JoinTable(
             name = "menu_item_allergen",
             joinColumns = @JoinColumn(name = "menu_item_id"),
             inverseJoinColumns = @JoinColumn(name = "allergen_id")
     )
+
     @ToString.Exclude
     private Set<Allergen> allergens = new HashSet<>();
 }

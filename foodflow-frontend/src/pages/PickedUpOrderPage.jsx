@@ -3,15 +3,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
+import { EtaCountdown } from '../components/EtaCountdown';
+import { motion } from 'framer-motion';
+import { DriverFooter } from '../components/DriverFooter';
 
 // WebSocket i API
 import Stomp from 'stompjs';
 import SockJS from 'sockjs-client';
-import { getOrderDetails, cancelDelivery,getDriverInfo, startSimulation,markOrderAsDelivered   } from '../services/api'; 
+import { getOrderDetails , cancelDelivery,getDriverInfo,reportDelay , startSimulation,markOrderAsDelivered   } from '../services/api'; 
 // Komponente i ikonice
 import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
-import { FiMapPin, FiUser, FiCheckCircle, FiNavigation, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
+import { FiEdit3,FiSend ,FiFlag ,FiShoppingBag ,FiArchive ,FiMapPin, FiUser, FiCheckCircle,FiPlayCircle , FiNavigation, FiAlertTriangle, FiXCircle,FiClock, FiMinus, FiPlus } from 'react-icons/fi';
 
 
 const predefinedReasons = [
@@ -20,6 +23,8 @@ const predefinedReasons = [
  { id: 3, text: "Spilled order", icon: <FiXCircle /> },
     { id: 4, text: "Personal reasons", icon: <FiUser /> }
 ];
+
+
 
 const CancelOrderModal = ({ onConfirm, onCancel }) => {
     const [selectedReasons, setSelectedReasons] = useState([]);
@@ -128,19 +133,24 @@ const CancelOrderModal = ({ onConfirm, onCancel }) => {
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                 <button
-                    onClick={onCancel}
-                    style={{
-                        flex: 1,
-                        padding: '1rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid #D1D5DB',
-                        backgroundColor: 'white',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                    }}
-                >
-                    Cancel
-                </button>
+    onClick={onCancel}
+    style={{
+        flex: 1,
+        padding: '1rem',
+        borderRadius: '10px',
+        border: '1.5px solid #D1D5DB',
+        backgroundColor: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s ease-in-out' // Dodato za glatku promenu boje
+    }}
+    // Kada miš pređe preko dugmeta, pozadina postaje svetlo siva
+    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'} 
+    // Kada miš napusti dugme, pozadina se vraća u belu boju
+    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+>
+    Cancel
+</button>
                 <button
                     onClick={handleConfirm}
                     style={{
@@ -160,6 +170,96 @@ const CancelOrderModal = ({ onConfirm, onCancel }) => {
         </motion.div>
     );
 };
+export const ReportDelayModal = ({ onConfirm, onCancel }) => {
+    const [minutes, setMinutes] = useState(3); // Početna vrednost
+    const MAX_DELAY = 7; // Maksimalno kašnjenje
+
+    const changeMinutes = (amount) => {
+        setMinutes(prev => {
+            const newValue = prev + amount;
+            // Ograničavamo vrednost između 1 i MAX_DELAY
+            return Math.max(1, Math.min(newValue, MAX_DELAY));
+        });
+    };
+
+    const handleConfirm = () => {
+        onConfirm(minutes);
+    };
+    
+    // Stilovi za + i - dugmad radi preglednosti
+    const stepperButtonStyle = {
+        width: '40px',
+        height: '40px',
+        border: '1.5px solid #D1D5DB',
+        borderRadius: '50%',
+        backgroundColor: 'white',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        color: '#4A4A4A',
+        transition: 'all 0.2s ease',
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ 
+                backgroundColor: 'white', 
+                padding: '2.5rem', // Više prostora
+                borderRadius: '16px', // Zaobljenije
+                width: '400px', 
+                textAlign: 'center', 
+                boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                border: '1px solid #F3EAD9'
+            }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <FiClock size={32} color="#8A643B" />
+                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Report a Delay</h3>
+            </div>
+
+            <p style={{ color: '#6B7280', marginBottom: '2rem' }}>
+                Please specify how many minutes you will be late.
+            </p>
+
+            {/* Redizajniran unos sa + i - dugmadima */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
+                <button 
+                    onClick={() => changeMinutes(-1)} 
+                    style={stepperButtonStyle}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                >
+                    <FiMinus />
+                </button>
+                <span style={{ fontSize: '3rem', fontWeight: 'bold', minWidth: '80px' }}>{minutes}</span>
+                <button 
+                    onClick={() => changeMinutes(1)} 
+                    style={stepperButtonStyle}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                >
+                    <FiPlus />
+                </button>
+            </div>
+            
+            <p style={{ fontSize: '1rem', color: '#6B7280', marginTop: '0.5rem' }}>minutes</p>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem' }}>
+                <button onClick={onCancel} style={{ flex: 1, padding: '1rem', border: '1.5px solid #D1D5DB', borderRadius: '10px', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+                <button onClick={handleConfirm} style={{ flex: 1, padding: '1rem', border: 'none', backgroundColor: '#8A643B', color: 'white', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', transition: 'background-color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#71502f'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
+                >
+                    Confirm Delay
+                </button>
+            </div>
+        </motion.div>
+    );
+};
 
 
 
@@ -171,13 +271,24 @@ export function PickedUpOrderPage() {
 
     // Stanja (State)
     const [order, setOrder] = useState(null);
+    const [isNotifying, setIsNotifying] = useState(false); 
     const [vehicleType, setVehicleType] = useState(null);
     const [driverLocation, setDriverLocation] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+     const [isReportDelayModalOpen, setIsReportDelayModalOpen] = useState(false);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(null);
+     const [timeLeft, setTimeLeft] = useState(null);
     const [predictedTimeLeft, setPredictedTimeLeft] = useState(null);
+        const refreshOrderDetails = async () => {
+        try {
+            const updatedOrder = await getOrderDetails(orderId);
+            setOrder(updatedOrder);
+        } catch (err) {
+            toast.error("Could not refresh order details.");
+        }
+    };
+
 
     // useEffect za dobavljanje podataka i WebSocket konekciju
        useEffect(() => {
@@ -252,18 +363,7 @@ if (newLocation.predictedTimeLeft !== undefined) {
     };
 }, [orderId]);
     // Handler za pokretanje simulacije
-    const handleStartDriving = async () => {
-        if (!order) return;
-        try {
-            toast.loading('Starting simulation...', { id: 'sim-start' });
-            await startSimulation(order.id);
-            toast.dismiss('sim-start');
-            toast.success("Simulation to customer started!");
-        } catch (error) {
-            toast.dismiss('sim-start');
-            toast.error("Could not start simulation.");
-        }
-    };
+
 
         const handleCancelDelivery = async (reason) => {
         try {
@@ -312,7 +412,20 @@ if (newLocation.predictedTimeLeft !== undefined) {
             console.error("Delivery failed:", error);
         }
     };
-    const handleReportDelay = () => alert("TODO: Implement Report Delay!");
+     const handleReportDelay = async (delayMinutes) => {
+        if (!order || !delayMinutes) return;
+        try {
+            toast.loading('Reporting delay...', { id: 'delay-toast' });
+            await reportDelay(order.id, delayMinutes);
+            toast.dismiss('delay-toast');
+            toast.success('Delay reported! ETA has been updated.');
+            await refreshOrderDetails();
+            setIsReportDelayModalOpen(false);
+        } catch (error) {
+            toast.dismiss('delay-toast');
+            toast.error(error.response?.data?.message || "Failed to report delay.");
+        }
+    };
 
     // Memoizacija props-ova za mapu
     const assignedDeliveriesForMap = useMemo(() => order ? [order] : [], [order]);
@@ -327,7 +440,6 @@ if (newLocation.predictedTimeLeft !== undefined) {
     
     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
-            <Toaster position="top-center" />
                         {/* OVERLAY I MODAL */}
             {isCancelModalOpen && (
                 <div style={{
@@ -342,14 +454,22 @@ if (newLocation.predictedTimeLeft !== undefined) {
                     />
                 </div>
             )}
+              {isReportDelayModalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 9998, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <ReportDelayModal
+                        onCancel={() => setIsReportDelayModalOpen(false)}
+                        onConfirm={handleReportDelay}
+                    />
+                </div>
+            )}
 
 
             <NavbarDriver />
             <main style={{  maxWidth: '1500px', margin: '20px 90px' }}>
-                <div style={{ backgroundColor: '#FDFDF5', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
+                <div style={{ backgroundColor: '#fffff9ff', padding: '2rem', borderRadius: '24px', border: '1px solid #F3EAD9', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '2rem', alignItems: 'start' }}>
                     
                     {/* LEVA KOLONA - MAPA */}
-                    <div style={{ height: '85vh', borderRadius: '16px', overflow: 'hidden' }}>
+                    <div style={{ height: '95vh', borderRadius: '16px', overflow: 'hidden' }}>
                         {driverLocation && (
                             <MapComponent
                                 driverLocation={driverLocation}
@@ -363,97 +483,238 @@ if (newLocation.predictedTimeLeft !== undefined) {
 
                     {/* DESNA KOLONA - INFORMACIJE */}
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                                <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #EAEAEA' }}>
-                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>
-                                START TIME
-                            </p>
-                            <p style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0.25rem 0', color: '#333' }}>
-                                {order.startTime ? new Date(order.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                            </p>
+                                               {/* === ETA I VREME (Novi, vertikalni dizajn) === */}
+<div style={{
+    paddingBottom: '1.25rem',
+    borderBottom: '1px solid #EAEAEA'
+}}>
+    {/* --- Vreme početka --- */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <FiPlayCircle size={24} color="#6B7280" /> {/* Ikonica za "start" */}
+        <div>
+            <p style={{
+                textTransform: 'uppercase',
+                color: '#6B7280',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                margin: 0
+            }}>
+                Start Time
+            </p>
+            <p style={{
+                fontSize: '1.2rem',
+                fontWeight: '600',
+                margin: '0.25rem 0',
+                color: '#333'
+            }}>
+                {order.startDeliveryTime ? new Date(order.startDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+            </p>
+        </div>
+    </div>
 
-                            <p style={{ textTransform: 'uppercase', color: '#6B7280', fontSize: '0.9rem', marginTop: '1rem' }}>
-                                ESTIMATED ARRIVAL (ETA)
-                            </p>
-                            <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.25rem 0 0 0', color: '#333' }}>
-                                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                            </p>
-
-<p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                                {predictedTimeLeft !== null 
-                                    ? `Predicted time: ~${Math.ceil(predictedTimeLeft / 60)} min` 
-                                    : (order.eta ? '' : 'Start the simulation to get a prediction.')
-                                }
-                            </p>
-                        </div>
-
+    {/* --- Vreme dolaska (ETA) --- */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.25rem' /* Razmak između sekcija */ }}>
+        <FiClock size={24} color="#8A643B" /> {/* Ikonica za ETA */}
+        <div>
+            <p style={{
+                textTransform: 'uppercase',
+                color: '#8A643B', // Naglašena boja
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                margin: 0
+            }}>
+                Estimated Arrival (ETA)
+            </p>
+            <p style={{
+                fontSize: '1.8rem', // Veći font za važniju informaciju
+                fontWeight: '700', // Deblji font
+                margin: '0.25rem 0 0 0',
+                color: '#1F2937' // Tamnija boja za bolji kontrast
+            }}>
+                {order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+            </p>
+        </div>
+    </div>
+    
+    {/* --- Komponenta za odbrojavanje, nepromenjena --- */}
+    <div style={{ marginTop: '0.5rem', paddingLeft: 'calc(24px + 1rem)' /* Poravnanje sa tekstom iznad */ }}>
+        {order.eta 
+            ? <EtaCountdown eta={order.eta} /> 
+            : <p style={{color: '#6B7280', fontSize: '0.9rem', margin: 0}}>ETA is calculated upon pickup.</p>
+        }
+    </div>
+</div>
 
 
                         {/* --- STEP 1: PICKUP (Neaktivan/Precrtan) --- */}
-                        <div style={{ marginTop: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #EAEAEA', opacity: 1 }}>
-                            <p style={{
-                                textTransform: 'uppercase', fontWeight: 'bold', margin: 0,
-                                color: '#A1A1AA', // Neutralna siva boja
-                                textDecoration: 'line-through', // Precrtavanje
-                                textDecorationColor: '#D4D4D8', // Svetlo siva linija
-                                display: 'flex', alignItems: 'center'
-                            }}>
-                                <FiMapPin style={{ marginRight: '0.5rem' }} /> Step 1: Pickup
-                            </p>
-                            <p style={{
-                                fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500',
-                                color: '#A1A1AA', textDecoration: 'line-through', textDecorationColor: '#D4D4D8'
-                            }}>
-                                {order.restaurantName}
-                            </p>
-                            <p style={{
-                                color: '#A1A1AA', margin: 0, textDecoration: 'line-through', textDecorationColor: '#D4D4D8'
-                            }}>
-                                {order.restaurantAddress}
-                            </p>
-                        </div>
-                        
-                        {/* --- STEP 2: DELIVER (Aktivan) --- */}
-                        <div style={{ marginTop: '1.5rem' }}>
-                            <p style={{ textTransform: 'uppercase', fontWeight: 'bold', margin: 0, color: '#2F855A', display: 'flex', alignItems: 'center' }}>
-                                <FiUser style={{ marginRight: '0.5rem' }} /> Step 2: Deliver
-                            </p>
-                            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0 0.25rem 0', fontWeight: '500' }}>
-                                {order.customerFirstName} {order.customerLastName}
-                            </p>
-                            <p style={{ color: '#6B7280', margin: 0 }}>{order.deliveryAddress}</p>
-                        </div>
+                     <div style={{
+    marginTop: '1.5rem',
+    paddingBottom: '1.5rem',
+    borderBottom: '1px solid #EAEAEA'
+}}>
+    {/* === Naslov koraka - veći, sa ikonicom, ali precrtan === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1rem', // Uvećan font kao na aktivnom koraku
+        color: '#8c8c8dff', // Neutralna siva boja
+        textDecoration: 'line-through',
+        textDecorationColor: '#D4D4D8',
+        margin: '0 0 1rem 0'
+    }}>
+        <FiShoppingBag size={20} />
+        Step 1: Pickup
+    </p>
+
+    {/* === Detalji o restoranu - ista struktura, ali precrtano === */}
+    <div style={{ paddingLeft: '0.5rem' }}>
+        {/* Ime restorana sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#A1A1AA' }}><FiArchive size={18} /></span>
+            <h4 style={{
+                fontSize: '1.2rem',
+                fontWeight: '600',
+                color: '#A1A1AA',
+                textDecoration: 'line-through',
+                textDecorationColor: '#D4D4D8',
+                margin: 0
+            }}>
+                {order.restaurantName}
+            </h4>
+        </div>
+
+        {/* Adresa restorana */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#A1A1AA' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#A1A1AA',
+                fontSize: '0.95rem',
+                textDecoration: 'line-through',
+                textDecorationColor: '#D4D4D8',
+                margin: 0,
+            }}>
+                {order.restaurantAddress}
+            </p>
+        </div>
+    </div>
+</div>
+{/* === KORAK 2: DOSTAVA (Aktivan, redizajniran) === */}
+<div style={{
+    marginTop: '1.5rem'
+}}>
+    {/* === Naslov koraka - veći i uočljiviji === */}
+    <p style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        fontSize: '1rem', // Isti font-size kao kod Step 1
+        color: '#2F855A', // Zadržana zelena boja za "Deliver"
+        margin: '0 0 1rem 0'
+    }}>
+        <FiFlag size={20} /> {/* Ikonica koja simbolizuje cilj/destinaciju */}
+        Step 2: Deliver
+    </p>
+
+    {/* === Detalji o dostavi - konzistentna struktura === */}
+    <div style={{ paddingLeft: '0.5rem' }}>
+        {/* Ime kupca sa ikonicom */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+        }}>
+            <span style={{ color: '#1F2937' }}><FiUser size={18} /></span>
+            <h4 style={{
+                fontSize: '1.2rem', // Isti font kao ime restorana
+                fontWeight: '600',
+                color: '#2e2e2eff', // Ista tamna boja za tekst
+                margin: 0
+            }}>
+                {order.customerFirstName} {order.customerLastName}
+            </h4>
+        </div>
+
+        {/* Adresa dostave */}
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.5rem'
+        }}>
+            <span style={{ color: '#6B7280' }}><FiMapPin size={18} /></span>
+            <p style={{
+                color: '#646464ff', // Ista siva boja za adresu
+                fontSize: '0.95rem',
+                margin: 0,
+            }}>
+                {order.deliveryAddress}
+            </p>
+        </div>
+    </div>
+</div>
 
                         {/* DUGMAD */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto', paddingTop: '1.5rem' }}>
-                            <button
-                                onClick={handleMarkAsDelivered}
-                                style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
-                            >
-                                <FiCheckCircle /> Mark as Delivered
-                            </button>
-                                                        <button
-                                onClick={handleStartDriving}
-                                style={{ ...primaryButtonStyle, backgroundColor: '#8A643B' }}
-                            >
-                                <FiNavigation /> Start Driving to Customer
-                            </button>
+                            
+                       <button
+    onClick={handleMarkAsDelivered}
+    style={{ ...primaryButtonStyle, backgroundColor: '#2E7D32' }}
+    // Kada miš pređe preko dugmeta, boja postaje tamnije zelena
+    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#256627'}
+    // Kada miš napusti dugme, boja se vraća na originalnu
+    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2E7D32'}
+>
+    <FiCheckCircle /> Mark as Delivered
+</button>
+                                                    
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <button onClick={handleReportDelay} style={secondaryButtonStyle}>
-                                    <FiAlertTriangle size={14} /> Report Delay
+                            <button
+    onClick={() => setIsReportDelayModalOpen(true)}
+    style={secondaryButtonStyle}
+    // Kada miš pređe preko dugmeta, stilovi se menjaju u "warning" temu
+    onMouseEnter={e => {
+        e.currentTarget.style.borderColor = '#D97706'; // Tamno žuta ivica
+        e.currentTarget.style.backgroundColor = '#faf8e6ff'; // Svetlo žuta pozadina
+        e.currentTarget.style.color = '#B45309'; // Tamno žuti tekst i ikonica
+    }}
+    // Kada miš napusti dugme, stilovi se vraćaju na originalne
+    onMouseLeave={e => {
+        e.currentTarget.style.borderColor = '#D1D5DB'; // Originalna siva ivica
+        e.currentTarget.style.backgroundColor = 'white'; // Originalna bela pozadina
+        e.currentTarget.style.color = '#4A4A4A'; // Originalna boja teksta
+    }}
+>
+    <FiAlertTriangle size={14} /> Report Delay
+</button>
+                                
+                                <button
+                                    onClick={() => setIsCancelModalOpen(true)}
+                                    style={secondaryButtonStyle}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#EF4444'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#4A4A4A'; }}
+                                >
+                                    <FiXCircle size={14} /> Cancel Delivery
                                 </button>
-                                 <button
-                                                                    onClick={() => setIsCancelModalOpen(true)}
-                                                                    style={secondaryButtonStyle}
-                                                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#EF4444'; }}
-                                                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#4A4A4A'; }}
-                                                                >
-                                                                    <FiXCircle size={14} /> Cancel Delivery
-                                                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             </main>
+            <DriverFooter /> 
         </div>
     );
 }

@@ -27,4 +27,5 @@ public class DashboardOrderDTO {
 
     private CoordinatesDTO restaurantCoordinates;
     private CoordinatesDTO deliveryCoordinates;
+    private LocalDateTime startDeliveryTime;
 }

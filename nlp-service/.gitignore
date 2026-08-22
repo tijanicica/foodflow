@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large ML/AI files
+*.pt
+*.pth
+*.pkl
+*.h5
+*.onnx
+*.ckpt
+
+# System
+.DS_Store
+Thumbs.db
+final_model/
+foodflow_ticket_classifier/

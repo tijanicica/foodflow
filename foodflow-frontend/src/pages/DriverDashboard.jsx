@@ -6,22 +6,15 @@ import { MapComponent } from '../components/MapComponent';
 import { NavbarDriver } from '../components/NavbarDriver';
 import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-
-/**
- * Komponenta za prikaz jedne kartice sa ponudom.
- */
-/**
- * Komponenta za prikaz jedne kartice sa ponudom.
- */
+import { DriverFooter } from '@/components/DriverFooter';
+import { RejectOfferModal } from '../components/modals/RejectOfferModal'; 
 // FAJL: src/pages/DriverDashboard.jsx
 
-// Definiramo zajedničku širinu kao varijablu na vrhu
-const cardMaxWidth = '450px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
-
-
+import { MapPin, ArrowRight, Clock, CheckCircle } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
+// ...
+const cardMaxWidth = '450px'; // Možete lako promijeniti ovu vrijednost (npr. '400px')
+import {FiGift,FiList , FiArrowLeft,FiChevronRight ,FiNavigation , FiArrowRight, FiTruck, FiCheckCircle, FiXCircle, FiClock, FiMapPin } from 'react-icons/fi';
 
 
 
@@ -68,43 +61,80 @@ const slideVariants = {
 /**
  * Komponenta za prikaz jedne kartice sa ponudom.
  * UVIJEK PRIKAZUJE OBJE DISTANCE.
- */
+ */// FAJL: src/pages/DriverDashboard.jsx
+
+// FAJL: src/pages/DriverDashboard.jsx
+
+// FAJL: src/pages/DriverDashboard.jsx
+
+// (Obavezno proverite da li je ikonica `FiNavigation` uvezena na vrhu fajla)
+// import { ..., FiNavigation } from 'react-icons/fi';
+
 const OfferCard = ({ offer, onAccept, onReject }) => {
-        if (!offer || !offer.order) {
-        return null; // Ili neki fallback prikaz
+    if (!offer || !offer.order) {
+        return null;
     }
-    // Definiramo stilove kao objekte da bi kod bio čitljiviji
-    const baseButtonStyle = {
-        flex: 1,
-        padding: '0.75rem',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: '600',
-        transition: 'all 0.2s ease-in-out'
-    };
+
+    const [isHovered, setIsHovered] = useState(false);
+
+    // Stilovi...
+    const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' };
+    const iconStyle = { color: '#8A643B', flexShrink: 0 };
+    const baseButtonStyle = { flex: 1, padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s ease-in-out', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' };
     const rejectButtonStyle = { ...baseButtonStyle, border: '2px solid #D1D5DB', color: '#4A4A4A', backgroundColor: 'transparent' };
     const acceptButtonStyle = { ...baseButtonStyle, border: '2px solid #8A643B', color: 'white', backgroundColor: '#8A643B' };
 
+    const cardStyle = {
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        border: '1px solid #EAEAEA',
+        maxWidth: cardMaxWidth,
+        margin: '0 auto',
+        boxShadow: isHovered ? '0 8px 25px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.08)',
+        transition: 'box-shadow 0.3s ease-in-out',
+    };
+
     return (
-        <div style={{
-            backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid #EAEAEA',
-            transition: 'transform 0.2s ease-in-out',
-            maxWidth: cardMaxWidth,
-            margin: '0 auto'
-        }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-            <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Pickup: {offer.order.restaurantName}</p>
-            <p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>From: {offer.order.restaurantAddress}</p>
-            <p style={{ marginTop: '0.75rem' }}>Deliver to: {offer.order.deliveryAddress}</p>
+        <div 
+            style={cardStyle}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div style={infoRowStyle}>
+                <FiMapPin size={20} style={iconStyle} />
+                <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Pickup From</p>
+                    <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: '0.1rem 0' }}>{offer.order.restaurantName}</p>
+                    <p style={{ color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>{offer.order.restaurantAddress}</p>
+                </div>
+            </div>
+
+            <div style={infoRowStyle}>
+                <FiChevronRight size={20} style={iconStyle} />
+                 <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Deliver To</p>
+                    <p style={{ fontWeight: '600', fontSize: '1rem', margin: '0.1rem 0' }}>{offer.order.deliveryAddress}</p>
+                </div>
+            </div>
             
-            {/* Prikaz obje distance */}
-            <div style={{ marginTop: '1rem', color: '#333', fontSize: '0.9rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
-                <p style={{ margin: '0 0 0.5rem 0' }}>
-                    Distance to Restaurant: <strong>{offer.order.distanceDriverToRestaurant.toFixed(1)} km</strong>
-                </p>
-                <p style={{ margin: 0 }}>
-                    Distance to Customer: <strong>{offer.order.distanceDriverToCustomer.toFixed(1)} km</strong>
-                </p>
+            {/* === IZMENJENI DEO ZA DISTANCU === */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    
+                    {/* 1. Ikonica za distancu */}
+                    <FiNavigation size={20} style={{ color: '#6B7280', flexShrink: 0 }} />
+
+                    {/* 2. Kontejner za obe distance, jedan ispod drugog */}
+                    <div style={{ color: '#333', fontSize: '0.9rem' }}>
+                        <p style={{ margin: 0 }}>
+                            To Restaurant: <strong>{offer.order.distanceDriverToRestaurant.toFixed(1)} km</strong>
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0 0' }}>
+                            To Customer: <strong>{offer.order.distanceDriverToCustomer.toFixed(1)} km</strong>
+                        </p>
+                    </div>
+                </div>
             </div>
             
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
@@ -114,7 +144,7 @@ const OfferCard = ({ offer, onAccept, onReject }) => {
                     onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.color = '#EF4444'; }}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.color = '#4A4A4A'; }}
                 >
-                    Reject
+                    <FiXCircle /> Reject
                 </button>
                 <button
                     onClick={() => onAccept(offer.id)}
@@ -122,76 +152,124 @@ const OfferCard = ({ offer, onAccept, onReject }) => {
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#71502f'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#8A643B'}
                 >
-                    Accept
+                    <FiCheckCircle /> Accept
                 </button>
             </div>
         </div>
     );
 };
+// FAJL: src/pages/DriverDashboard.jsx
+// FAJL: src/pages/DriverDashboard.jsx
 
-/**
- * Komponenta za prikaz jedne prihvaćene porudžbine.
- * DINAMIČKI PRIKAZUJE DISTANCU.
- */
+// (Proverite da li su sve ikonice uvezene na vrhu: FiTruck, FiCheckCircle, FiClock, FiMapPin, FiChevronRight, FiNavigation)
+
 const AssignedDeliveryCard = ({ delivery }) => {
+    // Logika za status ostaje ista
     const isReadyForPickup = delivery.status === 'READY_FOR_PICKUP';
     const isPickedUp = delivery.status === 'PICKED_UP';
+    
     let statusMessage = "Waiting for Restaurant...";
-    if (isReadyForPickup) { statusMessage = "Order is Ready for Pickup!"; }
-    else if (isPickedUp) { statusMessage = "On your way to customer!"; }
+    let statusIcon = <FiClock size={18} />; // Koristimo FiClock
+    if (isReadyForPickup) { 
+        statusMessage = "Order is Ready for Pickup!";
+        statusIcon = <FiCheckCircle size={18} />; // Koristimo FiCheckCircle
+    } else if (isPickedUp) { 
+        statusMessage = "On your way to customer!";
+        statusIcon = <FiTruck size={18} />;
+    }
 
+    // State za praćenje hover stanja
+    const [isHovered, setIsHovered] = useState(false);
+
+    // Stilovi iz OfferCard
+    const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' };
+    const iconStyle = { color: '#8A643B', flexShrink: 0 };
+
+    // Dinamički stil za karticu sa hover efektom
+    const cardStyle = {
+        backgroundColor: 'white',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        border: '1px solid #EAEAEA',
+        maxWidth: cardMaxWidth,
+        margin: '0 auto',
+        boxShadow: isHovered ? '0 8px 25px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.08)',
+        transition: 'box-shadow 0.3s ease-in-out',
+    };
+    
     return (
-        <div style={{
-            backgroundColor: 'white', 
-            padding: '1.5rem',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)', 
-            border: '1px solid #EAEAEA',
-            maxWidth: cardMaxWidth,
-            margin: '0 auto'
-        }}>
-            <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>Pickup: {delivery.restaurantName}</p>
-            <p style={{ color: '#6B7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>From: {delivery.restaurantAddress}</p>
-            <p style={{ marginTop: '0.5rem' }}>Deliver to: {delivery.deliveryAddress}</p>
-            
-            {/* === VRAĆENA IF/ELSE LOGIKA ZA DISTANCU === */}
-            <div style={{ marginTop: '1rem', color: '#333', fontSize: '0.9rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
-                {isPickedUp ? (
-                    // Ako je preuzeo, prikaži distancu do kupca
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                        Distance to Customer: {delivery.distanceDriverToCustomer.toFixed(1)} km
-                    </p>
-                ) : (
-                    // Ako nije preuzeo, prikaži distancu do restorana
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                        Distance to Restaurant: {delivery.distanceDriverToRestaurant.toFixed(1)} km
-                    </p>
-                )}
+        // `motion.div` je sada običan `div`
+        <div 
+            style={cardStyle}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div style={infoRowStyle}>
+                <FiMapPin size={20} style={iconStyle} />
+                <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Pickup From</p>
+                    <p style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: '0.1rem 0' }}>{delivery.restaurantName}</p>
+                    <p style={{ color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>{delivery.restaurantAddress}</p>
+                </div>
+            </div>
+
+            <div style={infoRowStyle}>
+                <FiChevronRight size={20} style={iconStyle} />
+                <div>
+                    <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase' }}>Deliver To</p>
+                    <p style={{ fontWeight: '600', fontSize: '1rem', margin: '0.1rem 0' }}>{delivery.deliveryAddress}</p>
+                </div>
             </div>
             
-            {/* Donji dio sa statusom i gumbom */}
+            {/* === IZMENJENI DEO ZA DISTANCU SA IKONICOM === */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <FiNavigation size={20} style={{ color: '#6B7280', flexShrink: 0 }} />
+                    <div style={{ color: '#333', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                        {isPickedUp ? (
+                            <p style={{ margin: 0 }}>
+                                Distance to Customer: {delivery.distanceDriverToCustomer.toFixed(1)} km
+                            </p>
+                        ) : (
+                            <p style={{ margin: 0 }}>
+                                Distance to Restaurant: {delivery.distanceDriverToRestaurant.toFixed(1)} km
+                            </p>
+                        )}
+                    </div>
+                 </div>
+            </div>
+
             {isReadyForPickup ? (
                 <>
-                           <p style={{ margin: '1rem 0', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>{statusMessage}</p>
-                        {/* === 2. OMOTAJTE DUGME SA <Link> === */}
-                        <Link to={`/driver/orders/${delivery.id}`} style={{ textDecoration: 'none' }}>
-                            <button style={{
+                    <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', margin: '1rem 0', padding: '0.5rem 0', color: '#2F855A', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#EBF8F2', borderRadius: '8px' }}>
+                        {statusIcon} {statusMessage}
+                    </p>
+                    <Link to={`/driver/orders/${delivery.id}`} style={{ textDecoration: 'none' }}>
+                        <button 
+                            style={{
                                 width: '100%', padding: '0.8rem', borderRadius: '8px',
-                                border: 'none', color: 'white', backgroundColor: '#1F2937',
-                                cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem'
-                            }}>
-                                View on Map & Start
-                            </button>
-                        </Link>
+                                border: 'none', color: 'white', backgroundColor: '#1F2937', // Originalna tamno siva/crna
+                                cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem',
+                                transition: 'background-color 0.2s ease-in-out' // Dodajemo tranziciju
+                            }}
+                            // === IZMENE SU OVDE ===
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#000000'} // Menja u potpunu crnu na hover
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1F2937'} // Vraća na originalnu boju
+                        >
+                            View on Map & Start
+                        </button>
+                    </Link>
                 </>
             ) : (
-                <div style={{ marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', backgroundColor: '#F3EAD9', color: '#8A643B', textAlign: 'center', fontWeight: '600' }}>
-                    {statusMessage}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem', borderRadius: '8px', backgroundColor: '#F3EAD9', color: '#8A643B', textAlign: 'center', fontWeight: '600' }}>
+                    {statusIcon} {statusMessage}
                 </div>
             )}
         </div>
     );
-};
+};// FAJL: src/pages/DriverDashboard.jsx
+// FAJL: src/pages/DriverDashboard.jsx
+
 /**
  * Komponenta za elegantan prikaz praznog stanja.
  */
@@ -199,19 +277,19 @@ const EmptyState = ({ message, details }) => (
     <div style={{
         border: '2px dashed #D1D5DB', 
         borderRadius: '12px',
-        padding: '3rem 1.2rem', // <-- PROMIJENILI SMO PADDING DA BUDE USKLAĐEN
+        padding: '3rem 1.2rem',
         textAlign: 'center', 
         color: '#6B7280',
         backgroundColor: '#FDFDF5',
-        maxWidth: '440px', // Koristimo zajedničku širinu
+        maxWidth: '440px',
         margin: '0 6px',
-        // Da bi bio iste visine kao kartice, možemo dodati minHeight
-        boxSizing: 'border-box' // Važno da padding bude uračunat u širinu/visinu
+        boxSizing: 'border-box'
     }}>
         <p style={{ fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>{message}</p>
         <p style={{ marginTop: '0.5rem' }}>{details}</p>
     </div>
 );
+// FAJL: src/pages/DriverDashboard.jsx
 
 const OfferCarousel = ({ offers, onAccept, onReject }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -222,11 +300,12 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
     const goNext = () => { setCurrentIndex(prev => (prev < offers.length - 1 ? prev + 1 : 0)); };
 
     if (offers.length === 0) {
+        // Vraćen poziv na staru EmptyState komponentu
         return <EmptyState message="No new orders available." details="You will be notified..." />;
     }
 
     return (
-        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0px 0px', minHeight: '220px' /* Visina da spriječimo skakanje */ }}>
+        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0px auto', minHeight: '320px' /* Visina da sprečimo skakanje */ }}>
             {offers.length > 1 && (
                 <>
                     <button onClick={goPrev} style={{ ...navButtonStyle, left: '-35px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
@@ -240,7 +319,7 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
             
             <AnimatePresence mode="wait">
                 <motion.div
-                    key={currentIndex} // Animacija se pokreće kada se ovaj key promijeni
+                    key={currentIndex}
                     variants={slideVariants}
                     initial="initial"
                     animate="animate"
@@ -253,6 +332,7 @@ const OfferCarousel = ({ offers, onAccept, onReject }) => {
         </div>
     );
 };
+// FAJL: src/pages/DriverDashboard.jsx
 
 const AssignedDeliveryCarousel = ({ deliveries }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -263,11 +343,12 @@ const AssignedDeliveryCarousel = ({ deliveries }) => {
     const goNext = () => { setCurrentIndex(prev => (prev < deliveries.length - 1 ? prev + 1 : 0)); };
 
     if (deliveries.length === 0) {
+        // Vraćen poziv na staru EmptyState komponentu
         return <EmptyState message="You have no active deliveries." details="Accepted orders will appear here." />;
     }
 
     return (
-        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0 0', minHeight: '220px' }}>
+        <div style={{ position: 'relative', maxWidth: cardMaxWidth, margin: '0 auto', minHeight: '320px' }}>
             {deliveries.length > 1 && (
                 <>
                     <button onClick={goPrev} style={{ ...navButtonStyle, left: '-36px' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#333'; }}>
@@ -298,17 +379,14 @@ const AssignedDeliveryCarousel = ({ deliveries }) => {
 
 // --- GLAVNA KOMPONENTA ---
 export function DriverDashboard() {
-    
     // --- STANJA (STATE) ---
     const [dashboardData, setDashboardData] = useState({ newOffers: [], assignedDeliveries: [], driverCoordinates: null });
     const [loading, setLoading] = useState(true);
     const [vehicleType, setVehicleType] = useState(null); 
     const [error, setError] = useState('');
-    // Ne vidim da koristiš `isRejectModalOpen`, pa sam ga zakomentarisao, ali ga ostavljam ako ti treba za neku drugu logiku.
-    // const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-
-    // --- FUNKCIJE ZA DOBAVLJANJE PODATAKA ---
-    // 1. Funkcija koja dobavlja SAMO podatke koji se često menjaju (porudžbine, lokacije)
+     // === 2. NOVI STATE ZA MODAL ===
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [offerToRejectId, setOfferToRejectId] = useState(null);
     const fetchDashboardUpdates = async () => {
         try {
             const data = await getDriverDashboard();
@@ -340,6 +418,7 @@ export function DriverDashboard() {
         return () => clearInterval(intervalId);
     }, []);
 
+
     // --- FUNKCIJE ZA UPRAVLJANJE PONUDAMA (HANDLERS) ---
     // 3. handleAccept sada poziva funkciju za osvežavanje
     const handleAccept = async (offerId) => {
@@ -352,100 +431,117 @@ export function DriverDashboard() {
         }
     };
 
-    // 4. handleReject sa svom tvojom logikom za modal
-    const handleReject = (offerId) => {
-        const performReject = async (reason) => {
-            try {
-                toast.loading('Rejecting offer...', { id: 'rejecting-toast' });
-                await rejectOffer(offerId, reason);
-                toast.dismiss('rejecting-toast');
-                toast.success('Offer rejected successfully.');
-                fetchDashboardUpdates();
-            } catch (err) {
-                toast.dismiss('rejecting-toast');
-                toast.error(err.response?.data?.message || 'Failed to reject offer.');
-            }
-            // `finally` blok sa `setIsRejectModalOpen(false)` nije potreban jer se modal zatvara preko `toast.dismiss(t.id)`
-        };
-        
-        toast((t) => {
-            const predefinedReasonStyle = {
-                padding: '0.5rem 1rem', borderRadius: '16px', border: '1px solid #D1D5DB',
-                backgroundColor: '#F9FAFB', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.2s ease',
-            };
+    useEffect(() => {
+    const handleRefresh = (event) => {
+      console.log("Dashboard received refresh signal!", event.detail);
+      fetchDashboardUpdates(); // Pozovi funkciju za osvežavanje
+    };
 
-            return (
-                 <div style={{ fontFamily: 'sans-serif', width: '300px', padding: '1.5rem', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #EAEAEA' }}>
-                    <h4 style={{ margin: '0 0 1.5rem 0', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                        Reason for Rejection
-                    </h4>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#6B7280' }}>
-                        Select a common reason or write your own:
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                        {['Too far', 'Too busy', 'Vehicle issue'].map(reason => (
-                            <button key={reason} style={predefinedReasonStyle}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3F4F6'}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F9FAFB'}
-                                onClick={() => {
-                                    performReject(reason);
-                                    toast.dismiss(t.id);
-                                }}>
-                                {reason}
-                            </button>
-                        ))}
-                    </div>
-                    <textarea id={`rejection-reason-${t.id}`} placeholder="Or write a custom reason here..."
-                        style={{ width: '100%', minHeight: '80px', border: '1px solid #ccc', borderRadius: '8px', padding: '0.75rem', resize: 'vertical', boxSizing: 'border-box' }}
-                    />
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                        <button onClick={() => toast.dismiss(t.id)}
-                            style={{ padding: '0.6rem 1.2rem', border: '1px solid #ccc', borderRadius: '8px', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}>
-                            Cancel
-                        </button>
-                        <button onClick={() => {
-                                const reasonInput = document.getElementById(`rejection-reason-${t.id}`);
-                                performReject(reasonInput.value);
-                                toast.dismiss(t.id);
-                            }}
-                            style={{ padding: '0.6rem 1.2rem', border: 'none', borderRadius: '8px', background: '#8A643B', color: 'white', cursor: 'pointer', fontWeight: '600' }}>
-                            Submit
-                        </button>
-                    </div>
-                </div>
-            );
-        }, { duration: Infinity, position: "top-center" });
-    }; // <-- **OVO JE KRA_J `handleReject` FUNKCIJE**
-    
+    window.addEventListener('new-notification', handleRefresh);
+
+    return () => {
+      window.removeEventListener('new-notification', handleRefresh);
+    };
+  }, []);
+
+    // 4. handleReject sa svom tvojom logikom za modal
+     const handleRejectClick = (offerId) => {
+        setOfferToRejectId(offerId);
+        setIsRejectModalOpen(true);
+    };
+
+    // Nova funkcija koja se poziva iz modala kada se potvrdi odbijanje
+    const performReject = async (reason) => {
+        if (!reason || !offerToRejectId) return;
+
+        try {
+            toast.loading('Rejecting offer...', { id: 'rejecting-toast' });
+            await rejectOffer(offerToRejectId, reason);
+            toast.dismiss('rejecting-toast');
+            toast.success('Offer rejected successfully.');
+            fetchDashboardUpdates();
+        } catch (err) {
+            toast.dismiss('rejecting-toast');
+            toast.error(err.response?.data?.message || 'Failed to reject offer.');
+        } finally {
+            // Zatvori modal i resetuj state
+            setIsRejectModalOpen(false);
+            setOfferToRejectId(null);
+        }
+    };
 
     // --- GLAVNI RETURN BLOK KOMPONENTE ---
     // Sve definicije stanja i funkcija moraju biti IZNAD ove `return` naredbe.
-    return (
+     return (
         <div style={{ fontFamily: 'sans-serif', backgroundColor: '#FFFBEB', minHeight: '100vh', color: '#4A4A4A' }}>
             <Toaster />
             <NavbarDriver />
             <main style={{ padding: '2rem 5%' }}>
-                <div style={{ maxWidth: '1400px', margin: '0 auto', backgroundColor: '#FDFDF5', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)', border: '1px solid #F3EAD9' }}>
+                <div style={{ maxWidth: '2100px', margin: '0 0px', backgroundColor: '#fffff9ff', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 10px 35px rgba(210, 180, 140, 0.2)', border: '1px solid #F3EAD9' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '2.5rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                             <section>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid #F3EAD9', paddingBottom: '0.75rem' }}>New Order Opportunities</h2>
+                                <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    
+    // Isti stil kao za drugi naslov
+    paddingBottom: '1rem',
+    borderBottom: '2px solid #F3EAD9',
+}}>
+    <div style={{ color: '#8A643B' }}>
+        {/* Koristimo drugu ikonicu da vizuelno razlikujemo sekcije */}
+        <FiGift size={28} /> {/* Ikonica za "poklon" ili novu priliku */}
+    </div>
+    <h2 style={{
+        fontSize: '1.5rem',
+        fontWeight: '700',
+        margin: 0,
+        color: '#1F2937'
+    }}>
+        New Order Opportunities
+    </h2>
+</div>
                                 {loading ? <p>Loading...</p> : error ? <p style={{ color: 'red' }}>{error}</p> :
                                     <OfferCarousel
                                         offers={dashboardData.newOffers}
                                         onAccept={handleAccept}
-                                        onReject={handleReject}
+                                        onReject={handleRejectClick} // <-- Važna izmena: poziva se handleRejectClick
                                     />
                                 }
                             </section>
                             <section>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid #F3EAD9', paddingBottom: '0.75rem' }}>My Assigned Deliveries</h2>
+                               
+<div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    
+    // === KLJUČNE IZMENE SU OVDE ===
+    paddingBottom: '1rem', // Ostavljamo padding samo na dnu za razmak
+    borderBottom: '2px solid #F3EAD9', // Deblja donja linija u boji pozadine
+}}>
+    <div style={{ color: '#8A643B' }}>
+        <FiList size={28} /> {/* Ikonica */}
+    </div>
+    <h2 style={{
+        fontSize: '1.5rem',
+        fontWeight: '700', // Jači font (bold)
+        margin: 0,
+        color: '#1F2937' // Malo tamnija boja za bolji kontrast
+    }}>
+        My Assigned Deliveries
+    </h2>
+</div>
                                 {loading ? <p>Loading...</p> :
                                     <AssignedDeliveryCarousel deliveries={dashboardData.assignedDeliveries} />
                                 }
                             </section>
                         </div>
-                        <div style={{ borderRadius: '16px', minHeight: '600px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #F3EAD9' }}>
+                        <div style={{ borderRadius: '16px', minHeight: '700px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', border: '1px solid #e4b152ff' }}>
                             {loading ? (
                                 <div style={{ backgroundColor: '#F3EAD9', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <p style={{ color: '#6B7280' }}>Loading Map...</p>
@@ -462,6 +558,18 @@ export function DriverDashboard() {
                     </div>
                 </div>
             </main>
+            <DriverFooter /> 
+
+            {/* === DODAT JE POZIV ZA MODAL OVDE === */}
+            {/* Modal je "nevidljiv" dok se `isRejectModalOpen` ne postavi na `true` */}
+            <RejectOfferModal 
+                isOpen={isRejectModalOpen}
+                onClose={() => {
+                    setIsRejectModalOpen(false);
+                    setOfferToRejectId(null); // Resetuj ID kada se modal zatvori
+                }}
+                onConfirm={performReject}
+            />
         </div>
     );
-} 
+}

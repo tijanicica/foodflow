@@ -3,14 +3,11 @@ import com.iis.foodflow.enums.TicketStatus;
 import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.user.Operator;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,16 +27,24 @@ public class SupportTicket {
 
     @ManyToOne
     @JoinColumn(name = "operator_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Operator operator;
 
     @OneToOne
     @JoinColumn(name = "order_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Order order;
 
     @OneToMany(mappedBy = "supportTicket", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Message> messages = new HashSet<>();
 
     @OneToOne(mappedBy = "supportTicket", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private OperatorRating operatorRating;
 
     @ManyToOne

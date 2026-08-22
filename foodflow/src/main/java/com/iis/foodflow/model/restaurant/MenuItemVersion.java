@@ -17,10 +17,13 @@ public class MenuItemVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private BigDecimal price;
-    private LocalTime timeFrom; // Bilo je dateFrom (LocalDateTime)
-    private LocalTime timeTo;   // Bilo je dateTo (LocalDateTime)
+    private LocalTime timeFrom;
+    private LocalTime timeTo;
     private boolean available;
     private boolean popular;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 
     @ManyToOne
     @JoinColumn(name = "menu_item_id", nullable = false)

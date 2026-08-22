@@ -8,17 +8,16 @@ import { useMap } from "react-leaflet";
 
 const RoutingMachine = ({ waypoints }) => {
   const map = useMap();
+  // Koristimo useRef da sačuvamo instancu kontrole između renderovanja
   const routingControlRef = useRef(null);
 
-  // Prvi useEffect: Kreira kontrolu samo jednom kada se mapa pojavi
+  // Ovaj useEffect kreira i uništava kontrolu
   useEffect(() => {
     if (!map) return;
 
-    // Kreiramo instancu, ali je NE dodajemo odmah na mapu
-    const instance = L.Routing.control({
+    // Kreiramo instancu i odmah je čuvamo u ref
+    routingControlRef.current = L.Routing.control({
       waypoints: [], // Uvek počinje prazna
-      
-      // Sve tvoje opcije
       lineOptions: {
         styles: [{ color: "black", opacity: 0.8, weight: 4, dashArray: "10, 10" }],
       },
@@ -27,39 +26,31 @@ const RoutingMachine = ({ waypoints }) => {
       routeWhileDragging: false,
       createMarker: () => null,
     });
-    
-    // Čuvamo instancu u ref-u da bi je drugi useEffect mogao koristiti
-    routingControlRef.current = instance;
 
-    // Cleanup funkcija koja se poziva samo kada se komponenta uništi
+    // Dodajemo kontrolu na mapu
+    routingControlRef.current.addTo(map);
+
+    // Cleanup funkcija se poziva kada se komponenta uništi
     return () => {
+      // Pristupamo kontroli preko `routingControlRef.current`
       if (map && routingControlRef.current) {
-        // Pre uklanjanja, očisti tačke da izbegneš greške
-        routingControlRef.current.setWaypoints([]);
         map.removeControl(routingControlRef.current);
       }
     };
-  }, [map]);
+  }, [map]); // Zavisnost je samo 'map', izvršava se jednom
 
-
-  // Drugi useEffect: Ažurira tačke i dodaje/uklanja kontrolu sa mape
+  // Ovaj useEffect samo ažurira tačke na postojećoj kontroli
   useEffect(() => {
-    if (!routingControlRef.current) return; // Ako kontrola ne postoji, ne radi ništa
-
-    if (waypoints && waypoints.length > 0) {
-      // Ako imamo tačke, dodaj kontrolu na mapu (ako već nije) i postavi tačke
-      routingControlRef.current.addTo(map);
-      routingControlRef.current.setWaypoints(
-        waypoints.map(wp => L.latLng(wp[0], wp[1]))
-      );
-    } else {
-      // Ako nemamo tačke (prazan niz), ukloni kontrolu sa mape
-      if (map && routingControlRef.current) {
-          // Ovaj deo je ključan - fizički uklanja liniju sa mape
-          routingControlRef.current.setWaypoints([]);
+    if (routingControlRef.current) {
+      if (waypoints && waypoints.length > 0) {
+        routingControlRef.current.setWaypoints(
+          waypoints.map((wp) => L.latLng(wp[0], wp[1]))
+        );
+      } else {
+        routingControlRef.current.setWaypoints([]); // Očisti rutu ako nema tačaka
       }
     }
-  }, [waypoints, map]); // Zavisnosti su 'waypoints' i 'map'
+  }, [waypoints]); // Zavisnost su 'waypoints'
 
   return null;
 };

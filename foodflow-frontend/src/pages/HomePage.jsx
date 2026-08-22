@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Link } from 'react-router-dom';
-import { getFilteredRestaurants, getAllergens, getDietTypes } from '@/services/api';
-import { SlidersHorizontal, UtensilsCrossed, X as XIcon, Search, Star as StarIcon, ChevronLeft, ChevronRight, CheckCircle, Circle } from 'lucide-react'; 
+import { Link, useLocation } from 'react-router-dom';
+import { getFilteredRestaurants, getAllergens, getDietTypes, getMyRecommendations } from '@/services/api';
+import { SlidersHorizontal, Sparkles, MessageSquarePlus, UtensilsCrossed, X as XIcon, Search, Star as StarIcon, ChevronLeft, ChevronRight, CheckCircle, Circle } from 'lucide-react'; 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DialogHeader, DialogFooter } from "@/components/ui/dialog";
-
+import { AIChatModal } from '@/components/modals/AIChatModal';
+import { useCart } from '@/context/CartContext';
 //================================================================================
-// POMOĆNE KOMPONENTE (kompletne)
+// POMOĆNE KOMPONENTE
 //================================================================================
 
 const RestaurantCard = ({ restaurant }) => {
@@ -120,17 +120,17 @@ const FilterModal = ({ isOpen, onClose, onApply, initialFilters }) => {
                             <section>
                                 <h3 className="font-bold text-lg text-gray-800 mb-2 px-2">Dietary Options</h3>
                                 <div className="space-y-1">
-                                    {availableDietTypes.length > 0 ? availableDietTypes.map(diet => (
+                                    {availableDietTypes.map(diet => (
                                         <FilterOption key={diet.id} label={diet.name} isSelected={selectedDietTypeIds.includes(diet.id)} onSelect={() => handleToggle(diet.id, selectedDietTypeIds, setSelectedDietTypeIds)}/>
-                                    )) : <p className="text-sm text-gray-500 px-2">No dietary options available.</p>}
+                                    ))}
                                 </div>
                             </section>
                             <section>
                                 <h3 className="font-bold text-lg text-gray-800 mb-2 px-2">Exclude Allergens</h3>
                                 <div className="space-y-1">
-                                     {availableAllergens.length > 0 ? availableAllergens.map(allergen => (
+                                     {availableAllergens.map(allergen => (
                                         <FilterOption key={allergen.id} label={allergen.name} isSelected={selectedExcludeAllergenIds.includes(allergen.id)} onSelect={() => handleToggle(allergen.id, selectedExcludeAllergenIds, setExcludeAllergenIds)}/>
-                                    )) : <p className="text-sm text-gray-500 px-2">No allergens to exclude.</p>}
+                                    ))}
                                 </div>
                             </section>
                         </div>
@@ -153,6 +153,100 @@ const Badge = ({ children, onRemove }) => (
         <button onClick={onRemove} className="rounded-full hover:bg-black/10 p-0.5"><XIcon size={14} /></button>
     </motion.div>
 );
+
+const RecommendedItemCard = ({ item, restaurant }) => {
+  // Пошто је ово сада самостална компонента, useCart се позива овде
+  const { addToCart } = useCart();
+    
+  const handleAddToCart = () => {
+    const itemToAdd = {
+      id: item.menuItemVersionId,
+      name: item.name,
+      price: item.price,
+      imageUrl: item.imageUrl,
+    };
+    const restaurantInfo = {
+      id: restaurant.id,
+      name: restaurant.name,
+      openingTime: restaurant.openingTime,
+      closingTime: restaurant.closingTime,
+    };
+    addToCart(itemToAdd, 1, restaurantInfo);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border p-4 flex flex-col items-center text-center group">
+<img src={item.imageUrl || 'https://via.placeholder.com/150'} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />      <p className="font-bold text-gray-800 flex-grow">{item.name}</p>
+      <p className="text-sm text-gray-500 mb-3">{item.price.toFixed(2)} RSD</p>
+      <Button onClick={handleAddToCart} size="sm" className="w-full bg-brand-primary hover:bg-brand-primary/90">
+        Add to Cart
+      </Button>
+    </div>
+  );
+};
+
+// Komponenta za preporučene stavke sa logikom za minimizovanje/maksimizovanje
+const FloatingRecommendationsPopup = ({ items, restaurant, onClose, shouldShowExpanded }) => {
+  // NOVO: Koristimo shouldShowExpanded prop da odredimo početno stanje
+  const [isMinimized, setIsMinimized] = useState(!shouldShowExpanded);
+
+   console.log('🎯 FloatingRecommendationsPopup - shouldShowExpanded:', shouldShowExpanded);
+  console.log('🎯 FloatingRecommendationsPopup - isMinimized:', isMinimized);
+
+  // Ažuriramo minimized stanje kada se promeni shouldShowExpanded
+  useEffect(() => {
+        console.log('🔄 FloatingRecommendationsPopup useEffect - updating isMinimized to:', !shouldShowExpanded);
+
+    setIsMinimized(!shouldShowExpanded);
+  }, [shouldShowExpanded]);
+
+  if (!items || items.length === 0 || !restaurant) return null;
+
+  // Ако је минимизиран, приказујемо само мало дугме
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 left-6 z-40">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+          <Button
+            className="rounded-full h-16 w-16 bg-brand-primary shadow-lg hover:bg-brand-primary/90"
+            onClick={() => setIsMinimized(false)}
+          >
+            <UtensilsCrossed className="h-8 w-8 text-white" />
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Ако није минимизиран, приказујемо цео popup
+  return (
+    <AnimatePresence>
+      <motion.div 
+        className="fixed bottom-6 left-6 z-40 bg-white p-5 rounded-2xl shadow-2xl border w-full max-w-md"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 50 }}
+        transition={{ type: 'spring', stiffness: 150, damping: 20 }}
+      >
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-xl font-bold text-brand-primary">Your Usuals from {restaurant.name}?</h2>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" 
+            onClick={() => setIsMinimized(true)}
+          >
+            <XIcon size={18} />
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {items.map(item => (
+            <RecommendedItemCard key={item.menuItemVersionId} item={item} restaurant={restaurant} />
+          ))}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 
 const AppliedFilters = ({ filters, setFilters, dietTypeMap, allergenMap }) => {
     const handleRemoveFilter = (type, value) => { setFilters(prev => ({ ...prev, [type]: prev[type].filter(item => item !== value) })); };
@@ -205,62 +299,137 @@ const FeaturedSection = ({ title, restaurants }) => {
     );
 };
 
+
 //================================================================================
 // GLAVNA KOMPONENTA STRANICE
 //================================================================================
 export function HomePage() {
-  const [allRestaurants, setAllRestaurants] = useState([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
+  const [restaurants, setRestaurants] = useState([]); // <--- Samo JEDNO stanje za restorane
   const [loading, setLoading] = useState(true);
   const [isFilterModalOpen, setFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
   const [dietTypeMap, setDietTypeMap] = useState({});
   const [allergenMap, setAllergenMap] = useState({});
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showChatTooltip, setShowChatTooltip] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recommendedRestaurant, setRecommendedRestaurant] = useState(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
-  const fetchFilteredRestaurants = useCallback(async (currentFilters) => {
-    setLoading(true);
+
+   // NOVA LOGIKA: Praćenje da li je korisnik upravo došao sa login stranice
+  const location = useLocation();
+  const [shouldShowExpandedRecommendations, setShouldShowExpandedRecommendations] = useState(false);
+
+
+  // Funkcija za dohvatanje restorana sa servera na osnovu filtera
+  const fetchRestaurants = useCallback(async (currentFilters) => {
+    // Ne postavljamo loading na true ovde da izbegnemo treperenje pri kucanju
     try {
       const data = await getFilteredRestaurants(currentFilters);
-      setFilteredRestaurants(data);
-    } catch (error) { console.log("Error fetching restaurants", error); } 
-    finally { setLoading(false); }
-  }, []);
+      setRestaurants(data);
+    } catch (error) {
+      console.error("Error fetching restaurants:", error);
+      // Možete dodati toast notifikaciju ako želite
+    } finally {
+        // Postavljamo loading na false tek kada stignu prvi podaci
+        if(loading) setLoading(false);
+    }
+  }, [loading]); 
+
+ // NOVA LOGIKA: Proveravamo da li je korisnik došao sa login stranice
+  useEffect(() => {
+    // Proveravamo da li postoji flag u sessionStorage koji označava da je korisnik upravo loginovan
+    const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+    
+    if (justLoggedIn) {
+      // Ako je upravo loginovan, pokazujemo expanded popup
+      setShouldShowExpandedRecommendations(true);
+      // Uklanjamo flag jer je već obrađen
+      sessionStorage.removeItem('justLoggedIn');
+    } else {
+      // Inače, popup treba da bude minimizovan
+      setShouldShowExpandedRecommendations(false);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [allData, diets, allergens] = await Promise.all([
+        const [initialRestaurants, diets, allergens, recs] = await Promise.all([
           getFilteredRestaurants({}),
           getDietTypes(),
-          getAllergens()
+          getAllergens(),
+          getMyRecommendations() 
         ]);
-        setAllRestaurants(allData);
-        setFilteredRestaurants(allData);
+        
+        setRestaurants(initialRestaurants);
         setDietTypeMap(Object.fromEntries(diets.map(d => [d.id, d.name])));
         setAllergenMap(Object.fromEntries(allergens.map(a => [a.id, a.name])));
-      } catch (error) { console.error("Failed to load initial data", error); }
-      finally { setLoading(false); }
-    };
-    fetchInitialData();
-  }, []);
+        setRecommendations(recs);
 
+        if (recs && recs.length > 0) {
+          const restaurantId = recs[0].restaurantId;
+          const restaurant = initialRestaurants.find(r => r.id === restaurantId);
+          setRecommendedRestaurant(restaurant);
+
+          // AŽURIRANO: Pokazujemo preporučene stavke odmah, ali stanje expanded/minimized zavisi od shouldShowExpandedRecommendations
+          setShowRecommendations(true);
+        }
+
+      } catch (error) {
+        console.error("Failed to load initial data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchInitialData();
+     
+
+    // Logika za tooltip ostaje ista
+    const hasSeenTooltip = sessionStorage.getItem('hasSeenAIChatTooltip');
+    if (!hasSeenTooltip) {
+        const showTimer = setTimeout(() => {
+            setShowChatTooltip(true);
+            sessionStorage.setItem('hasSeenAIChatTooltip', 'true');
+        }, 2500);
+        const hideTimer = setTimeout(() => {
+            setShowChatTooltip(false);
+        }, 10000); 
+
+        return () => {
+            clearTimeout(showTimer);
+            clearTimeout(hideTimer);
+        };
+    }
+  }, []); // Prazan niz zavisnosti osigurava da se ovo izvrši samo jednom
+
+  // Hook koji reaguje na SVAKU promenu filtera i poziva backend
+    // Hook koji reaguje na SVAKU promenu filtera
   useEffect(() => {
+    // Koristimo debounce da ne bismo slali previše zahteva
     const timerId = setTimeout(() => {
-      fetchFilteredRestaurants(filters);
+      fetchRestaurants(filters);
     }, 300);
+
     return () => clearTimeout(timerId);
-  }, [filters, fetchFilteredRestaurants]);
+  }, [filters, fetchRestaurants]);
   
   const highestRated = useMemo(() => 
-    [...allRestaurants].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10),
-    [allRestaurants]
+    [...restaurants].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10),
+    [restaurants]
   );
   
   const handleSearchChange = (e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }));
   const handleApplyModalFilters = (modalFilters) => setFilters(prev => ({ ...prev, ...modalFilters }));
   const handlePriceFilterToggle = (price) => setFilters(prev => ({ ...prev, priceRanges: prev.priceRanges.includes(price) ? prev.priceRanges.filter(p => p !== price) : [...prev.priceRanges, price] }));
-  const handleClearAllFilters = () => setFilters({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
+  
+  // ISPRAVLJENA FUNKCIJA
+  const handleClearAllFilters = () => {
+    setFilters({ searchTerm: '', dietTypeIds: [], excludeAllergenIds: [], priceRanges: [] });
+  };
 
   return (
     <div className="w-full min-h-screen bg-brand-background-light flex flex-col">
@@ -285,8 +454,7 @@ export function HomePage() {
       </header>
       
       <main className="container mx-auto px-4 md:px-6 py-12 flex-grow">
-        
-        {!loading && allRestaurants.length > 0 && (
+        {!loading && restaurants.length > 0 && (
             <div className="mb-16">
                 <FeaturedSection title="Trending Now" restaurants={highestRated} />
             </div>
@@ -313,8 +481,8 @@ export function HomePage() {
                 <AnimatePresence>
                     {loading ? (
                         [...Array(8)].map((_, i) => <RestaurantCardSkeleton key={i} />)
-                    ) : filteredRestaurants.length > 0 ? (
-                        filteredRestaurants.map((restaurant) => (
+                    ) : restaurants.length > 0 ? (
+                        restaurants.map((restaurant) => (
                             <motion.div key={restaurant.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
                                 <RestaurantCard restaurant={restaurant} />
                             </motion.div>
@@ -327,12 +495,54 @@ export function HomePage() {
                 </AnimatePresence>
             </div>
         </div>
-      </main>
+    </main>
+
+      <Footer />
 
       <AnimatePresence>
         {isFilterModalOpen && <FilterModal isOpen={isFilterModalOpen} onClose={() => setFilterModalOpen(false)} onApply={handleApplyModalFilters} initialFilters={filters} />}
+        {isChatOpen && <AIChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
       </AnimatePresence>
-      <Footer />
+
+{showRecommendations && (
+        <FloatingRecommendationsPopup 
+          items={recommendations} 
+          restaurant={recommendedRestaurant}
+          shouldShowExpanded={shouldShowExpandedRecommendations}
+        />
+      )}
+      <div className="fixed bottom-6 right-6 z-40">
+        <AnimatePresence>
+            {showChatTooltip && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                    className="absolute bottom-full right-0 mb-3 bg-white text-gray-800 p-3 rounded-lg shadow-lg w-64"
+                >
+                    <p className="font-semibold flex items-center gap-2">
+                        <MessageSquarePlus size={18} className="text-brand-primary"/>
+                        Need a recommendation?
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">Click here to ask our AI assistant!</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        <motion.div
+          initial={{ scale: 0, y: 50 }}
+          animate={{ scale: 1, y: 0 }}
+          transition={{ delay: 0.5, type: 'spring', stiffness: 150 }}
+        >
+          <Button 
+              onClick={() => { setIsChatOpen(true); setShowChatTooltip(false); }}
+              className="rounded-full h-16 w-16 bg-brand-primary shadow-lg hover:bg-brand-primary/90"
+          >
+              <Sparkles className="h-8 w-8 text-white" />
+          </Button>
+        </motion.div>
+      </div>
     </div>
   );
 }

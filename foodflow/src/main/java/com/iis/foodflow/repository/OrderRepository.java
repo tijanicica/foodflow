@@ -6,6 +6,7 @@ import com.iis.foodflow.model.order.Order;
 import com.iis.foodflow.model.order.RepeatingOrder;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
+import com.iis.foodflow.model.user.Manager;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -92,6 +93,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY TO_CHAR(creation_date, 'YYYY-MM') ORDER BY month", nativeQuery = true)
     List<Object[]> findSpendingOverTime(@Param("customerId") Long customerId);
 
+    Optional<Order> findTopByDriverAndStatusInOrderByCreationDateDesc(Driver driver, List<OrderStatus> statuses);
+
 
 
     @Query("SELECT oi.menuItemVersion.menuVersion.menu.restaurant.name, SUM(oi.menuItemVersion.price * oi.quantity) " +
@@ -99,6 +102,34 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "GROUP BY oi.menuItemVersion.menuVersion.menu.restaurant.name " +
             "ORDER BY SUM(oi.menuItemVersion.price * oi.quantity) DESC LIMIT 5") // <-- LIMIT 5
     List<Object[]> findTop5SpendingByCategory(@Param("customer") Customer customer);
+
+    // Nove metode za analitiku menadžera
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate")
+    List<Order> findOrdersByManagerAndDate(@Param("manager") com.iis.foodflow.model.user.Manager manager, @Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT oi.menuItemVersion.menuItem.name, COUNT(o.id) as orderCount " +
+            "FROM Order o JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate " +
+            "GROUP BY oi.menuItemVersion.menuItem.name " +
+            "ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItems(@Param("manager") com.iis.foodflow.model.user.Manager manager, @Param("startDate") LocalDateTime startDate);
+    // ===== DODAJ OVE DVE METODE =====
+
+    // Novi upit za filtriranje porudžbina po restoranu
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate AND m.restaurant.id = :restaurantId")
+    List<Order> findOrdersByManagerAndDateAndRestaurant(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
+
+    // Novi upit za filtriranje najprodavanijih stavki po restoranu
+    @Query("SELECT oi.menuItemVersion.menuItem.name, COUNT(o.id) as orderCount " +
+            "FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.creationDate >= :startDate AND m.restaurant.id = :restaurantId " +
+            "GROUP BY oi.menuItemVersion.menuItem.name " +
+            "ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItemsByRestaurant(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
+
+    // ===================================
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.customer = :customer AND o.status = 'DELIVERED' AND o.creationDate >= :since")
     Long countDeliveredOrdersForCustomerSince(@Param("customer") Customer customer, @Param("since") LocalDateTime since);
@@ -120,4 +151,75 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "FROM orders WHERE customer_id = :customerId AND status = 'DELIVERED' AND creation_date >= :since " +
             "GROUP BY time_point ORDER BY MIN(creation_date)", nativeQuery = true)
     List<Object[]> findSpendingOverTimeSince(@Param("customerId") Long customerId, @Param("since") LocalDateTime since, @Param("dateFormat") String dateFormat);
+// U OrderRepository.java
+
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m JOIN m.restaurant r " +
+            "WHERE r.manager.id = :managerId AND o.status = :status")
+    List<Order> findActiveOrdersForManagerByStatus(@Param("managerId") Long managerId, @Param("status") OrderStatus status);
+
+    @Query("SELECT o FROM Order o JOIN o.orderItems oi JOIN oi.menuItemVersion miv JOIN miv.menuVersion mv JOIN mv.menu m " +
+            "WHERE m.restaurant.manager = :manager AND o.status IN :statuses " +
+            "ORDER BY o.creationDate ASC")
+    List<Order> findOrdersByManagerAndStatuses(@Param("manager") Manager manager, @Param("statuses") List<OrderStatus> statuses);
+
+// U fajlu OrderRepository.java
+
+// ...
+
+
+
+  
+
+    @Query("SELECT o FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "JOIN m.restaurant r " +
+            "WHERE r.manager = :manager AND o.creationDate >= :startDate AND o.creationDate < :endDate " +
+            "GROUP BY o.id")
+    List<Order> findOrdersByManagerAndDateRange(@Param("manager") Manager manager,
+                                                @Param("startDate") LocalDateTime startDate,
+                                                @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT o FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion mv " +
+            "JOIN mv.menu m " +
+            "JOIN m.restaurant r " +
+            "WHERE r.manager = :manager AND r.id = :restaurantId AND o.creationDate >= :startDate AND o.creationDate < :endDate " +
+            "GROUP BY o.id")
+    List<Order> findOrdersByManagerAndDateRangeAndRestaurant(@Param("manager") Manager manager,
+                                                             @Param("startDate") LocalDateTime startDate,
+                                                             @Param("endDate") LocalDateTime endDate,
+                                                             @Param("restaurantId") Long restaurantId);
+
+    @Query("SELECT miv.menuItem.name, COUNT(oi.id) as orderCount FROM OrderItem oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion.menu.restaurant r " +
+            "WHERE r.manager = :manager AND oi.order.creationDate >= :startDate " +
+            "GROUP BY miv.menuItem.name ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItemsSince(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT miv.menuItem.name, COUNT(oi.id) as orderCount FROM OrderItem oi " +
+            "JOIN oi.menuItemVersion miv " +
+            "JOIN miv.menuVersion.menu.restaurant r " +
+            "WHERE r.manager = :manager AND r.id = :restaurantId AND oi.order.creationDate >= :startDate " +
+            "GROUP BY miv.menuItem.name ORDER BY orderCount DESC")
+    List<Object[]> findTopPerformingItemsByRestaurantSince(@Param("manager") Manager manager, @Param("startDate") LocalDateTime startDate, @Param("restaurantId") Long restaurantId);
+
+
+    @Query(value = "SELECT suggest_most_frequent_items(:customerId, :count)", nativeQuery = true)
+    List<Long> findRecommendedItemIdsForCustomer(@Param("customerId") Long customerId, @Param("count") int count);
+
+
+    @Query(value = "SELECT calculate_avg_fulfillment_time_minutes(:managerId, :startDate, :endDate, :restaurantId)", nativeQuery = true)
+    Optional<Double> calculateAverageFulfillmentTimeMinutesUsingFunction(
+            @Param("managerId") Long managerId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("restaurantId") Long restaurantId
+    );
+
 }

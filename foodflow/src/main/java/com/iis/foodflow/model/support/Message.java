@@ -1,11 +1,12 @@
 package com.iis.foodflow.model.support;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.iis.foodflow.model.user.Customer;
+import com.iis.foodflow.model.user.Operator;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,5 +23,16 @@ public class Message {
 
     @ManyToOne
     @JoinColumn(name = "ticket_id", nullable = false)
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private SupportTicket supportTicket;
+
+    @ManyToOne
+    @JoinColumn(name = "sender_customer_id")
+    private Customer senderCustomer;
+
+    @ManyToOne
+    @JoinColumn(name = "sender_operator_id")
+    private Operator senderOperator;
 }

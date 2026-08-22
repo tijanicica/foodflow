@@ -1,11 +1,9 @@
 package com.iis.foodflow.controller;
 
 import com.iis.foodflow.dto.request.OrderRequestDTO;
+import com.iis.foodflow.dto.request.RateOrderFoodRequest;
 import com.iis.foodflow.dto.request.RejectOfferRequest;
-import com.iis.foodflow.dto.response.OrderDetailDTO;
-import com.iis.foodflow.dto.response.OrderSummaryDTO;
-import com.iis.foodflow.dto.response.RepeatingOrderTemplateDTO;
-import com.iis.foodflow.dto.response.TrackOrderDTO;
+import com.iis.foodflow.dto.response.*;
 import com.iis.foodflow.model.user.Customer;
 import com.iis.foodflow.model.user.Driver;
 import com.iis.foodflow.service.OrderAssignmentService;
@@ -134,5 +132,25 @@ public class OrderController {
             @AuthenticationPrincipal Customer customer
     ) {
         return ResponseEntity.ok(orderService.getTrackingInfo(id, customer));
+    }
+
+    @PutMapping("/{orderId}/rate-food")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<Void> rateOrderFood(
+            @PathVariable Long orderId,
+            @RequestBody RateOrderFoodRequest request,
+            @AuthenticationPrincipal Customer customer
+    ) {
+        orderService.rateOrderFood(orderId, request, customer);
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/my-recommendations")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<List<RecommendedItemDTO>> getMyRecommendations(@AuthenticationPrincipal Customer customer) {
+        List<RecommendedItemDTO> recommendations = orderService.getRecommendedItemsForCustomer(customer);
+        return ResponseEntity.ok(recommendations);
     }
 }

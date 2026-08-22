@@ -1,12 +1,9 @@
 package com.iis.foodflow.model.support;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
-
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,5 +19,7 @@ public class OperatorRating {
     @OneToOne
     @MapsId
     @JoinColumn(name = "id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private SupportTicket supportTicket;
 }

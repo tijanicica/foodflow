@@ -29,9 +29,9 @@ public class SupportAdministrator implements UserDetails {
     private String lastName;
     @Column(nullable = false)
     private String phone;
-    @Enumerated(EnumType.STRING) // <-- JAKO VAŽNO!
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role; // <-- NOVO POLJE!
+    private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
